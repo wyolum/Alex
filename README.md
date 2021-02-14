@@ -7,6 +7,9 @@ Aluminium Extrusion specific CAD program for Python3
 > openscad Alex_test.scad & ### background this task or launch OpenScad manually, file->open "Alex_test.scad"
 > python main_06.py
 ```
+
+[![Quick Demo](https://img.youtube.com/vi/mkjgiLznFwk/0.jpg)](https://www.youtube.com/watch?v=mkjgiLznFwk)
+
 ## Shortcuts
 * ctrl-n -- New Aluminum Extrusion
 * ctrl-g -- Group selected items
