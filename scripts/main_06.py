@@ -5,6 +5,7 @@ import tkinter as tk
 import numpy as np
 from numpy import sin, cos, sqrt
 import tkinter.ttk as ttk
+from PIL import ImageTk, Image
 
 ### dummy selected group for bootstrapping gui
 selected_group = []
@@ -1125,10 +1126,14 @@ sidebar = SideBar(root, 10, 800)
 topcan = tk.Canvas(root, width=CANVAS_W, height=CANVAS_H)
 topcan.grid(row=2, column=3);
 #tk.Button(root, text="Top").grid(row=2, column=3, sticky="NW")
-rt_angle_image = tk.PhotoImage(file = '../resources/rt_angle.png')
-rt_angle_yaw_image = tk.PhotoImage(file = '../resources/rt_angle_yaw.png')
-rt_angle_pitch_image = tk.PhotoImage(file = '../resources/rt_angle_pitch.png')
-rt_angle_roll_image = tk.PhotoImage(file = '../resources/rt_angle_roll.png')
+#rt_angle_image = tk.PhotoImage(file = '../resources/rt_angle.png')
+#rt_angle_yaw_image = tk.PhotoImage(file = '../resources/rt_angle_yaw.png')
+#rt_angle_pitch_image = tk.PhotoImage(file = '../resources/rt_angle_pitch.png')
+#rt_angle_roll_image = tk.PhotoImage(file = '../resources/rt_angle_roll.png')
+rt_angle_image = ImageTk.PhotoImage(Image.open('../resources/rt_angle.png')) 
+rt_angle_yaw_image = ImageTk.PhotoImage(Image.open('../resources/rt_angle_yaw.png'))
+rt_angle_pitch_image = ImageTk.PhotoImage(Image.open('../resources/rt_angle_pitch.png'))
+rt_angle_roll_image = ImageTk.PhotoImage(Image.open('../resources/rt_angle_roll.png'))
 tk.Button(root, text="Top", image=rt_angle_yaw_image, compound=tk.RIGHT, command=rotate_yaw).grid(row=2, column=3, sticky="NW")
 
 sidecan = tk.Canvas(root, width=CANVAS_W, height=CANVAS_H)
