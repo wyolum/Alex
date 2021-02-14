@@ -238,7 +238,7 @@ class SideBar:
         try:
             if hasattr(self, 'length_var'):
                 length = self.length_var.get()
-                self.length_entry.config(bg='white')
+                self.length_entry.config(bg=bgcolor)
                 
                 for thing in selected_group:
                     thing.length = length
@@ -253,14 +253,15 @@ class SideBar:
                 if dim2 < dim1 or (dim2 / dim1) % 1 != 0:
                     self.dim2_entry.config(bg='yellow')
                 else:
-                    self.dim2_entry.config(bg='white')
-                self.dim1_entry.config(bg='white')
+                    self.dim2_entry.config(bg=bgcolor)
+                self.dim1_entry.config(bg=bgcolor)
 
                 for thing in selected_group:
                     thing.dim1 = dim1
                     thing.render(views)
         except Exception as e:
             self.dim1_entry.config(bg='red')
+
     def dim2_change(self, id, text, mode):
         try:
             if hasattr(self, 'dim2_var'):
@@ -269,7 +270,7 @@ class SideBar:
                 if dim2 < dim1 or (dim2 / dim1) % 1 != 0:
                     self.dim2_entry.config(bg='yellow')
                 else:
-                    self.dim2_entry.config(bg='white')
+                    self.dim2_entry.config(bg=bgcolor)
 
                 for thing in selected_group:
                     thing.dim2 = dim2
@@ -280,7 +281,7 @@ class SideBar:
         try:
             if hasattr(self, 'x_var'):
                 x = self.x_var.get()
-                self.x_entry.config(bg='white')
+                self.x_entry.config(bg=bgcolor)
 
                 selected_group.translate([x - selected_group.pos[0], 0, 0])
                 selected_group.render(views)
@@ -291,7 +292,7 @@ class SideBar:
         try:
             if hasattr(self, 'y_var'):
                 y = self.y_var.get()
-                self.y_entry.config(bg='white')
+                self.y_entry.config(bg=bgcolor)
 
                 for thing in selected_group:
                     thing.translate([0, y - thing.pos[1], 0])
@@ -303,7 +304,7 @@ class SideBar:
         try:
             if hasattr(self, 'z_var'):
                 z = self.z_var.get()
-                self.z_entry.config(bg='white')
+                self.z_entry.config(bg=bgcolor)
 
                 for thing in selected_group:
                     thing.translate([0, 0, z - thing.pos[2]])
@@ -511,7 +512,7 @@ class Group(Thing):
         else:
             center_of_rotation = np.mean(self.get_verts(), axis=0)
             center_of_rotation = snap_to_grid(center_of_rotation, STEP)
-            center_of_rotation = np.zeros(3)
+            #center_of_rotation = np.zeros(3)
         c = center_of_rotation
 
         R = get_integer_rotation(*args, **kw)
@@ -886,6 +887,7 @@ class CornerThreeWay(InterfacedThing):
 class IsoView:
     def __init__(self, can, x, y, offset_x, offset_y, scale=1):
         self.can = can
+        self.can.config(bg=bgcolor)
         self.x = x
         self.y = y
         self.scale=scale
@@ -1123,6 +1125,7 @@ def ungroup_selected(*args):
                 sub.unselect()
     export()
 root = tk.Tk()
+bgcolor = "white"
 root.bind('<Escape>', cancel)
 sidebar = SideBar(root, 10, 800)
 
@@ -1138,19 +1141,22 @@ rt_angle_image = ImageTk.PhotoImage(Image.open('../resources/rt_angle.png'))
 rt_angle_yaw_image = ImageTk.PhotoImage(Image.open('../resources/rt_angle_yaw.png'))
 rt_angle_pitch_image = ImageTk.PhotoImage(Image.open('../resources/rt_angle_pitch.png'))
 rt_angle_roll_image = ImageTk.PhotoImage(Image.open('../resources/rt_angle_roll.png'))
-tk.Button(root, text="Top", image=rt_angle_yaw_image, compound=tk.RIGHT, command=rotate_yaw).grid(row=2, column=3, sticky="NW")
+tk.Button(root, text="Top", image=rt_angle_yaw_image, compound=tk.RIGHT, command=rotate_yaw,
+          bg=bgcolor).grid(row=2, column=3, sticky="NW")
 
 sidecan = tk.Canvas(root, width=CANVAS_W, height=CANVAS_H)
 sidecan.grid(row=4, column=5);
-tk.Button(root, text="Side", image=rt_angle_roll_image, compound=tk.RIGHT, command=rotate_roll).grid(row=4, column=5, sticky="NW")
+tk.Button(root, text="Side", image=rt_angle_roll_image, compound=tk.RIGHT,
+          command=rotate_roll, bg=bgcolor).grid(row=4, column=5, sticky="NW")
 
 frontcan = tk.Canvas(root, width = CANVAS_W, height=CANVAS_H)
 frontcan.grid(row=4, column=3);
-tk.Button(root, text="Front", image=rt_angle_pitch_image, compound=tk.RIGHT, command=rotate_pitch).grid(row=4, column=3, sticky="NW")
+tk.Button(root, text="Front", image=rt_angle_pitch_image, compound=tk.RIGHT,
+          command=rotate_pitch, bg=bgcolor).grid(row=4, column=3, sticky="NW")
 
 isocan = tk.Canvas(root, width=CANVAS_W, height=CANVAS_H)
 isocan.grid(row=2, column=5);
-tk.Button(root, text="Iso").grid(row=2, column=5, sticky="NW")
+tk.Button(root, text="Iso", bg=bgcolor).grid(row=2, column=5, sticky="NW")
 
 ttk.Separator(root, orient=tk.VERTICAL).grid(column=2, row=0, rowspan=10, sticky='ns')
 ttk.Separator(root, orient=tk.VERTICAL).grid(column=4, row=0, rowspan=10, sticky='ns')
@@ -1418,12 +1424,13 @@ def alex_import():
                                           title = "Select file",
                                           filetypes = (("Extruded AL","*.alex"),
                                                        ("all files","*.*")))
-    f = open(filename, 'rb')
-    things = pickle.load(f)
-    for thing in things:
-        scene.append(thing)
-        thing.render(views)
-    export()
+    if filename:
+        f = open(filename, 'rb')
+        things = pickle.load(f)
+        for thing in things:
+            scene.append(thing)
+            thing.render(views)
+        export()
 
 def alex_open(filename):
     while len(alex_filename) > 0:
