@@ -1,18 +1,27 @@
+import sys
+sys.path.append('./packages/')
+import quaternion
 import pickle
 from tkinter import filedialog
-import quaternion
 import tkinter as tk
 import numpy as np
 from numpy import sin, cos, sqrt
 import tkinter.ttk as ttk
 from PIL import ImageTk, Image
 
+STEP = 5 ### grid step size in mm
+
+if len(sys.argv) > 1:
+    CANVAS_W = int(sys.argv[1])
+else:
+    CANVAS_W = 550
+if len(sys.argv) > 2:
+    CANVAS_H = int(sys.argv[2])
+else:
+    CANVAS_H = CANVAS_W
 ### dummy selected group for bootstrapping gui
 selected_group = []
 
-STEP = 5
-CANVAS_W = 550
-CANVAS_H = 450
 ROLL = np.array([[1, 0, 0],
                  [0, 0, -1],
                  [0, 1, 0]])
@@ -423,7 +432,13 @@ class Thing:
         raise NotImplemented("Abstract Base Class")
     def tobom(self):
         raise NotImplemented("Abstract Base Class")
-
+    def get_orientation_angle_and_vec(self):
+        #q = quaternion.from_rotation_matrix(self.orient) ## numpy-quaternion
+        q = quaternion.Quaternion(matrix=self.orient)## pyquaternion
+        angle = q.angle
+        # vec = q.vec ## numpy-quaternion
+        vec = q.vector ## pyquaternion
+        return angle, vec
 def indent(s, n):
     '''
     Indent each line of s n spaces
@@ -603,19 +618,15 @@ class Alex(Thing):
         return start, stop
 
     def toscad(self):
-        q = quaternion.from_rotation_matrix(self.orient)
-        angle = q.angle()
         out = [
             f'translate([{self.pos[0]:.4f}, {self.pos[1]:.4f}, {self.pos[2]:.4f}])',
             ]
         if selected_group.contains(self):
             out[0] = '#' + out[0]
-        if abs(angle) > 1e-8:
-            vec = q.vec
-            l = np.linalg.norm(vec)
-            if l > .001:
-                vec /= l
-            out.append(f'  rotate(a={angle / DEG:.0f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
+        #q = quaternion.from_rotation_matrix(self.orient) ## numpy-quaternion
+        #q = quaternion.Quaternion(matrix=self.orient)## pyquaternion
+        angle, vec = self.get_orientation_angle_and_vec()
+        out.append(f'  rotate(a={angle / DEG:.0f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
         out.append(f'  bar({self.length}, {self.dim1}, {self.dim2});')
         return '\n'.join(out)
 
@@ -681,17 +692,13 @@ class CornerTwoWay(Alex):
         return id
     
     def toscad(self):
-        q = quaternion.from_rotation_matrix(self.orient)
-        angle = q.angle()
         out = [
             f'translate([{self.pos[0]:.4f}, {self.pos[1]:.4f}, {self.pos[2]:.4f}])',
             ]
         if selected_group.contains(self):
             out[0] = '#' + out[0]
-        if abs(angle) > 1e-8:
-            vec = q.vec
-            vec /= np.linalg.norm(vec)
-            out.append(f'  rotate(a={angle / DEG:.0f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
+        angle, vec = self.get_orientation_angle_and_vec()
+        out.append(f'  rotate(a={angle / DEG:.0f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
         out.append(f'  corner_two_way({self.dim1});')
         return '\n'.join(out)
 
@@ -795,17 +802,14 @@ class bareCornerThreeWay(Alex):
         Alex.__init__(self, h, dim1, dim1)
 
     def toscad(self):
-        q = quaternion.from_rotation_matrix(self.orient)
-        angle = q.angle()
+        # q = quaternion.from_rotation_matrix(self.orient)
         out = [
             f'translate([{self.pos[0]:.4f}, {self.pos[1]:.4f}, {self.pos[2]:.4f}])',
             ]
         if selected_group.contains(self):
             out[0] = '#' + out[0]
-        if abs(angle) > 1e-8:
-            vec = q.vec
-            vec /= np.linalg.norm(vec)
-            out.append(f'  rotate(a={angle / DEG:.0f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
+        angle, vec = self.get_orientation_angle_and_vec()
+        out.append(f'  rotate(a={angle / DEG:.0f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
         out.append(f'  corner_three_way({self.dim1});')
         return '\n'.join(out)
 
