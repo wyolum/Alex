@@ -23,3 +23,6 @@ Aluminium Extrusion specific CAD program for Python3
 
 #TODO
 - Get interfaces working
+
+# Thanks to
+pyquaternion: https://github.com/KieranWynn/pyquaternion for providing a python library that is easy to include with Alex.
