@@ -4,8 +4,8 @@ Aluminium Extrusion specific CAD program for Python3
 > pip install numpy-quaternion
 > git clone git@github.com:wyolum/Alex.git
 > cd Alex/scripts
-> python main_06.py &
-> openscad Alex_test.scad ## or launch OpenScad manually, file->open "Alex_test.scad"
+> openscad Alex_test.scad & ### background this task or launch OpenScad manually, file->open "Alex_test.scad"
+> python main_06.py
 ```
 ## Shortcuts
 * ctrl-n -- New Aluminum Extrusion
