@@ -1,6 +1,7 @@
 # Alex
 Aluminium Extrusion specific CAD program for Python3
 ```
+> pip install numpy
 > pip install numpy-quaternion
 > git clone git@github.com:wyolum/Alex.git
 > cd Alex/scripts
