@@ -1,10 +1,12 @@
 # Alex
 Aluminium Extrusion specific CAD program for Python3
 ```
-> pip install numpy-quaternion
+> pip install numpy
 > git clone git@github.com:wyolum/Alex.git
 > cd Alex/scripts
-> openscad Alex_test.scad & ### background this task or launch OpenScad manually, file->open "Alex_test.scad"
+> touch Alex_test.scad ## or wait for AlexCAD to generate this automatically
+> openscad Alex_test.scad & ### background this task or launch OpenScad manually, file->open "Alex_test.scad"'
+>                           ### in the OpenScad menu select Design->Automatically Reload and Preview
 > python main_06.py
 ```
 
@@ -21,3 +23,6 @@ Aluminium Extrusion specific CAD program for Python3
 
 #TODO
 - Get interfaces working
+
+# Thanks to
+pyquaternion: https://github.com/KieranWynn/pyquaternion for providing a python library that is easy to include with Alex.
