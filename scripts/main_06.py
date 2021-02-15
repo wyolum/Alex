@@ -8,17 +8,15 @@ import numpy as np
 from numpy import sin, cos, sqrt
 import tkinter.ttk as ttk
 from PIL import ImageTk, Image
+import argparse
+
+parser = argparse.ArgumentParser(description='ALuminum EXtrusion CAD program.')
+parser.add_argument('filename', nargs='?', default=None, type=str)
+parser.add_argument('-W', '--width', default=None, type=int)
+parser.add_argument('-H', '--height', default=None, type=int)
+args = parser.parse_args()
 
 STEP = 5 ### grid step size in mm
-
-if len(sys.argv) > 1:
-    CANVAS_W = int(sys.argv[1])
-else:
-    CANVAS_W = 550
-if len(sys.argv) > 2:
-    CANVAS_H = int(sys.argv[2])
-else:
-    CANVAS_H = 450
 ### dummy selected group for bootstrapping gui
 selected_group = []
 
@@ -89,6 +87,18 @@ def closest_test():
     pl.show()
 
 #closest_test()
+misumi_2020 = np.array(((50, 3.18), (299, 3.18), (300, 1.98), (4000, 26.40)))
+def misumi_2020_cost(mm):
+    try:
+        import scipy.interpolate
+        if mm < 50:
+            out = 3.18
+        else:
+            out = scipy.interpolate.interp1d(misumi_2020[:,0], misumi_2020[:,1])(mm)
+    except:
+        out = 0
+        raise
+    return out
 
 def NumericalEntry(parent, label, onchange, from_=-1e6, to=1e6, values=None, increment=1,
                    var_factory=tk.DoubleVar):
@@ -167,9 +177,7 @@ def new_part(*args):
     export()
         
 class SideBar:
-    def __init__(self, parent, width, height):
-        self.width = width
-        self.height = height
+    def __init__(self, parent):
         self.parent = parent
         self.frame = tk.Frame(self.parent)
         self.frame.grid(row=1, column=1, rowspan=10, sticky="NW")
@@ -632,6 +640,7 @@ class Alex(Thing):
         return '\n'.join(out)
 
     def tobom(self):
+        # , {misumi_2020_cost(self.length)}
         return [f'Extrude AL, {self.dim1:.0f}X{self.dim2:.0f}, {self.length:.0f}']
     
     def __del__(self):
@@ -1125,9 +1134,21 @@ def ungroup_selected(*args):
                 sub.unselect()
     export()
 root = tk.Tk()
+
+window_w = args.width
+window_h = args.height
+if window_w is None:
+    window_w = root.winfo_screenwidth()
+if window_h is None:
+    window_h = root.winfo_screenheight()
+    
+CANVAS_W = (window_w - 10) / 3
+CANVAS_H = (window_h - 75) / 2
+
+
 bgcolor = "white"
 root.bind('<Escape>', cancel)
-sidebar = SideBar(root, 10, 800)
+sidebar = SideBar(root)
 
 
 topcan = tk.Canvas(root, width=CANVAS_W, height=CANVAS_H)
