@@ -22,7 +22,12 @@ Aluminium Extrusion specific CAD program for Python3
 ![GitHub Logo](images/screenshot.png)
 
 #TODO
+- UNDO ctrl-z
+- Incorporate pricing CSV to easily change prices
+- Add new parts
+- Allow recentering (right now only one center allowed)
 - Get interfaces working
+
 
 # Thanks to
 pyquaternion: https://github.com/KieranWynn/pyquaternion for providing a python library that is easy to include with Alex.
