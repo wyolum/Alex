@@ -26,6 +26,7 @@ Aluminium Extrusion specific CAD program for Python3
 - Incorporate pricing CSV to easily change prices
 - Add new parts
 - Allow recentering (right now only one center allowed)
+- add more parts
 - Get interfaces working
 
 
