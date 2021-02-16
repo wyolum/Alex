@@ -1030,11 +1030,13 @@ class IsoView:
             p, d = closest_pt_on_segment(p0, p1, p)
             if d < min_dist and closest in self.tags:
                 dragging = self.tags[closest]
-                if dragging != 'axes':
-                    for thing in scene.things:
+                if dragging != 'axes':                 ## cant drag the axis
+                    for thing in scene.things:         ## grab containing group
                         if thing.contains(dragging):
                             dragging = thing
-                    if not selected_group.contains(dragging):
+                    if selected_group.contains(dragging):
+                        thing.unselect()
+                    else:
                         if shift_key.released():
                             for thing in selected_group.ungroup():
                                 thing.render(views)
