@@ -715,11 +715,13 @@ class STL(Alex):
         return self.__cost
     
     def toscad(self):
-        p = self.pos + self.offset
+        off = self.offset
+        pos = self.pos + off
         out = []
         angle, vec = self.get_orientation_angle_and_vec()
+        out.append(f'translate([{pos[0]}, {pos[1]}, {pos[2]}])')
         out.append(f'  rotate(a={angle / DEG:.0f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
-        out.append(f'color([0, 1, 0])translate([{p[0]}, {p[1]}, {p[2]}])import("{self.filename}");')
+        out.append(f'  color([0, 1, 0])translate([{-off[0]}, {-off[1]}, {-off[2]}])import("{self.filename}");')
         if selected_group.contains(self):
             out.insert(0, '#')
         return ''.join(out)
