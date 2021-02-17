@@ -1,3 +1,10 @@
+try:
+    from stl import mesh
+except ImportError:
+    print('''numpy-stl required for stl imports
+> pip install numpy-stl # or
+> const install numpy-stl
+''')
 import sys
 import pickle
 from tkinter import filedialog
@@ -18,7 +25,7 @@ parser.add_argument('-W', '--width', default=None, type=int)
 parser.add_argument('-H', '--height', default=None, type=int)
 args = parser.parse_args()
 
-STEP = 5 ### grid step size in mm
+STEP = 1 ### grid step size in mm
 
 ### undoable actions
 # -- translate part
@@ -109,7 +116,8 @@ def misumi_cost(d1, mm):
         x = misumi_3030[:,0]
         y = misumi_3030[:,1]
     else:
-        raise ValueError(f'No price for misumi {d1:2d}{d1:2d}')
+        print(ValueError(f'No price for misumi {d1:2d}{d1:2d}'))
+        return 0.
     if mm < 50:
         out = x[0]
     else:
@@ -354,9 +362,8 @@ def rotate_yaw():
     export()
         
 def export(*args):
-        header = '''\
-include <../resources/components.scad>
-'''
+        header = 'include <../resources/components.scad>'
+            
         scad = 'Alex_test.scad'
         f = open(scad, 'w')
         f.write(header)
@@ -467,6 +474,7 @@ class Thing:
         # vec = q.vec ## numpy-quaternion
         vec = q.vector ## pyquaternion
         return angle, vec
+
 def indent(s, n):
     '''
     Indent each line of s n spaces
@@ -677,6 +685,38 @@ class Alex(Thing):
         out = misumi_cost(self.dim1, self.length)
         return out
     
+class STL(Alex):
+    def __init__(self, filename):
+        self.filename = filename
+        self.mesh = mesh.Mesh.from_file(self.filename)
+        self.points = self.mesh.points.reshape((-1, 3))
+        maxs = np.max(self.points, axis=0)
+        mins = np.min(self.points, axis=0)
+        
+        left = mins[0]
+        right = maxs[0]
+        back = maxs[1]
+        front = mins[1]
+        top = maxs[2]
+        bottom = mins[2]
+
+        d1 = right - left
+        d2 = back - front
+        length = top - bottom
+        Alex.__init__(self, length, d1, d2)
+        self.translate(np.array([-(left + right) / 2, -(front + back) / 2, bottom]))
+        print(self.get_verts())
+        print(bottom)
+
+    def cost(self):
+        return 0.
+    def toscad(self):
+        p = self.pos
+        out = f'color([0, 1, 0])translate([{p[0]}, {p[1]}, {p[2]}])import("{self.filename}");'
+        if selected_group.contains(self):
+            out = '#' + out
+        return out
+
 class CornerTwoWay(Alex):
     def __init__(self, dim1):
         Alex.__init__(self, dim1, dim1, dim1)
@@ -1034,14 +1074,15 @@ class IsoView:
                     for thing in scene.things:         ## grab containing group
                         if thing.contains(dragging):
                             dragging = thing
-                    if selected_group.contains(dragging):
-                        thing.unselect()
+                    if selected_group.contains(dragging): ### toggle selected status for clicked part
+                        if shift_key.pressed():
+                            dragging.unselect()
                     else:
                         if shift_key.released():
                             for thing in selected_group.ungroup():
                                 thing.render(views)
 
-                    dragging.select()
+                        dragging.select()
                     dragging.render(views)
                     if dragging in self.things:
                         self.dragging = dragging
@@ -1627,13 +1668,17 @@ def alex_import():
     filename = filedialog.askopenfilename(#initialdir = "/",
                                           title = "Select file",
                                           filetypes = (("Extruded AL","*.alex"),
+                                                       ("Mesh", "*.stl"),
                                                        ("all files","*.*")))
-    if filename:
+    if filename.endswith('.alex'):
         f = open(filename, 'rb')
         things = pickle.load(f)
         for thing in things:
             scene.append(thing)
             thing.render(views)
+        export()
+    if filename.endswith('.stl'):
+        scene.append(STL(filename))
         export()
 
 def alex_open(filename):
@@ -1691,6 +1736,7 @@ OFFSET = 0
 
 ### global groups!
 scene = Group()
+#scene.append(STL('rattleCAD_road_20150823.stl'))
 scene.render(views)
 selected_group = Group()
 
