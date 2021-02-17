@@ -684,9 +684,13 @@ class Alex(Thing):
     def cost(self):
         out = misumi_cost(self.dim1, self.length)
         return out
-    
+
+mm = 1
+inch = 25.4
+units = {'mm':mm,
+         'inch': inch}
 class STL(Alex):
-    def __init__(self, filename):
+    def __init__(self, filename, cost=0, unit=mm):
         self.filename = filename
         self.mesh = mesh.Mesh.from_file(self.filename)
         self.points = self.mesh.points.reshape((-1, 3))
@@ -704,18 +708,21 @@ class STL(Alex):
         d2 = back - front
         length = top - bottom
         Alex.__init__(self, length, d1, d2)
-        self.translate(np.array([-(left + right) / 2, -(front + back) / 2, bottom]))
-        print(self.get_verts())
-        print(bottom)
-
+        self.offset = np.array([-(left + right) / 2, -(front + back) / 2, -bottom])
+        self.__cost = cost
+    
     def cost(self):
-        return 0.
+        return self.__cost
+    
     def toscad(self):
-        p = self.pos
-        out = f'color([0, 1, 0])translate([{p[0]}, {p[1]}, {p[2]}])import("{self.filename}");'
+        p = self.pos + self.offset
+        out = []
+        angle, vec = self.get_orientation_angle_and_vec()
+        out.append(f'  rotate(a={angle / DEG:.0f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
+        out.append(f'color([0, 1, 0])translate([{p[0]}, {p[1]}, {p[2]}])import("{self.filename}");')
         if selected_group.contains(self):
-            out = '#' + out
-        return out
+            out.insert(0, '#')
+        return ''.join(out)
 
 class CornerTwoWay(Alex):
     def __init__(self, dim1):
@@ -1664,6 +1671,58 @@ def alex_set_titlebar():
     cost = scene.cost()
     selected_cost = selected_group.cost()
     root.winfo_toplevel().title(f"Alex {fn} ${cost:.2f} (${selected_cost:.2f})")
+
+def stl_import_dialog():
+    def ask_filename():
+        filename = filedialog.askopenfilename(title = "Select STL file",
+                                              filetypes = (("Mesh", "*.stl"),
+                                                           ("all files","*.*")))
+        if filename:
+            filename_entry.delete(0, tk.END)
+            filename_entry.insert(0, filename)
+            
+    def on_submit():
+        stl = STL(filename_var.get(), cost_var.get(), unit_var.get())
+        scene.append(stl)
+        stl.render(views)
+        export()
+        tl.destroy()
+    def on_cancel():
+        tl.destroy()
+    tl = tk.Toplevel(root)
+    frame = tk.Frame(tl)
+
+    filename_var = tk.StringVar()
+    tk.Label(frame, text="Filename").grid(row=1, column=1)
+    filename_entry = tk.Entry(frame, textvariable=filename_var)
+    filename_entry.grid(row=1, column=2, columnspan=2)
+    tk.Button(frame, text="Browse", command=ask_filename).grid(row=1, column=4)
+
+    unit_var = tk.StringVar()
+    unit_var.set('mm')
+    tk.Label(frame, text="Unit:").grid(row=2, column=1)
+    unit_entry = tk.Spinbox(frame, values=list(units.keys()), textvariable=unit_var, width=5)
+    unit_entry.grid(row=2, column=2, sticky="NW")
+
+    tk.Label(frame, text='Cost $').grid(row=3, column=1)
+    cost_var = tk.DoubleVar()
+    cost_entry = tk.Spinbox(frame, from_=0, to=1e6, textvariable=cost_var, increment=1, width=5)
+    cost_entry.grid(row=3, column=2, sticky="NW")
+
+    
+    
+    tk.Button(frame, text="Submit", command=on_submit).grid(row=4, column=3, sticky="E")
+    tk.Button(frame, text="Cancel", command=on_cancel).grid(row=4, column=4, sticky="W")
+    
+    frame.grid(row=1, column=1)
+    #filename = filedialog.askopenfilename(#initialdir = "/",
+    #                                      title = "Select file",
+    #                                      filetypes = (("Mesh", "*.stl"),
+    #                                                   ("all files","*.*")))
+    #if filename.endswith('.stl'):
+    #    scene.append(STL(filename))
+    #    export()
+    
 def alex_import():
     filename = filedialog.askopenfilename(#initialdir = "/",
                                           title = "Select file",
@@ -1707,6 +1766,7 @@ filemenu = tk.Menu(menubar, tearoff=0)
 filemenu.add_command(label="New", command=alex_new)
 filemenu.add_command(label="Open", command=alex_open_dialog)
 filemenu.add_command(label="Import", command=alex_import)
+filemenu.add_command(label="Import STL", command=stl_import_dialog)
 filemenu.add_command(label="Save", command=alex_save)
 filemenu.add_command(label="Save As", command=alex_save_as)
 filemenu.add_command(label="Generate BoM", command=alex_bom)
