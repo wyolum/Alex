@@ -14,6 +14,7 @@ from numpy import sin, cos, sqrt
 import tkinter.ttk as ttk
 from PIL import ImageTk, Image
 import argparse
+import warnings
 
 sys.path.append('./packages/')
 import quaternion
@@ -25,7 +26,7 @@ parser.add_argument('-W', '--width', default=None, type=int)
 parser.add_argument('-H', '--height', default=None, type=int)
 args = parser.parse_args()
 
-STEP = 1 ### grid step size in mm
+STEP = [1] ### grid step size in mm (in list to be mutable)
 
 ### undoable actions
 # -- translate part
@@ -116,7 +117,7 @@ def misumi_cost(d1, mm):
         x = misumi_3030[:,0]
         y = misumi_3030[:,1]
     else:
-        print(ValueError(f'No price for misumi {d1:2d}{d1:2d}'))
+        warnings.warn(f'No price for misumi {d1:2d}{d1:2d}')
         return 0.
     if mm < 50:
         out = x[0]
@@ -264,7 +265,23 @@ class SideBar:
 
         #self.export_button = tk.Button(self.frame, command=export, text='Export')
         #self.export_button.grid(row=13, column=1)
+        self.step_frame, self.step_entry, self.step_var = NumericalEntry(self.frame,
+                                                                         'STEP:',
+                                                                         self.step_change,
+                                                                         increment=1,
+                                                                         var_factory=tk.IntVar)
+        self.step_frame.grid(row=14, column=1)
+        self.step_var.set(1)
 
+    def step_change(self, id, text, mode):
+        try:
+            step = self.step_var.get()
+            STEP[0] = step
+        except tk.TclError:
+            pass
+        except AttributeError:
+            pass
+        
     def length_change(self, id, text, mode):
         try:
             if hasattr(self, 'length_var'):
@@ -415,11 +432,13 @@ class ShiftTracker:
 
 class Thing:
     total = 0
+    normal_color = 'black'
+    select_color = 'red'
     def __init__(self):
         Thing.total += 1
         self.pos = np.array([0, 0, 0])
         self.orient = np.eye(3)
-
+        
     def set_length(self, length):
         self.length = length
     
@@ -508,7 +527,9 @@ class Group(Thing):
         out = []
         for thing in self:
             out.append(thing.get_verts())
-        return np.vstack(out)
+        if out:
+            out = np.vstack(out)
+        return out
             
     def contains(self, thing):
         out = thing in self.things
@@ -546,7 +567,7 @@ class Group(Thing):
             center_of_rotation = self.things[0].pos
         else:
             center_of_rotation = np.mean(self.get_verts(), axis=0)
-            center_of_rotation = snap_to_grid(center_of_rotation, STEP)
+            #center_of_rotation = snap_to_grid(center_of_rotation, STEP[0])
             #center_of_rotation = np.zeros(3)
         c = center_of_rotation
 
@@ -614,10 +635,10 @@ class Alex(Thing):
         s1 = self.dim1/2
         s2 = self.dim2/2
         if selected_group.contains(self):
-            color = 'red'
+            color = self.select_color
             width = max([1, np.min([2 * view.get_scale(), 3])])
         else:
-            color = 'black'
+            color = self.normal_color
             width = np.max([.5, np.min([1 * view.get_scale(), 1.5])])
         for direction in np.array([[s1,   s2, 0],
                                    [s1,  -s2, 0],
@@ -690,6 +711,8 @@ inch = 25.4
 units = {'mm':mm,
          'inch': inch}
 class STL(Alex):
+    normal_color = 'lightgrey'
+    select_color = 'salmon'
     def __init__(self, filename, cost=0, unit=mm):
         self.filename = filename
         self.mesh = mesh.Mesh.from_file(self.filename)
@@ -716,7 +739,7 @@ class STL(Alex):
     
     def toscad(self):
         off = self.offset
-        pos = self.pos + off
+        pos = self.pos + 2 * off
         out = []
         angle, vec = self.get_orientation_angle_and_vec()
         out.append(f'translate([{pos[0]}, {pos[1]}, {pos[2]}])')
@@ -742,10 +765,10 @@ class CornerTwoWay(Alex):
         s1 = self.dim1 / 2
         s2 = self.dim2 / 2
         if selected_group.contains(self):
-            color = 'red'
+            color = self.select_color
             width = max([1, np.min([2 * view.get_scale(), 3])])
         else:
-            color = 'black'
+            color = self.normal_color
             width = np.max([.5, np.min([1 * view.get_scale(), 1.5])])
         for direction in np.array([[s1,   s2, 0],
                                    [s1,  -s2, 0],
@@ -1116,7 +1139,7 @@ class IsoView:
             delta = np.zeros(3)
             delta += self.x * (event.x - self.start[0]) / self.get_scale()
             delta += self.y * (event.y - self.start[1]) / self.get_scale()
-            delta = snap_to_grid(delta, STEP)
+            delta = snap_to_grid(delta, STEP[0])
             if np.linalg.norm(delta) > 0:
                 selected_group.translate(delta)
                 selected_group.render(views)
@@ -1677,11 +1700,12 @@ def alex_set_titlebar():
 def stl_import_dialog():
     def ask_filename():
         filename = filedialog.askopenfilename(title = "Select STL file",
-                                              filetypes = (("Mesh", "*.stl"),
-                                                           ("all files","*.*")))
+                                            filetypes = (("Mesh", "*.stl"),
+                                                         ("all files","*.*")))
         if filename:
             filename_entry.delete(0, tk.END)
             filename_entry.insert(0, filename)
+            on_submit()
             
     def on_submit():
         stl = STL(filename_var.get(), cost_var.get(), unit_var.get())
@@ -1695,10 +1719,10 @@ def stl_import_dialog():
     frame = tk.Frame(tl)
 
     filename_var = tk.StringVar()
-    tk.Label(frame, text="Filename").grid(row=1, column=1)
+    tk.Label(frame, text="Filename").grid(row=5, column=1)
     filename_entry = tk.Entry(frame, textvariable=filename_var)
-    filename_entry.grid(row=1, column=2, columnspan=2)
-    tk.Button(frame, text="Browse", command=ask_filename).grid(row=1, column=4)
+    filename_entry.grid(row=5, column=2, columnspan=2)
+    tk.Button(frame, text="Browse", command=ask_filename).grid(row=5, column=4)
 
     unit_var = tk.StringVar()
     unit_var.set('mm')
@@ -1713,17 +1737,10 @@ def stl_import_dialog():
 
     
     
-    tk.Button(frame, text="Submit", command=on_submit).grid(row=4, column=3, sticky="E")
-    tk.Button(frame, text="Cancel", command=on_cancel).grid(row=4, column=4, sticky="W")
+    tk.Button(frame, text="Submit", command=on_submit).grid(row=6, column=3, sticky="E")
+    tk.Button(frame, text="Cancel", command=on_cancel).grid(row=6, column=4, sticky="W")
     
     frame.grid(row=1, column=1)
-    #filename = filedialog.askopenfilename(#initialdir = "/",
-    #                                      title = "Select file",
-    #                                      filetypes = (("Mesh", "*.stl"),
-    #                                                   ("all files","*.*")))
-    #if filename.endswith('.stl'):
-    #    scene.append(STL(filename))
-    #    export()
     
 def alex_import():
     filename = filedialog.askopenfilename(#initialdir = "/",
