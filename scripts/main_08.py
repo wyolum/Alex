@@ -1,6 +1,8 @@
 try:
     from stl import mesh
+    STL_SUPPORTED = True
 except ImportError:
+    STL_SUPPORTED = False
     print('''numpy-stl required for stl imports
 > pip install numpy-stl # or
 > const install numpy-stl
@@ -34,6 +36,7 @@ STEP = [1] ### grid step size in mm (in list to be mutable)
 # -- new part
 # -- delete part
 # -- resize a part
+
 
 ### dummy selected group for bootstrapping gui
 selected_group = []
@@ -430,6 +433,13 @@ class ShiftTracker:
         out = not self.pressed()
         return out
 
+### PARTS:
+# wire-frame
+# price
+# url
+# STL
+# interfaces
+
 class Thing:
     total = 0
     normal_color = 'black'
@@ -716,9 +726,11 @@ class STL(Alex):
     def __init__(self, filename, cost=0, unit=mm):
         self.filename = filename
         self.mesh = mesh.Mesh.from_file(self.filename)
-        self.points = self.mesh.points.reshape((-1, 3))
-        maxs = np.max(self.points, axis=0)
-        mins = np.min(self.points, axis=0)
+        self.vectors = self.mesh.vectors
+        self.points = self.mesh.points
+        
+        maxs = np.max(self.points.reshape((-1, 3)), axis=0)
+        mins = np.min(self.points.reshape((-1, 3)), axis=0)
         
         left = mins[0]
         right = maxs[0]
@@ -733,7 +745,7 @@ class STL(Alex):
         Alex.__init__(self, length, d1, d2)
         self.offset = np.array([-(left + right) / 2, -(front + back) / 2, -bottom])
         self.__cost = cost
-    
+
     def cost(self):
         return self.__cost
     
@@ -749,6 +761,14 @@ class STL(Alex):
             out.insert(0, '#')
         return ''.join(out)
 
+    def __render(self, view):
+        Alex.render(self, view)
+        for triangle in self.vectors[::200]:
+            triangle = triangle + self.offset +  self.pos
+            view.create_line(self, triangle[0], triangle[1], color="grey", width=1)
+            view.create_line(self, triangle[2], triangle[1], color="grey", width=1)
+            view.create_line(self, triangle[0], triangle[2], color="grey", width=1)
+    
 class CornerTwoWay(Alex):
     def __init__(self, dim1):
         Alex.__init__(self, dim1, dim1, dim1)
@@ -1743,11 +1763,17 @@ def stl_import_dialog():
     frame.grid(row=1, column=1)
     
 def alex_import():
-    filename = filedialog.askopenfilename(#initialdir = "/",
-                                          title = "Select file",
-                                          filetypes = (("Extruded AL","*.alex"),
-                                                       ("Mesh", "*.stl"),
-                                                       ("all files","*.*")))
+    filetypes = (("Extruded AL","*.alex"),
+                 ("Mesh", "*.stl"),
+                 ("all files","*.*"))
+    if not STL_SUPPORTED:
+        filetypes = (("Extruded AL","*.alex"),
+                     ("all files","*.*"))
+    filename = filedialog.askopenfilename(
+        #initialdir = "/",
+        title = "Select file",
+        filetypes=filetypes
+    )
     if filename.endswith('.alex'):
         f = open(filename, 'rb')
         things = pickle.load(f)
@@ -1785,7 +1811,8 @@ filemenu = tk.Menu(menubar, tearoff=0)
 filemenu.add_command(label="New", command=alex_new)
 filemenu.add_command(label="Open", command=alex_open_dialog)
 filemenu.add_command(label="Import", command=alex_import)
-filemenu.add_command(label="Import STL", command=stl_import_dialog)
+if STL_SUPPORTED:
+    filemenu.add_command(label="Import STL", command=stl_import_dialog)
 filemenu.add_command(label="Save", command=alex_save)
 filemenu.add_command(label="Save As", command=alex_save_as)
 filemenu.add_command(label="Generate BoM", command=alex_bom)
