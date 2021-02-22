@@ -238,6 +238,8 @@ class STL(Thing):
         return ''.join(out)
 
     def get_wireframe(self):
+        if len(self.points) < -1:
+            return self.points.reshape((-1, 3))
         return self.wireframe * [self.dim1, self.dim2, self.length] @ self.orient.T + self.pos
     
     def render(self, view, selected=False):
