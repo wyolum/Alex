@@ -53,10 +53,21 @@ import wireframes
 import things
 import isometric_view as iv
 
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+    
 parser = argparse.ArgumentParser(description='ALuminum EXtrusion CAD program.')
 parser.add_argument('filename', nargs='?', default=None, type=str)
 parser.add_argument('-W', '--width', default=None, type=int)
 parser.add_argument('-H', '--height', default=None, type=int)
+parser.add_argument('-Z', '--zoom_buttons', nargs='?', default=False, type=str2bool)
 args = parser.parse_args()
 
 ### Global singletons
@@ -105,6 +116,7 @@ def get_view_under_mouse(event):
         out = None
         delta_xy = None
     return out, delta_xy
+
 def OnMouseWheel(event):
     view_under_mouse, delta_xy = get_view_under_mouse(event)
     if view_under_mouse:
@@ -113,6 +125,7 @@ def OnMouseWheel(event):
             zoom_in(delta_xyz)
         for i in range(-event.delta):
             zoom_out(delta_xyz)
+            
 
 def export(*args):
     scene.export()
@@ -190,12 +203,15 @@ def rotate_yaw():
     selected.render(views, selected=True)
     scene.export()
     
-def zoom_in(mouse_xyz=None):
-    views.set_scale(views.get_scale() / .9, mouse_xyz)
+def zoom_in(mouse_xyz=None, amt=.9):
+    views.set_scale(views.get_scale() / amt, mouse_xyz)
 
-def zoom_out(mouse_xyz=None):
-    views.set_scale(views.get_scale() * .9, mouse_xyz)
-
+def zoom_out(mouse_xyz=None, amt=.9):
+    views.set_scale(views.get_scale() * amt, mouse_xyz)
+def zoom_in_lots():
+    zoom_in(amt=.8)
+def zoom_out_lots():
+    zoom_out(amt=.8)
 def select(part):
     scene.selected.append(part)
     part.render(scene.view, selected=True)
@@ -448,23 +464,25 @@ class SideBar:
 
         self.export_button = tk.Button(self.frame, command=export, text='Export')
         #self.export_button.grid(row=13, column=1)
-        
-        self.zoom_in_button = tk.Button(self.frame, command=zoom_in, text='Zoom In')
-        self.zoom_out_button = tk.Button(self.frame, command=zoom_out, text='Zoom Out')
+        if args.zoom_buttons:
+            self.zoom_in_button = tk.Button(self.frame, command=zoom_in_lots, text='Zoom In')
+            self.zoom_out_button = tk.Button(self.frame, command=zoom_out_lots, text='Zoom Out')
+            self.zoom_in_button.grid(row=14, column=1)
+            self.zoom_out_button.grid(row=15, column=1)
         self.step_frame, self.step_entry, self.step_var = NumericalEntry(self.frame,
                                                                          'STEP:',
                                                                          self.step_change,
                                                                          from_=1,
                                                                          increment=1,
                                                                          var_factory=tk.IntVar)
-        self.step_frame.grid(row=14, column=1)
+        self.step_frame.grid(row=16, column=1, pady=10)
         self.step_var.set(5)
 
         ## why does this not take its own column
-        ttk.Separator(self.frame, orient=tk.HORIZONTAL).grid(row=15, column=1, rowspan=10, sticky='ew')
+        ttk.Separator(self.frame, orient=tk.HORIZONTAL).grid(row=17, column=1, rowspan=10, sticky='ew')
         
         self.ap = AlignmentPanel(self.frame)
-        self.ap.grid(row=17, column=1, pady=50)
+        self.ap.grid(row=18, column=1, pady=50)
         
 
     def step_change(self, id, text, mode):
@@ -993,6 +1011,5 @@ root.bind('<Delete>', delete_selected)
 root.bind('<Control-g>', group_selected)
 root.bind('<Control-u>', ungroup_selected)
 root.bind("<MouseWheel>", OnMouseWheel)
-
 
 root.mainloop()
