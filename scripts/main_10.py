@@ -151,22 +151,24 @@ def select_all(*args):
             scene.selected.append(thing)
             thing.render(views, selected=True)
         
-@util.undoable
 def dup_selected(*args):
+    if len(selected) > 0:
+        util.register_goback()
     for thing in scene.selected.ungroup():
         thing.render(views, selected=False)
         scene.append(thing.dup(), select=True)
     
-@util.undoable
 def delete_selected(*args):
+    if len(selected) > 0:
+        util.register_goback()
     for thing in scene.selected.ungroup():
         views.erase(thing)
         scene.remove(thing)
-@util.undoable
 def group_selected(*args):
     if len(scene.selected) < 2:
         pass
     else:
+        util.register_goback()
         out = things.Group()
         for thing in scene.selected.ungroup():
             scene.remove(thing)
@@ -175,8 +177,9 @@ def group_selected(*args):
         scene.selected.append(out)
         out.render(views, selected=True)
 
-@util.undoable
 def ungroup_selected(*args):
+    if len(selected) > 0:
+        util.register_goback()
     for thing in scene.selected.ungroup():
         thing.render(views, selected=False)
         if thing.iscontainer():
@@ -185,18 +188,21 @@ def ungroup_selected(*args):
             for thing in group.ungroup():
                 scene.append(thing)
 
-@util.undoable
 def rotate_roll():
+    if len(selected) > 0:
+        util.register_goback()
     selected.rotate(roll=1)
     selected.render(views, selected=True)
     scene.export()
-@util.undoable
 def rotate_pitch():
+    if len(selected) > 0:
+        util.register_goback()
     selected.rotate(pitch=1)
     selected.render(views, selected=True)
     scene.export()
-@util.undoable
 def rotate_yaw():
+    if len(selected) > 0:
+        util.register_goback()
     selected.rotate(yaw=1)
     selected.render(views, selected=True)
     scene.export()
@@ -210,7 +216,7 @@ def zoom_in_lots():
     zoom_in(amt=.8)
 def zoom_out_lots():
     zoom_out(amt=.8)
-@util.undoable
+
 def select(part):
     scene.selected.append(part)
     part.render(scene.view, selected=True)
@@ -284,10 +290,10 @@ def ImageButton(parent, png, command):
     button.img = img
     return button
 
-@util.undoable
 def center_selected(axis):
     sel = scene.selected
     if len(sel) > 1:
+        util.register_goback()
         verts = sel[-1].get_verts()
         ref = (np.max(verts[:,axis], axis=0) + np.min(verts[:,axis], axis=0))/2
         for part in sel[:-1]:
@@ -299,7 +305,6 @@ def center_selected(axis):
             part.render(views, selected=True)
         export()
     
-@util.undoable
 def abut_selected(axis, dir=1):
     sel = scene.selected
     if dir == 1:
@@ -310,6 +315,7 @@ def abut_selected(axis, dir=1):
         max = np.min
         
     if len(sel) > 1:
+        util.register_goback()
         ref = max(sel[-1].get_verts()[:,axis], axis=0)
         for part in sel[:-1]:
             verts = part.get_verts()
@@ -320,7 +326,6 @@ def abut_selected(axis, dir=1):
             part.render(views, selected=True)
         export()
 
-@util.undoable
 def flush_selected(axis, dir):
     if dir == 1:
         min = np.min
@@ -328,6 +333,7 @@ def flush_selected(axis, dir):
         min = np.max
     sel = scene.selected
     if len(sel) > 1:
+        util.register_goback()
         ref = min(sel[-1].get_verts()[:,axis], axis=0)
         for part in sel[:-1]:
             verts = part.get_verts()
