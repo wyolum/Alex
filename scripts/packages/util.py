@@ -166,6 +166,7 @@ def register_goback():
     for thing in things.TheScene:
         if thing not in selected:
             unselected.append(thing.dup())
+    print(unselected, selected)
     history.append((unselected, selected.dup()))
     history_i[0] += 1
     print('  do len(history)', len(history), history_i[0], len(unselected), len(selected))

@@ -46,17 +46,14 @@ class Thing:
         return self
     
     def render(self, view, selected=False):
-        raise NotImplemented('Abstract base class')
+        raise NotImplementedError('Abstract base class')
 
     def dup(self):
-        out = []
-        for thing in self:
-            out.append(thing.dup())
-        return Group(out)
+        raise NotImplementedError('Abstract base class')
     def toscad(self):
-        raise NotImplemented("Abstract Base Class")
+        raise NotImplementedError("Abstract Base Class")
     def tobom(self):
-        raise NotImplemented("Abstract Base Class")
+        raise NotImplementedError("Abstract Base Class")
     def get_orientation_angle_and_vec(self):
         #q = quaternion.from_rotation_matrix(self.orient) ## numpy-quaternion
         q = quaternion.Quaternion(matrix=self.orient)## pyquaternion
@@ -145,6 +142,11 @@ class Group(Thing):
             p1 = R @ (p0 - c) + c
             thing.translate(p1 - p0)
 
+    def dup(self):
+        out = Group()
+        for thing in self.things:
+            out.append(thing.dup())
+        return out
     def get_center(self):
         verts = self.get_verts()
         if len(verts) > 0:
@@ -199,7 +201,7 @@ class STL(Thing):
         self.mesh = mesh.Mesh.from_file(self.filename)
         self.vectors = self.mesh.vectors
         self.points = self.mesh.points
-        
+        self.unit = unit
         maxs = np.max(self.points.reshape((-1, 3)), axis=0)
         mins = np.min(self.points.reshape((-1, 3)), axis=0)
         
@@ -224,6 +226,12 @@ class STL(Thing):
         self.offset = np.array([0, 0, -bottom])
         self.__cost = cost
 
+    def dup(self):
+        out = STL(self.filename, self.__cost, self.unit)
+        out.orient = self.orient.copy()
+        out.translate(self.pos)
+        return out
+    
     def cost(self):
         return self.__cost
     

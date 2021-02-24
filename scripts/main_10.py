@@ -13,7 +13,7 @@ scene is a group that has a view (or grouped views) and a "selected" subgroup
 ###
 # TODO
 # 
-# -- add control-z undo
+# -- add control-z undo (complete!)
 # -- add look before you leap alighment
 # -- add costing framework for parts_db
 # -- add in necessary stl code directly
@@ -596,6 +596,7 @@ class SideBar:
 def cube_dialog(*args):
     def on_cancel(*args):
         tl.destroy()
+    @util.undoable
     def on_submit(*args):
         l = l_var.get()
         w = w_var.get()
@@ -872,11 +873,14 @@ def alex_import():
         f = open(filename, 'rb')
         group = pickle.load(f)
         f.close()
+        if len(group) > 0:
+            util.register_goback()
         for thing in group:
             scene.append(thing)
             thing.render(views)
         scene.export()
     if filename.endswith('.stl'):
+        util.register_goback()
         scene.append(things.STL(filename))
         scene.export()
 
