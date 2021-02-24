@@ -136,3 +136,91 @@ class DummyKey:
         return False
     def released(self):
         return not self.pressed()
+
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+    
+    
+def clear_all():
+    from packages import things
+    things.TheScene.selected.ungroup()
+    things.TheScene.delete_all()
+    
+################################################################################
+## UNDO/REDO
+history = []
+history_i = [0]
+def register_goback():
+    from packages import things
+    del history[history_i[0]:]
+
+    unselected = things.Group()
+    selected = things.TheScene.selected
+    for thing in things.TheScene:
+        if thing not in selected:
+            unselected.append(thing.dup())
+    history.append((unselected, selected.dup()))
+    history_i[0] += 1
+    print('  do len(history)', len(history), history_i[0], len(unselected), len(selected))
+    
+def undoable(doable):
+    def out(*args, **kw):
+        register_goback()
+        doable(*args, **kw)
+    return out
+
+
+def restore(scn, sel):
+    '''
+    restore scn to scene and sel to scn.selected
+    '''
+    from packages import things
+    clear_all()
+    for thing in scn:
+        things.TheScene.append(thing)
+        thing.render(things.TheScene.view)
+    for thing in sel:
+        things.TheScene.append(thing)
+        thing.render(things.TheScene.view, selected=True)
+        
+def undo(*args, **kw):
+    from packages import things
+    print('  undo len(history)', len(history), history_i[0], history_i[0] == len(history))
+
+    #### save current state for redo if this is the latest
+    if history_i[0] == len(history):
+        print('add current state to end for redo')
+        history.append((things.TheScene.dup(), things.TheScene.selected.dup()))
+        #history_i[0] += 1
+    
+    if history_i[0] > 0:
+        history_i[0]-= 1
+        prev_scene, prev_selected  = history[history_i[0]]
+        restore(prev_scene, prev_selected)
+        print('  undo len(history)', len(history), history_i[0])
+    else:
+        print(' no more undos')
+
+def redo(*args, **kw):
+    print('redo len(history)', len(history), history_i[0])
+    if history_i[0] < len(history)-1:
+        history_i[0] += 1
+        next_scene, next_selected  = history[history_i[0]]
+        restore(next_scene, next_selected)
+    else:
+        print("No more redos")
+
+def reset_undo_history():
+    del history[:]
+    history_i[0] = 0
+    print('reset len(history)', len(history), history_i[0])
+
+## UNDO/REDO
+################################################################################

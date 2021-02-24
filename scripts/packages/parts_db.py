@@ -1,19 +1,20 @@
 import tkinter as tk
-import things
 import os
 import os.path
 import numpy as np
 import sqlite3
-import database
-from database import String, Integer, Float, Table, Column
 import csv
-import wireframes
-from constants import DEG, alex_scad, stl_dir
 import webbrowser
-
 from PIL import ImageTk, Image
-#import MyTable
-from mylistbox import listbox
+
+from packages import things
+from packages import database
+from packages.database import String, Integer, Float, Table, Column
+from packages import wireframes
+from packages.constants import DEG, alex_scad, stl_dir
+
+
+from packages.mylistbox import listbox
 
 mydir = os.path.split(os.path.abspath(__file__))[0]
 db_fn = os.path.join(mydir, 'Alex_parts.db')

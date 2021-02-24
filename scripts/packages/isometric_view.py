@@ -1,5 +1,6 @@
 import numpy as np
-import util
+
+from packages import util
 
 class Rectangle:
     def __init__(self, c1, c2):
@@ -41,6 +42,7 @@ class IsoView:
         self.can.bind('<Motion>', self.ondrag)
         self.tags = {}
         self.dragging = False
+        self.drag_initialized = False
         self.axes_on = True
 
         ### UI tracking
@@ -170,10 +172,17 @@ class IsoView:
                 _delta = np.zeros(3)
                 _delta[keep] = delta[keep]
                 delta = _delta
-            new_pos = self.start + delta
-            self.scene.selected.translate(new_pos - self.last)
-            self.last = new_pos
-            self.scene.selected.render(self.scene.view, selected=True)
+            if np.linalg.norm(delta) > 0:
+                if self.drag_initialized:
+                    pass
+                else:
+                    self.drag_initialized = True
+                    util.register_goback() ### make drag undoable
+                new_pos = self.start + delta
+                self.scene.selected.translate(new_pos - self.last)
+                self.last = new_pos
+                self.scene.selected.render(self.scene.view, selected=True)
+
         else:
             if self.button1_down:
                 self.can.delete('selection_box')
@@ -185,9 +194,11 @@ class IsoView:
             
     def onrelease(self, event):
         self.button1_down = False
+        self.drag_initialized = False
         self.can.delete('selection_box')
         if self.dragging:
             self.dragging = False
+            current = self.B @ np.array([event.x, event.y]) / self.scale
         else:
             corner_1 = (np.array([event.x, event.y]) - self.offset) / self.scale
             corner_2 = (self.click_pt - self.offset) / self.scale
@@ -254,7 +265,7 @@ class Views:
         for view in self.views:
             getattr(view, name)(*args, **kw)
 
-    def erase_all(*args, **kw):
+    def erase_all(self, *args, **kw):
         self.apply('erase_all', *args, **kw)
     def get_scale(self):
         return self.views[0].get_scale()

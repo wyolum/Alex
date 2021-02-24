@@ -1,7 +1,8 @@
 import os.path
 import numpy as np
 from numpy import cos, sin
-import constants
+
+from packages import constants
 
 def path(pts):
     return np.array(pts)

@@ -5,10 +5,10 @@ try:
 except ImportError:
     STL_SUPPORTED = False
 
-from constants import mm, DEG
-import util
-import wireframes
-import quaternion
+from packages.constants import mm, DEG
+from packages import util
+from packages import wireframes
+from packages import quaternion
 
 class Thing:
     total = 0
@@ -132,17 +132,6 @@ class Group(Thing):
             self.pos = np.mean(self.get_verts(), axis=0)
         return self
 
-    def get_center(self):
-        verts = self.get_verts()
-        if len(verts) > 0:
-            ### return center of bounding box
-            maxs = np.max(verts, axis=0)
-            mins = np.min(verts, axis=0)
-            center = (maxs + mins) / 2
-        else:
-            center = np.zeros(3)
-        return center
-    
     def rotate(self, *args, **kw):
         if len(self.things) == 1:
             center_of_rotation = self.things[0].pos
@@ -156,6 +145,17 @@ class Group(Thing):
             p1 = R @ (p0 - c) + c
             thing.translate(p1 - p0)
 
+    def get_center(self):
+        verts = self.get_verts()
+        if len(verts) > 0:
+            ### return center of bounding box
+            maxs = np.max(verts, axis=0)
+            mins = np.min(verts, axis=0)
+            center = (maxs + mins) / 2
+        else:
+            center = np.zeros(3)
+        return center
+    
     def render(self, view, selected=False):
         for thing in self:
             thing.render(view, selected=selected)
@@ -238,9 +238,11 @@ class STL(Thing):
         return ''.join(out)
 
     def get_wireframe(self):
-        if len(self.points) < -1:
-            return self.points.reshape((-1, 3))
-        return self.wireframe * [self.dim1, self.dim2, self.length] @ self.orient.T + self.pos
+        if len(self.points) < 50:
+            out = self.points.reshape((-1, 3)) * [self.dim1, self.dim2, self.length] @ self.orient.T + self.pos
+        else:
+            out = self.wireframe * [self.dim1, self.dim2, self.length] @ self.orient.T + self.pos
+        return out
     
     def render(self, view, selected=False):
         view.erase(self)
@@ -257,14 +259,22 @@ class STL(Thing):
 
 class Selected(Group):
     pass
-
-class Scene(Group):
+class SingletonError(Exception):
+    pass
+class Scene(Group):### singleton
+    count = 0 ### must never be 2 or more
     def __init__(self, view, selected):
+        global TheScene
+        if self.count > 0:
+            raise SingletonError("Only one Scene object allowed.  Use things.TheScene instead")
+        self.count += 1
         Group.__init__(self, [])
         self.view = view
         self.selected = selected
         self.view.set_scene(self) ### allow view to access Scene
 
+        TheScene = self ### reference to Scene singlton
+        
     def delete_all(self):
         for thing in self:
             self.view.erase(thing)
