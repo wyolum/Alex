@@ -290,6 +290,10 @@ def ImageButton(parent, png, command):
     button.img = img
     return button
 
+def AlignmentButton(parent, png, command):
+    button = ImageButton(parent, png, command)
+    return button
+
 def center_selected(axis):
     sel = scene.selected
     if len(sel) > 1:
@@ -377,19 +381,24 @@ def z_flush_selected():
 def z_flush_top_selected():
     flush_selected(2, -1)
 
-def highlight_last_selected(*event):
+def highlight_last_selected(event):
+    print("highlight last selected")
     if len(scene.selected) > 0:
-        #scene.selected[-1].render(views)
+        print(scene.selected[-1].get_wireframe())
         pass
-    
+
+def unhighlight_last_selected(event):
+    print("unhighlight last selected")
 def AlignmentPanel(parent):
     frame = tk.Frame(parent)
+    frame.bind('<Enter>', highlight_last_selected)
+    frame.bind('<Leave>', unhighlight_last_selected)
     
-    x_abut_button = ImageButton(frame, '../resources/x_abut.png', x_abut_selected)
-    x_abut_right_button = ImageButton(frame, '../resources/x_abut_right.png', x_abut_right_selected)
-    x_center_button = ImageButton(frame, '../resources/x_center.png', x_center_selected)
-    x_flush_button = ImageButton(frame, '../resources/x_flush.png', x_flush_selected)
-    x_flush_left_button = ImageButton(frame, '../resources/x_flush_left.png', x_flush_left_selected)
+    x_abut_button = AlignmentButton(frame, '../resources/x_abut.png', x_abut_selected)
+    x_abut_right_button = AlignmentButton(frame, '../resources/x_abut_right.png', x_abut_right_selected)
+    x_center_button = AlignmentButton(frame, '../resources/x_center.png', x_center_selected)
+    x_flush_button = AlignmentButton(frame, '../resources/x_flush.png', x_flush_selected)
+    x_flush_left_button = AlignmentButton(frame, '../resources/x_flush_left.png', x_flush_left_selected)
     x_abut_button.bind('<Motion>', highlight_last_selected)
     
     x_abut_button.grid      (row=6, column=1)
@@ -398,11 +407,11 @@ def AlignmentPanel(parent):
     x_flush_button.grid     (row=3, column=1)
     x_flush_left_button.grid(row=5, column=1)
 
-    y_abut_button = ImageButton(frame, '../resources/y_abut.png', y_abut_selected)
-    y_abut_back_button = ImageButton(frame, '../resources/y_abut_back.png', y_abut_back_selected)
-    y_center_button = ImageButton(frame, '../resources/y_center.png', y_center_selected)
-    y_flush_button = ImageButton(frame, '../resources/y_flush.png', y_flush_selected)
-    y_flush_back_button = ImageButton(frame, '../resources/y_flush_back.png', y_flush_back_selected)
+    y_abut_button = AlignmentButton(frame, '../resources/y_abut.png', y_abut_selected)
+    y_abut_back_button = AlignmentButton(frame, '../resources/y_abut_back.png', y_abut_back_selected)
+    y_center_button = AlignmentButton(frame, '../resources/y_center.png', y_center_selected)
+    y_flush_button = AlignmentButton(frame, '../resources/y_flush.png', y_flush_selected)
+    y_flush_back_button = AlignmentButton(frame, '../resources/y_flush_back.png', y_flush_back_selected)
 
     y_abut_button.grid      (row=6, column=2)
     y_abut_back_button.grid (row=2, column=2)
@@ -410,11 +419,11 @@ def AlignmentPanel(parent):
     y_flush_button.grid     (row=3, column=2)
     y_flush_back_button.grid(row=5, column=2)
 
-    z_abut_button = ImageButton(frame, '../resources/z_abut.png', z_abut_selected)
-    z_abut_top_button = ImageButton(frame, '../resources/z_abut_top.png', z_abut_top_selected)
-    z_center_button = ImageButton(frame, '../resources/z_center.png', z_center_selected)
-    z_flush_button = ImageButton(frame, '../resources/z_flush.png', z_flush_selected)
-    z_flush_top_button = ImageButton(frame, '../resources/z_flush_top.png', z_flush_top_selected)
+    z_abut_button = AlignmentButton(frame, '../resources/z_abut.png', z_abut_selected)
+    z_abut_top_button = AlignmentButton(frame, '../resources/z_abut_top.png', z_abut_top_selected)
+    z_center_button = AlignmentButton(frame, '../resources/z_center.png', z_center_selected)
+    z_flush_button = AlignmentButton(frame, '../resources/z_flush.png', z_flush_selected)
+    z_flush_top_button = AlignmentButton(frame, '../resources/z_flush_top.png', z_flush_top_selected)
 
     z_abut_button.grid     (row=6, column=3)
     z_abut_top_button.grid (row=2, column=3)
