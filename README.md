@@ -29,6 +29,9 @@ Aluminium Extrusion specific CAD program for Python3
 - add more parts
 - Get interfaces working
 
+# Development Videos
+[![Quick Demo](https://img.youtube.com/vi/UnlkdmXvXzY/0.jpg)](https://www.youtube.com/watch?v=UnlkdmXvXzY)
+
 
 # Thanks to
 pyquaternion: https://github.com/KieranWynn/pyquaternion for providing a python library that is easy to include with Alex.
