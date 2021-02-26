@@ -6,6 +6,10 @@ class Struct:
         self.__dict__.update(kwargs)
     def keys(self):
         return self.attrs.keys()
+    def __getitem__(self, key):
+        return self.attrs[key]
+    def __repr__(self):
+        return f'Struct(**{self.attrs})'
 class Table:
     def __init__(self, name, db, *columns):
         self.name = name

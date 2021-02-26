@@ -518,7 +518,7 @@ class SideBar:
             STEP[0] = step
             self.last_step = step
         except tk.TclError:
-            self.step_var.set(self.last_ste)
+            self.step_var.set(self.last_step)
             pass
         except AttributeError:
             pass

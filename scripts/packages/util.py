@@ -217,21 +217,38 @@ def undo(*args, **kw):
         #print('no more undos')
 
 def redo(*args, **kw):
-    print('redo len(history)', len(history), history_i[0])
+    # print('redo len(history)', len(history), history_i[0])
     if history_i[0] < len(history)-1:
         history_i[0] += 1
         next_scene, next_selected  = history[history_i[0]]
         restore(next_scene, next_selected)
     else:
-        print("No more redos")
+        pass
+        # print("No more redos")
 
 def reset_undo_history():
     del history[:]
     history_i[0] = 0
-    print('reset len(history)', len(history), history_i[0])
+    # print('reset len(history)', len(history), history_i[0])
 
 ## UNDO/REDO
 ################################################################################
+def cacheable(f):
+    function_cache = {}
+    def out(string):
+        if string not in function_cache:
+            function_cache[string] = f(string)
+        return function_cache[string]
+    return out
+
+# @cacheable
+# def junk(string):
+#     return len(string)
+# print(junk('justin'))
+# print(junk('justin shaw'))
+# print(junk('justin shaw'))
+# print(junk('justin'))
+
 def dedup(points):
     '''return induces of non-duplicates'''
     d = np.linalg.norm(points[:,np.newaxis] - points[np.newaxis], axis=-1)

@@ -12,7 +12,7 @@ from packages import database
 from packages.database import String, Integer, Float, Table, Column
 from packages import wireframes
 from packages.constants import DEG, alex_scad, stl_dir
-
+from packages import util
 
 from packages.mylistbox import listbox
 
@@ -20,39 +20,29 @@ mydir = os.path.split(os.path.abspath(__file__))[0]
 db_fn = os.path.join(mydir, 'Alex_parts.db')
 db = sqlite3.connect(db_fn)
 
-interface_table = Table("Interface", db,
-                        Column("Name", String(), UNIQUE=True),
-                        Column("Hotspot_x", Float()),
-                        Column("Hotspot_y", Float()),
-                        Column("Hotspot_z", Float()),
-                        Column("Direction_x", Float()),
-                        Column("Direction_y", Float()),
-                        Column("Direction_z", Float()))
-interface_table.create()
-L = 0xdeadbeef
-interface_table.insert([
-    ["2020+X", 10,  0, 10, 1, 0, 0],
-    ["2020+Y",  0, 10, 10, 0, 1, 0],
-    ["2020+Z",  0,  0,  L, 0, 0, 1],
-    ["2020-X",-10,  0,-10,-1, 0, 0],
-    ["2020-Y",  0,-10,-10, 0,-1, 0],
-    ["2020-Z",  0,  0,  0, 0, 0,-1],
-    
-    ["3030+X", 15, 0, 15, 1, 0, 0],
-    ["3030+Y", 0, 15, 15, 0, 1, 0],
-    ["3030+Z", 15, 15, L, 0, 0, 1],
-    ["3030-X",-15, 0, 15,-1, 0, 0],
-    ["3030-Y", 0,-15, 15, 0,-1, 0],
-    ["3030-Z", 0,  0,  0, 0, 0,-1]])
 
+L = 0xdeadbeef
+interface_table = {"2020+X":[  10,  0, 10, 1, 0, 0],
+                   "2020+Y":[   0, 10, 10, 0, 1, 0],
+                   "2020+Z":[   0,  0,  5, 0, 0, 1],
+                   "2020-X":[ -10,  0, 10,-1, 0, 0],
+                   "2020-Y":[   0,-10, 10, 0,-1, 0],
+                   "2020-Z":[   0,  0,  0, 0, 0,-1],
+                   
+                   "3030+X":[ 15, 0, 15, 1, 0, 0],
+                   "3030+Y":[ 0, 15, 15, 0, 1, 0],
+                   "3030+Z":[ 15, 15, 6, 0, 0, 1],
+                   "3030-X":[-15, 0, 15,-1, 0, 0],
+                   "3030-Y":[ 0,-15, 15, 0,-1, 0],
+                   "3030-Z":[ 0,  0,  0, 0, 0,-1]}
+@util.cacheable
 def lookup_interface(name):
-    interfaces = interface_table.select(where=f'name="{name}"')
-    if len(interfaces) == 0:
+    if name not in interface_table:
         raise ValueError(f"Interface named {name} not found")
-    record = interfaces[0]
-    record.hotspot = np.array([record.Hotspot_x,record.Hotspot_y,record.Hotspot_z])
-    record.direction = np.array([record.Direction_x,record.Direction_y,record.Direction_z])
-    return record
+    record = interface_table[name]
+    hotspot = np.array(record[:3])
+    direction = np.array(record[3:])
+    return Interface(name, hotspot, direction)
 
 part_table = Table('Part', db,
                    Column('Name',String(), UNIQUE=True),
@@ -103,7 +93,66 @@ def get(name):
         raise ValueError(f"No item named {name}.")
     return record[0]
 
+class Interface:
+    def __init__(self, name, hotspot, direction):
+        self.name = name
+        self.hotspot = hotspot
+        self.direction = direction
+    def __repr__(self):
+        return f'Interface("{self.name}", {self.hotspot}, {self.direction})'
+    def get_pos_dir(self, owner):
+        p = owner.pos + owner.orient @ self.hotspot
+        d = owner.orient @ self.direction
+        return p, d
 
+    def engaged_with(self, proj, p2, owner_bb, owner, thing):
+        wf = thing.get_wireframe()
+        wf2d = wf @ proj
+        hull = util.convexhull(wf2d)[0][:-1]
+        mn = np.min(hull, axis=0)
+        mx = np.max(hull, axis=0)
+        midpoint = (mx + mn) / 2
+        if np.linalg.norm(midpoint - p2) < .01:
+            ## check flush with owner
+            if np.min(np.abs(np.roll(owner_bb, 3) - np.hstack(thing.get_boundingbox()))) < .01:
+                return True
+        return False
+    
+    def engaged(self, owner, group=None):
+        '''
+        self.direction is in line with another part
+        part not overlapping
+        -- cant be engages with a Group... unless part of that same group
+        '''
+        if group is None:
+            group = things.TheScene
+            
+        p, d = self.get_pos_dir(owner)
+        i = np.argmin(abs(d)) ### most orthongonal axis
+        u0 = np.zeros(3)
+        u0[i] = 1
+        u0 = u0 - (d @ u0) * d
+        u0 /= np.linalg.norm(u0)
+        u1 = np.cross(d, u0)
+        U = np.column_stack([u0, u1])
+
+        # projection orthognal to direction
+        proj = U
+        p2 = p @ U
+        
+        owner_bb = np.hstack(owner.get_boundingbox())
+
+        for thing in group:
+            if thing.iscontainer():
+                continue ### cant interface w/ a group
+                gp = thing
+                if self.engaged(owner, gp):
+                    return True
+            elif thing is not owner:
+                if self.engaged_with(proj, p2, owner_bb, owner, thing):
+                    return True
+        return False
+    
 class Part(things.Thing):
     def __init__(self, name, length=1):
         record = get(name)
@@ -121,6 +170,13 @@ class Part(things.Thing):
             self.color = record.Color
             self.record = record
             
+            self.interfaces = []
+            for i in range(1, 7):
+                k = f'Interface_{i:02d}'
+                name = self.record[k]
+                if name != 'NA':
+                    interface = lookup_interface(name)
+                    self.interfaces.append(interface)
     def __rescale_wireframe(self):
         self.wireframe = wireframes.get(self.record.Wireframe) * [self.dim1, self.dim2, self.length]
         
@@ -147,6 +203,15 @@ class Part(things.Thing):
             width = max([1, np.min([view.get_scale(), 1.5])])
         wireframe = self.get_wireframe()
         view.create_path(self, wireframe, color, width)
+        return ### interfaces are too slow to render on every render :-(
+        for interface in self.interfaces:
+            if not interface.engaged(self): ## too slow
+                p, d = interface.get_pos_dir(self)
+                r = int(abs(d[0] * 255))
+                g = int(abs(d[1] * 255))
+                b = int(abs(d[2] * 255))
+                color = f'#{r:02x}{g:02x}{b:02x}'
+                view.create_line(self, p, p + 5 * d, color, width)
     
     def toscad(self):
         pos = self.pos

@@ -60,7 +60,7 @@ class IsoView:
         wf = part.get_wireframe()
         wf2d = wf @ self.B
         hull, hull_i = util.convexhull(wf2d)
-        width = max([1, np.min([self.get_scale(), 3])]) * 4
+        width = max([1, np.min([self.get_scale(), 3])]) * 2
         self.create_path("highlight", wf[hull_i], 'red', width)
 
     def toggle_axes(self):
@@ -103,6 +103,10 @@ class IsoView:
         start = 0
         tag = str(thing)
         for stop in breaks:
+            if stop == 2:
+                if np.linalg.norm(np.diff(path[:2], axis=0)) < 1:
+                    path[0] = path[0] - [width/2, width/2]
+                    path[1] = path[1] + [width/2, width/2]
             args = path[start:stop].ravel()
             id = self.can.create_line(*args,
                                       tags=(tag,),

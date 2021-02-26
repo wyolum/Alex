@@ -18,7 +18,18 @@ class Thing:
         Thing.total += 1
         self.pos = np.array([0, 0, 0])
         self.orient = np.eye(3)
+        self.interfaces = []
         
+    def get_boundingbox(self):
+        '''
+        return min and max for each axis
+        [min_x, min_y, min_z], [max_x, max_y, max_z]
+        '''
+        verts = self.get_wireframe()
+        maxs = np.max(verts, axis=0)
+        mins = np.min(verts, axis=0)
+        return(mins, maxs)
+
     def set_length(self, length):
         self.length = length
         
@@ -27,12 +38,6 @@ class Thing:
             views.delete(self)
         except:
             pass
-
-    def get_boundingbox(self):
-        verts = self.get_wireframe()
-        maxs = np.max(verts, axis=0)
-        mins = np.min(verts, axis=0)
-        return(maxs, mins)
 
     def iscontainer(self):
         return False
@@ -102,7 +107,35 @@ class Group(Thing):
         else:
             out = np.array(out)
         return out
-            
+    
+    def get_wireframe(self):
+        wfs = []
+        n = 0
+        for thing in self.things:
+            wf = thing.get_wireframe()
+            wfs.append(wf)
+            n += len(wf)
+        out = np.zeros((n, 3)) * np.nan
+        i = 0
+        for wf in wfs:
+            out[i:i+len(wf)] = wf
+            i += len(wf)
+        x = np.max(out, axis=0)
+        n = np.min(out, axis=0)
+        return np.array([[n[0], n[1], n[2]],
+                         [n[0], n[1], x[2]],
+                         [n[0], x[1], x[2]],
+                         [n[0], x[1], n[2]],
+                         [n[0], n[1], n[2]],
+                         [x[0], n[1], n[2]],
+                         [x[0], n[1], x[2]],
+                         [x[0], x[1], x[2]],
+                         [x[0], x[1], n[2]],
+                         [x[0], n[1], n[2]]])
+                         
+                         
+        return out
+    
     def contains(self, thing):
         out = thing in self.things
         if not out:
@@ -114,6 +147,8 @@ class Group(Thing):
 
     def append(self, thing):
         if thing not in self.things:
+            for interface in thing.interfaces:
+                pass
             self.things.append(thing)
         thing.group = self
 
@@ -154,12 +189,12 @@ class Group(Thing):
         for thing in self.things:
             out.append(thing.dup())
         return out
+
     def get_center(self):
         verts = self.get_verts()
         if len(verts) > 0:
             ### return center of bounding box
-            maxs = np.max(verts, axis=0)
-            mins = np.min(verts, axis=0)
+            mins, maxs = self.get_boundingbox()
             center = (maxs + mins) / 2
         else:
             center = np.zeros(3)
