@@ -27,6 +27,13 @@ class Thing:
             views.delete(self)
         except:
             pass
+
+    def get_boundingbox(self):
+        verts = self.get_wireframe()
+        maxs = np.max(verts, axis=0)
+        mins = np.min(verts, axis=0)
+        return(maxs, mins)
+
     def iscontainer(self):
         return False
 

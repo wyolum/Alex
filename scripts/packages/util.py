@@ -156,8 +156,9 @@ def clear_all():
 ################################################################################
 ## UNDO/REDO
 history = []
-history_i = [0]
-def register_goback():
+history_i = [0] ### how long is history
+max_undo = 15
+def register_undo():
     from packages import things
     del history[history_i[0]:]
 
@@ -166,14 +167,16 @@ def register_goback():
     for thing in things.TheScene:
         if thing not in selected:
             unselected.append(thing.dup())
-    print(unselected, selected)
     history.append((unselected, selected.dup()))
     history_i[0] += 1
-    print('  do len(history)', len(history), history_i[0], len(unselected), len(selected))
+    if len(history) > max_undo:
+        del history[:-(max_undo - len(history))]
+        history_i[0] = max_undo
+    print('  do len(history)', len(history), history_i[0])
     
 def undoable(doable):
     def out(*args, **kw):
-        register_goback()
+        register_undo()
         doable(*args, **kw)
     return out
 
@@ -193,7 +196,6 @@ def restore(scn, sel):
         
 def undo(*args, **kw):
     from packages import things
-    print('  undo len(history)', len(history), history_i[0], history_i[0] == len(history))
 
     #### save current state for redo if this is the latest
     if history_i[0] == len(history):
@@ -205,9 +207,9 @@ def undo(*args, **kw):
         history_i[0]-= 1
         prev_scene, prev_selected  = history[history_i[0]]
         restore(prev_scene, prev_selected)
-        print('  undo len(history)', len(history), history_i[0])
+        print('undo len(history)', len(history), history_i[0])
     else:
-        print(' no more undos')
+        print('no more undos')
 
 def redo(*args, **kw):
     print('redo len(history)', len(history), history_i[0])
@@ -225,3 +227,74 @@ def reset_undo_history():
 
 ## UNDO/REDO
 ################################################################################
+def dedup(points):
+    '''return induces of non-duplicates'''
+    d = np.linalg.norm(points[:,np.newaxis] - points[np.newaxis], axis=-1)
+    import pylab as pl
+    dups = np.transpose(np.where(d < .1))
+    dups = dups[dups[:,1] > dups[:,0],0]
+    keep = [i for i in range(len(points)) if i not in dups]
+    return keep
+def convexhull(points):
+    '''
+    return induces of convex hull
+    '''
+    unique_i = dedup(points)
+    p = points[unique_i]
+    n = len(p)
+    start = np.argmin(p[:,1])
+    xy = p - p[start]
+    theta = np.arctan2(xy[:,1], xy[:,0])
+    sorted = np.argsort(theta)
+    hull = [p[sorted[0]]]
+    out = [unique_i[sorted[0]]]
+    idx = np.arange(3)
+    def getv(p3):
+        return np.linalg.det(np.diff(p3, axis=0))
+    for i in range(n):
+        p3 = p[sorted[(idx + i) % n]]
+        v = getv(p3)
+        if v > 0:
+            hull.append(p3[1])
+            out.append(unique_i[sorted[(idx[1] + i) % n]])
+        if len(hull) > 2:
+            remove = []
+            for j in range(2, len(hull) + 1):
+                p3 = [hull[- j - 1], hull[-j], hull[-1]]
+                if getv(p3) < 0:
+                    remove.append(j)
+                else:
+                    break
+            for r in remove:
+                del hull[-2]
+                del out[-2]
+    return np.array(hull), out
+
+
+def convexhull_test():
+    import pylab as pl
+    import numpy as np
+    p = np.random.normal(0, 1, (1000, 2))
+    p = np.array([[ 107.45190528,  -20.71308365],
+                  [ 117.45190528,  -30.64771895],
+                  [ 134.77241336,  -24.91195459],
+                  [ 124.77241336,  -14.97731929],
+                  [ 107.45190528,  -20.71308365],
+                  [ 107.45190528, -102.62828808],
+                  [ 117.45190528, -112.56292338],
+                  [ 117.45190528,  -30.64771895],
+                  [ 117.45190528, -112.56292338],
+                  [ 134.77241336, -106.82715902],
+                  [ 134.77241336,  -24.91195459],
+                  [ 134.77241336, -106.82715902],
+                  [ 124.77241336,  -96.89252372],
+                  [ 124.77241336,  -14.97731929],
+                  [ 124.77241336,  -96.89252372],
+                  [ 107.45190528, -102.62828808]])
+
+    h, i = convexhull(p)
+    print(h)
+    pl.plot(p[:,0], p[:,1], 'b.')
+    pl.plot(h[:,0], h[:,1], 'b-')
+    pl.show()
+#xconvexhull_test()

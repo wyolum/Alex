@@ -56,6 +56,13 @@ class IsoView:
 
         self.draw_axes()
 
+    def highlight_part(self, part, color):
+        wf = part.get_wireframe()
+        wf2d = wf @ self.B
+        hull, hull_i = util.convexhull(wf2d)
+        width = max([1.5, np.min([self.get_scale(), 4])])
+        self.create_path("highlight", wf[hull_i], 'red', width)
+
     def toggle_axes(self):
         self.axes_on = not self.axes_on
         self.draw_axes()
@@ -81,6 +88,15 @@ class IsoView:
     def get_scale(self):
         return self.scale
 
+    def create_polygon(self, thing, path, color, width):
+        tag = str(thing)
+        path = path @ self.B * self.get_scale() + self.offset
+        print(len(path.ravel()))
+        id = self.can.create_polygon(*path.ravel(),
+                                     tags=(tag,),
+                                     fill=color,
+                                     width=width, alpha=.3)
+        
     def create_path(self, thing, path, color, width):
         path = path @ self.B * self.get_scale() + self.offset
         breaks = np.where(np.isnan(path[:,0]))[0]
@@ -102,7 +118,7 @@ class IsoView:
 
     def erase(self, thing):
         self.can.delete(str(thing))
-        if thing.iscontainer():
+        if hasattr(thing, 'iscontainer') and thing.iscontainer():
             for subthing in thing:
                 self.erase(subthing)
                 
@@ -177,7 +193,7 @@ class IsoView:
                     pass
                 else:
                     self.drag_initialized = True
-                    util.register_goback() ### make drag undoable
+                    util.register_undo() ### make drag undoable
                 new_pos = self.start + delta
                 self.scene.selected.translate(new_pos - self.last)
                 self.last = new_pos
@@ -286,7 +302,9 @@ class Views:
         self.apply('slew', *args, **kw)
     def toggle_axes(self, *args, **kw):
         self.apply('toggle_axes', *args, **kw)
-    
+    def highlight_part(self, *args, **kw):
+        self.apply('highlight_part', *args, **kw)
+        
 def from_theta_phi(theta, phi, can, offset, step_var, scale, shift_key=None, control_key=None, bgcolor=bgcolor):
     pov = -np.array([np.sin(phi),
                      0,

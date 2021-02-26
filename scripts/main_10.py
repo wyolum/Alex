@@ -153,14 +153,14 @@ def select_all(*args):
         
 def dup_selected(*args):
     if len(selected) > 0:
-        util.register_goback()
+        util.register_undo()
     for thing in scene.selected.ungroup():
         thing.render(views, selected=False)
         scene.append(thing.dup(), select=True)
     
 def delete_selected(*args):
     if len(selected) > 0:
-        util.register_goback()
+        util.register_undo()
     for thing in scene.selected.ungroup():
         views.erase(thing)
         scene.remove(thing)
@@ -168,7 +168,7 @@ def group_selected(*args):
     if len(scene.selected) < 2:
         pass
     else:
-        util.register_goback()
+        util.register_undo()
         out = things.Group()
         for thing in scene.selected.ungroup():
             scene.remove(thing)
@@ -179,7 +179,7 @@ def group_selected(*args):
 
 def ungroup_selected(*args):
     if len(selected) > 0:
-        util.register_goback()
+        util.register_undo()
     for thing in scene.selected.ungroup():
         thing.render(views, selected=False)
         if thing.iscontainer():
@@ -190,19 +190,19 @@ def ungroup_selected(*args):
 
 def rotate_roll():
     if len(selected) > 0:
-        util.register_goback()
+        util.register_undo()
     selected.rotate(roll=1)
     selected.render(views, selected=True)
     scene.export()
 def rotate_pitch():
     if len(selected) > 0:
-        util.register_goback()
+        util.register_undo()
     selected.rotate(pitch=1)
     selected.render(views, selected=True)
     scene.export()
 def rotate_yaw():
     if len(selected) > 0:
-        util.register_goback()
+        util.register_undo()
     selected.rotate(yaw=1)
     selected.render(views, selected=True)
     scene.export()
@@ -297,7 +297,7 @@ def AlignmentButton(parent, png, command):
 def center_selected(axis):
     sel = scene.selected
     if len(sel) > 1:
-        util.register_goback()
+        util.register_undo()
         verts = sel[-1].get_verts()
         ref = (np.max(verts[:,axis], axis=0) + np.min(verts[:,axis], axis=0))/2
         for part in sel[:-1]:
@@ -319,7 +319,7 @@ def abut_selected(axis, dir=1):
         max = np.min
         
     if len(sel) > 1:
-        util.register_goback()
+        util.register_undo()
         ref = max(sel[-1].get_verts()[:,axis], axis=0)
         for part in sel[:-1]:
             verts = part.get_verts()
@@ -337,7 +337,7 @@ def flush_selected(axis, dir):
         min = np.max
     sel = scene.selected
     if len(sel) > 1:
-        util.register_goback()
+        util.register_undo()
         ref = min(sel[-1].get_verts()[:,axis], axis=0)
         for part in sel[:-1]:
             verts = part.get_verts()
@@ -384,11 +384,12 @@ def z_flush_top_selected():
 def highlight_last_selected(event):
     print("highlight last selected")
     if len(scene.selected) > 0:
-        print(scene.selected[-1].get_wireframe())
-        pass
+        scene.view.highlight_part(scene.selected[-1], 'red')
 
 def unhighlight_last_selected(event):
     print("unhighlight last selected")
+    scene.view.erase("highlight")
+    
 def AlignmentPanel(parent):
     frame = tk.Frame(parent)
     frame.bind('<Enter>', highlight_last_selected)
@@ -889,13 +890,13 @@ def alex_import():
         group = pickle.load(f)
         f.close()
         if len(group) > 0:
-            util.register_goback()
+            util.register_undo()
         for thing in group:
             scene.append(thing)
             thing.render(views)
         scene.export()
     if filename.endswith('.stl'):
-        util.register_goback()
+        util.register_undo()
         scene.append(things.STL(filename))
         scene.export()
 
