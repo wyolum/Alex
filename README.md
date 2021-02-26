@@ -21,13 +21,19 @@ Aluminium Extrusion specific CAD program for Python3
 
 ![GitHub Logo](images/screenshot.png)
 
+#Complete
+- UNDO ctrl-z (REDO ctrl-y)
+- Extensible parts library
+- Intuative zoom
+- Intuative alignment
+
 #TODO
-- UNDO ctrl-z
 - Incorporate pricing CSV to easily change prices
-- Add new parts
-- Allow recentering (right now only one center allowed)
 - add more parts
 - Get interfaces working
+
+# Development Videos
+[![Quick Demo](https://img.youtube.com/vi/UnlkdmXvXzY/0.jpg)](https://www.youtube.com/watch?v=UnlkdmXvXzY)
 
 
 # Thanks to
