@@ -530,9 +530,12 @@ class SideBar:
                 if 'scene' in globals():
                     scene.export()
                 self.last_length = length
-        except tk.TclError:
-            self.length_var.set(self.last_length)
-            #self.length_entry.config(bg='red')
+        except tk.TclError as e:
+            if str(e) == 'expected floating-point number but got ""':
+                pass
+            else:
+                self.length_var.set(self.last_length)
+                #self.length_entry.config(bg='red')
 
     def dim1_change(self, id, text, mode):
         try:
