@@ -382,12 +382,11 @@ def z_flush_top_selected():
     flush_selected(2, -1)
 
 def highlight_last_selected(event):
-    print("highlight last selected")
+    print("len(scene.selected)", len(scene.selected))
     if len(scene.selected) > 0:
         scene.view.highlight_part(scene.selected[-1], 'red')
 
 def unhighlight_last_selected(event):
-    print("unhighlight last selected")
     scene.view.erase("highlight")
     
 def AlignmentPanel(parent):

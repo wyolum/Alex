@@ -60,7 +60,7 @@ class IsoView:
         wf = part.get_wireframe()
         wf2d = wf @ self.B
         hull, hull_i = util.convexhull(wf2d)
-        width = max([1.5, np.min([self.get_scale(), 4])])
+        width = max([1, np.min([self.get_scale(), 3])]) * 4
         self.create_path("highlight", wf[hull_i], 'red', width)
 
     def toggle_axes(self):

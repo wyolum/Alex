@@ -152,6 +152,8 @@ def clear_all():
     from packages import things
     things.TheScene.selected.ungroup()
     things.TheScene.delete_all()
+    things.TheScene.view.erase_all()
+    things.TheScene.view.draw_axes()
     
 ################################################################################
 ## UNDO/REDO
@@ -192,7 +194,9 @@ def restore(scn, sel):
         thing.render(things.TheScene.view)
     for thing in sel:
         things.TheScene.append(thing)
+        things.TheScene.selected.append(thing)
         thing.render(things.TheScene.view, selected=True)
+    print(len(sel), len(things.TheScene.selected))
         
 def undo(*args, **kw):
     from packages import things
