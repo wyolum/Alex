@@ -91,7 +91,6 @@ class IsoView:
     def create_polygon(self, thing, path, color, width):
         tag = str(thing)
         path = path @ self.B * self.get_scale() + self.offset
-        print(len(path.ravel()))
         id = self.can.create_polygon(*path.ravel(),
                                      tags=(tag,),
                                      fill=color,
@@ -129,13 +128,13 @@ class IsoView:
         self.button1_down = True
         
         clicked = self.can.find_closest(event.x, event.y)
-        if len(clicked) > 1:
-            print(clicked)
         if len(clicked) > 0:
             closest = clicked[0]
             min_dist = 10
             coords = self.can.coords(closest)
-
+            if len(coords) == 2:
+                coords.append(coords[0]) ## repeat coords for follow on processing
+                coords.append(coords[1])
             if len(coords) > 3:
                 ### find closest segment
                 mind = 1e9
@@ -151,26 +150,32 @@ class IsoView:
                         minp = p
                 d = mind
                 p = p
-                if d < min_dist and closest in self.tags: ### something was clicked
-                    clicked = self.tags[closest]
-                    if clicked != 'axes':                          ### cant drag the axis
-                        for thing in self.scene.things:            ### grab containing group
-                            if thing.contains(clicked):
-                                clicked = thing
-                        if self.scene.selected.contains(clicked): ### already toggle selected status for clicked part
-                            ### unless dragging starts??
-                            if self.shift_key.pressed():
-                                self.scene.selected.remove(clicked)
-                                assert clicked not in self.scene.selected
-                                clicked.render(self.scene.view, selected=False)
-                        else:
-                            if self.shift_key.released():
-                                for thing in self.scene.selected.ungroup():
-                                    thing.render(self.scene.view, selected=False)
+                if d < min_dist:
+                    if closest in self.tags: ### something was clicked
+                        clicked = self.tags[closest]
+                        if  clicked == 'axes': ## axis was clicked..
+                            self.dragging = False
+                            for thing in self.scene.selected.ungroup():
+                                thing.render(self.scene.view, selected=False)
+                        else:                          ### cant drag the axis
+                            for thing in self.scene.things:            ### grab containing group
+                                if thing.contains(clicked):
+                                    clicked = thing
+                            if self.scene.selected.contains(clicked):
+                                ### already toggle selected status for clicked part
+                                ### unless dragging starts??
+                                if self.shift_key.pressed():
+                                    self.scene.selected.remove(clicked)
+                                    assert clicked not in self.scene.selected
+                                    clicked.render(self.scene.view, selected=False)
+                            else:
+                                if self.shift_key.released():
+                                    for thing in self.scene.selected.ungroup():
+                                        thing.render(self.scene.view, selected=False)
 
-                            self.scene.selected.append(clicked)
-                            clicked.render(self.scene.view, selected=True)
-                        self.dragging = True
+                                self.scene.selected.append(clicked)
+                                clicked.render(self.scene.view, selected=True)
+                            self.dragging = True
                 else:                                      ### nothing was clicked
                     if self.shift_key.released():
                         self.dragging = False
@@ -229,26 +234,28 @@ class IsoView:
         
     def draw_axes(self):
         if self.axes_on:
-            self.can.create_oval(self.offset[0] - 2, self.offset[1] - 2,
+            id = self.can.create_oval(self.offset[0] - 2, self.offset[1] - 2,
                                  self.offset[0] + 2, self.offset[1] + 2, tags=('axes',))
             self.create_line('axes', [0, 0, 0], [50 / self.scale, 0, 0], color="red", width=.25)
             self.create_line('axes', [0, 0, 0], [0, 50 / self.scale, 0], color="green", width=.25)
             self.create_line('axes', [0, 0, 0], [0, 0, 50 / self.scale], color="blue", width=.25)
-
+            self.tags[id] = 'axes'
             x, y = self.B.T @ ([55, 0, 0])
             if x ** 2 + y ** 2 > 10:
-                self.can.create_text(x + self.offset[0], y + self.offset[1], text='x', font='times',
-                                     tags=('axes',))
-
+                id = self.can.create_text(x + self.offset[0], y + self.offset[1], text='x', font='times',
+                                          tags=('axes',))
+                self.tags[id] = 'axes'
             x, y = self.B.T @ ([0, 55, 0])
             if x ** 2 + y ** 2 > 10:
-                self.can.create_text(x + self.offset[0], y + self.offset[1], text='y', font='times',
-                                     tags=('axes',))
+                id = self.can.create_text(x + self.offset[0], y + self.offset[1], text='y', font='times',
+                                          tags=('axes',))
+                self.tags[id] = 'axes'
 
             x, y = self.B.T @ ([0, 0, 55])
             if x ** 2 + y ** 2 > 10:
-                self.can.create_text(x + self.offset[0], y + self.offset[1], text='z', font='times',
+                id = self.can.create_text(x + self.offset[0], y + self.offset[1], text='z', font='times',
                                      tags=('axes',))
+                self.tags[id] = 'axes'
         else:
             self.can.delete('axes')
                 

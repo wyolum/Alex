@@ -174,7 +174,7 @@ def register_undo():
     if len(history) > max_undo:
         del history[:-(max_undo - len(history))]
         history_i[0] = max_undo
-    print('  do len(history)', len(history), history_i[0])
+    # print('  do len(history)', len(history), history_i[0])
     
 def undoable(doable):
     def out(*args, **kw):
@@ -211,9 +211,10 @@ def undo(*args, **kw):
         history_i[0]-= 1
         prev_scene, prev_selected  = history[history_i[0]]
         restore(prev_scene, prev_selected)
-        print('undo len(history)', len(history), history_i[0])
+        #print('undo len(history)', len(history), history_i[0])
     else:
-        print('no more undos')
+        pass
+        #print('no more undos')
 
 def redo(*args, **kw):
     print('redo len(history)', len(history), history_i[0])

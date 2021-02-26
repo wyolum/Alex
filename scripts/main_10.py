@@ -264,7 +264,11 @@ def Alex(length, d1, d2):
 def createAlex(*args):
     unselect_all()
     
-    length = max([0, sidebar.length_var.get()])
+    try:
+        length = max([0, sidebar.length_var.get()])
+    except tk.TclError:
+        length = 100
+        sidebar.length_var.set(length)
     d1 = np.max([20, sidebar.dim1_var.get()])
     d2 = np.max([20, sidebar.dim2_var.get()])
 
@@ -382,7 +386,7 @@ def z_flush_top_selected():
     flush_selected(2, -1)
 
 def highlight_last_selected(event):
-    print("len(scene.selected)", len(scene.selected))
+    #print("len(scene.selected)", len(scene.selected))
     if len(scene.selected) > 0:
         scene.view.highlight_part(scene.selected[-1], 'red')
 
