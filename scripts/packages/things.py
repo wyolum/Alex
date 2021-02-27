@@ -5,6 +5,9 @@ try:
 except ImportError:
     STL_SUPPORTED = False
 
+import sys
+if '.' not in sys.path:
+    sys.path.append('.')
 from packages.constants import mm, DEG
 from packages import util
 from packages import wireframes

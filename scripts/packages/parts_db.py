@@ -7,12 +7,15 @@ import csv
 import webbrowser
 from PIL import ImageTk, Image
 
+import sys
+if '.' not in sys.path:
+    sys.path.append('.')
+from packages import util
 from packages import things
 from packages import database
 from packages.database import String, Integer, Float, Table, Column
 from packages import wireframes
 from packages.constants import DEG, alex_scad, stl_dir
-from packages import util
 
 from packages.mylistbox import listbox
 
@@ -52,8 +55,8 @@ part_table = Table('Part', db,
                    Column('URL', String()),
                    Column('Color', String()),
                    Column('Length', Integer()),
-                   Column('Width', Integer()),
-                   Column('Height', Integer()),
+                   Column('Dim1', Integer()),
+                   Column('Dim2', Integer()),
                    Column('Interface_01', Integer()),
                    Column('Interface_02', Integer()),
                    Column('Interface_03', Integer()),
@@ -156,15 +159,17 @@ class Interface:
 class Part(things.Thing):
     def __init__(self, name, length=1):
         record = get(name)
+        print(record)
         if record:
             things.Thing.__init__(self)
             self.name = name
-            self.dim1 = record.Length
-            self.dim2 = record.Width
-            if record.Height == '0xdeadbeef':
+            self.dim1 = record.Dim1
+            self.dim2 = record.Dim2
+            if record.Length == '0xdeadbeef':
                 self.length = length
             else:
-                self.length = record.Height
+                self.length = record.Length
+            print(name, self.dim1, self.dim2, self.length)
             self.wireframe = wireframes.get(record.Wireframe) * [self.dim1, self.dim2, self.length]
             self.stl_fn = os.path.join(mydir, 'STL', record.STL_filename)
             self.color = record.Color
@@ -327,9 +332,9 @@ def make_thumbnails():
         os.system(f"/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD ../Alex_test.scad --imgsize=512,512 -o STL/{name}.png")
 #make_thumbnails();here
     
-def test():
+def test_part_select():
     load_parts(csv_fn)
-    f = open('../Alex_test.scad', 'w')
+    f = open(alex_scad, 'w')
     #f.write(Part("2020 Alex", 80).toscad())
     #f.write(Part("2040 Alex", 60).translate([20, 0, 0]).toscad())
     #f.write(Part("2060 Alex", 40).toscad())
@@ -346,5 +351,39 @@ def test():
     PartDialog(r, select_cb)
     r.mainloop()
 
+def new_part_dialog(parent):
+    from packages import piecewise_linear_cost_model as cm
+    '''
+    Entry: Column('Name',String(), UNIQUE=True)
+    FileDialog: Column('Wireframe', Integer())
+    FileDialog: Column('STL_filename', String())
+    Entry: Column('Price', Float())
+    Entry: Column('URL', String())
+    Entry: Column('Color', String())
+    Entry: Column('Length', Integer())
+    Column('Dim1', Integer())
+    Column('Dim2', Integer())
+    Column('Interface_01', Integer())
+    Column('Interface_02', Integer())
+    Column('Interface_03', Integer())
+    Column('Interface_04', Integer())
+    Column('Interface_05', Integer())
+    Column('Interface_06', Integer())
+    '''
+    frame, can, len_vars, cost_vars = cm.piecewise_linear_cost_model(parent)
+    frame.grid()
+    return frame, can, len_vars, cost_vars
+
+def test_new_part_dialog():
+    from packages import piecewise_linear_cost_model as cm
+
+    root = tk.Tk()
+    frame, can, len_vars, cost_vars = new_part_dialog(root)
+    root.mainloop()
+    print("Table:")
+    print(cm.get_table(len_vars, cost_vars))
+
+    
 if __name__ == '__main__':
-    test()
+    #test_part_select()
+    test_new_part_dialog()
