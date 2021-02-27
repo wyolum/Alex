@@ -1,16 +1,27 @@
 import tkinter as tk
 import numpy as np
 
+import sys
+if '.' not in sys.path:
+    sys.path.append('.')
+from packages.util import curry
+
 bgcolor = 'white'
 
 margin = 50
-W = 200 + 2 * margin
-H = 150 + 2 * margin
+W = 400 + 2 * margin
+H = 300 + 2 * margin
 
 default_table = [['50',   '3.00'],
                  ['299',  '3'],
                  ['300',  '2.50'],
                  ['4000', '30'],
+                 ['', ''],
+                 ['', ''],
+                 ['', ''],
+                 ['', ''],
+                 ['', ''],
+                 ['', ''],
                  ['', ''],
                  ['', ''],
                  ['', '']]
@@ -112,11 +123,6 @@ def len_var(row):
     var.trace('w', onchange)
     return var
 
-def curry(f, args):
-    def out(event):
-        return f(*args)
-    return out
-    
 def check_cost(row, can, len_vars, cost_vars):
     c = cost_vars[row].get().strip()
 
@@ -151,11 +157,12 @@ def piecewise_linear_cost_model(parent):
     string_table = default_table[:]
 
     frame = tk.Frame(parent)
-    tk.Label(frame, text="Length [mm]").grid(row=0, column=1)
-    tk.Label(frame, text="Price [USD]").grid(row=0, column=3)
+    tk.Label(frame, text="Piecewise Linear Cost").grid(row=9, column=1, columnspan=4)
+    tk.Label(frame, text="Length [mm]").grid(row=10, column=1)
+    tk.Label(frame, text="Price [USD]").grid(row=10, column=3)
 
     can = tk.Canvas(frame, width=W, height=H)
-    can.grid(row=0, column=4, rowspan=20)
+    can.grid(row=10, column=4, rowspan=20)
 
     len_vars = {}
     cost_vars = {}
@@ -176,9 +183,9 @@ def piecewise_linear_cost_model(parent):
         l_var.entry = l
         c_var.entry = c
 
-        l.grid(row=i+1, column=1)
-        tk.Label(frame, text="        $").grid(row=i+1, column=2, padx=0, sticky='N')
-        c.grid(row=i+1, column=3)
+        l.grid(row=i+11, column=1)
+        tk.Label(frame, text="        $").grid(row=i+11, column=2, padx=0, sticky='N')
+        c.grid(row=i+11, column=3)
 
         if len(string_table[i][0]) > 0:
             l.delete(0, tk.END)

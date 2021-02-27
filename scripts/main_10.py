@@ -6,6 +6,8 @@ Refactor with extracted librarries:
 -- wireframes
 -- isometric_views
 -- util
+# -- add control-z undo (complete!)
+# -- add look before you leap alighment
 
 scene is a group that has a view (or grouped views) and a "selected" subgroup
 
@@ -13,10 +15,11 @@ scene is a group that has a view (or grouped views) and a "selected" subgroup
 ###
 # TODO
 # 
-# -- add control-z undo (complete!)
-# -- add look before you leap alighment
+# -- length bug
+# -- add xyz pos entries for non-grouped items
 # -- add costing framework for parts_db
 # -- add in necessary stl code directly
+# -- add tool tips
 '''
 
 try:

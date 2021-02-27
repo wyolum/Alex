@@ -74,7 +74,7 @@ class Table:
             l = dict(zip(colnames, row))
             out.append(l)
         return out
-        
+
 class Column:
     def __init__(self, name, type, **kw):
         self.name = name

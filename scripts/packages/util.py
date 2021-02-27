@@ -257,6 +257,12 @@ def dedup(points):
     dups = dups[dups[:,1] > dups[:,0],0]
     keep = [i for i in range(len(points)) if i not in dups]
     return keep
+
+def curry(f, args, **kw):
+    def out(event):
+        return f(*args, **kw)
+    return out
+
 def convexhull(points):
     '''
     return induces of convex hull

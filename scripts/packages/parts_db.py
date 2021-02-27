@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.ttk as ttk
 import os
 import os.path
 import numpy as np
@@ -159,7 +160,6 @@ class Interface:
 class Part(things.Thing):
     def __init__(self, name, length=1):
         record = get(name)
-        print(record)
         if record:
             things.Thing.__init__(self)
             self.name = name
@@ -169,7 +169,6 @@ class Part(things.Thing):
                 self.length = length
             else:
                 self.length = record.Length
-            print(name, self.dim1, self.dim2, self.length)
             self.wireframe = wireframes.get(record.Wireframe) * [self.dim1, self.dim2, self.length]
             self.stl_fn = os.path.join(mydir, 'STL', record.STL_filename)
             self.color = record.Color
@@ -186,7 +185,7 @@ class Part(things.Thing):
         self.wireframe = wireframes.get(self.record.Wireframe) * [self.dim1, self.dim2, self.length]
         
     def set_length(self, length):
-        if self.record.Height == '0xdeadbeef':
+        if self.record.Length == '0xdeadbeef':
             things.Thing.set_length(self, length)
             self.__rescale_wireframe()
         
@@ -351,6 +350,11 @@ def test_part_select():
     PartDialog(r, select_cb)
     r.mainloop()
 
+def validate_name(name_var):
+    name = name_var.get()
+    matches = part_table.select(where=f"name = {name}")
+    print(matches)
+    
 def new_part_dialog(parent):
     from packages import piecewise_linear_cost_model as cm
     '''
@@ -370,20 +374,39 @@ def new_part_dialog(parent):
     Column('Interface_05', Integer())
     Column('Interface_06', Integer())
     '''
-    frame, can, len_vars, cost_vars = cm.piecewise_linear_cost_model(parent)
-    frame.grid()
-    return frame, can, len_vars, cost_vars
+    dialog_parent = tk.Frame(parent)
+    cost_frame, can, len_vars, cost_vars = cm.piecewise_linear_cost_model(dialog_parent)
+    cost_frame.grid(row=1, column=4, padx=20)
+
+    ttk.Separator(dialog_parent, orient=tk.VERTICAL).grid(column=2, row=0, rowspan=100, sticky='ns', padx=20)
+    
+    part_frame = tk.Frame(dialog_parent)
+    name_var = tk.StringVar()
+    tk.Label(part_frame, text="Name").grid(row=1, column=1, sticky='e')
+    name_entry = tk.Entry(part_frame, textvariable=name_var)
+    name_entry.grid(row=1, column=2)
+    name_entry.bind('<FocusOut>', curry(validate_name, name_var))
+    
+    for i, col in enumerate(part_table.columns[1:]):
+        var = tk.StringVar()
+        tk.Label(part_frame, text=col.name).grid(row=i, column=1, sticky='e')
+        tk.Entry(part_frame, textvariable=var).grid(row=i, column=2)
+
+    part_frame.grid(row=1, column=1)
+    return dialog_parent, can, len_vars, cost_vars
 
 def test_new_part_dialog():
     from packages import piecewise_linear_cost_model as cm
 
     root = tk.Tk()
     frame, can, len_vars, cost_vars = new_part_dialog(root)
+    frame.grid()
     root.mainloop()
     print("Table:")
     print(cm.get_table(len_vars, cost_vars))
 
     
 if __name__ == '__main__':
+    load_parts(csv_fn)
     #test_part_select()
     test_new_part_dialog()
