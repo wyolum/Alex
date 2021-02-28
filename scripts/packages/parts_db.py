@@ -860,7 +860,8 @@ def new_part_dialog(parent, name=None):
            plot_cb()
            enable_piecewise_dialog()
         else:
-           disable_piecewise_dialog()
+            price_var.set(recort.Price)
+            disable_piecewise_dialog()
         url_var.set(record.URL)
         color_var.set(record.Color)
         length_var.set(record.Length)

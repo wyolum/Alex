@@ -1054,5 +1054,5 @@ root.bind("<MouseWheel>", OnMouseWheel)
 
 root.bind('<Control-z>', util.undo)
 root.bind('<Control-y>', util.redo)
-
+export()
 root.mainloop()
