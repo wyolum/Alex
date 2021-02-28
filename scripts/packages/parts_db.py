@@ -21,7 +21,7 @@ from packages import wireframes
 from packages import database
 from packages.database import String, Integer, Float, Table, Column
 from packages.constants import DEG, alex_scad, stl_dir, bgcolor
-
+from packages.interpolate import interp1d
 from packages.mylistbox import listbox
 
 mydir = os.path.split(os.path.abspath(__file__))[0]
@@ -188,12 +188,22 @@ class Part(things.Thing):
         if type(name_or_record) == type(''):
             name = name_or_record
             record = get(name)
+            assert record
         else:
             record = name_or_record
             name = record.Name
         if record:
             things.Thing.__init__(self)
             self.name = name
+            self.price = record.Price
+            if self.price == '{piecewise}':
+                result = piecewise_table.select(where=f"PartName='{name}'")
+                self.lengths = np.array([(r.Length) for r in result])
+                self.prices = np.array([(r.Price) for r in result])
+                self.min_len = np.min(self.lengths)
+                self.max_len = np.max(self.lengths)
+                self.price_function = lambda x: interp1d(self.lengths, self.prices, x)
+            
             self.dim1 = record.Dim1
             self.dim2 = record.Dim2
             if record.Length == 'NA':
@@ -212,6 +222,7 @@ class Part(things.Thing):
                 if name != 'NA':
                     interface = lookup_interface(name)
                     self.interfaces.append(interface)
+                
     def __rescale_wireframe(self):
         self.wireframe = wireframes.get(self.record.Wireframe) * [self.dim1, self.dim2, self.length]
         
@@ -263,7 +274,11 @@ class Part(things.Thing):
         out.orient = self.orient.copy()
         return out
     def cost(self):
-        return 0
+        if self.price == '{piecewise}':
+            out = self.price_function(self.length)
+        else:
+            out = self.price
+        return out
     def tobom(self):
         return [f'{self.name},{self.dim1},{self.dim2},{self.length},{self.cost()}']
 
@@ -286,7 +301,6 @@ def PartDialog(parent, select_cb):
     tl = tk.Toplevel(parent)
     
     data = [[getattr(line, name) for name in columns] for line in parts]
-    print(data[-1])
     names = [l[0] for l in data]
     idx = np.argsort(names)
     parts = [parts[i] for i in idx]

@@ -316,7 +316,7 @@ class SingletonError(Exception):
     pass
 class Scene(Group):### singleton
     count = 0 ### must never be 2 or more
-    def __init__(self, view, selected):
+    def __init__(self, view, selected, export_cb=None):
         global TheScene
         if self.count > 0:
             raise SingletonError("Only one Scene object allowed.  Use things.TheScene instead")
@@ -325,7 +325,7 @@ class Scene(Group):### singleton
         self.view = view
         self.selected = selected
         self.view.set_scene(self) ### allow view to access Scene
-
+        self.export_cb = export_cb
         TheScene = self ### reference to Scene singlton
         
     def delete_all(self):
@@ -370,3 +370,5 @@ class Scene(Group):### singleton
                 f.write("#" + thing.toscad())
 
             f.close()
+        if self.export_cb is not None:
+            self.export_cb()

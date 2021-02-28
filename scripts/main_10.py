@@ -123,6 +123,8 @@ def OnMouseWheel(event):
 
 def export(*args):
     scene.export()
+def export_cb(*args):
+    alex_set_titlebar()
 def slew_left(*args):
     delta = np.array([-10, 0, 0])
     views.slew(delta)
@@ -196,19 +198,19 @@ def rotate_roll():
         util.register_undo()
     selected.rotate(roll=1)
     selected.render(views, selected=True)
-    scene.export()
+    export()
 def rotate_pitch():
     if len(selected) > 0:
         util.register_undo()
     selected.rotate(pitch=1)
     selected.render(views, selected=True)
-    scene.export()
+    export()
 def rotate_yaw():
     if len(selected) > 0:
         util.register_undo()
     selected.rotate(yaw=1)
     selected.render(views, selected=True)
-    scene.export()
+    export()
     
 def zoom_in(mouse_xyz=None, amt=.9):
     views.set_scale(views.get_scale() / amt, mouse_xyz)
@@ -537,7 +539,7 @@ class SideBar:
                     thing.set_length(length)
                     render(thing)
                 if 'scene' in globals():
-                    scene.export()
+                    export()
                 self.last_length = length
         except tk.TclError as e:
             if str(e) == 'expected floating-point number but got ""':
@@ -837,6 +839,7 @@ def alex_set_titlebar():
         fn = ''
     cost = scene.cost()
     selected_cost = selected.cost()
+    print(cost, selected_cost)
     root.winfo_toplevel().title(f"Alex {fn} ${cost:.2f} (${selected_cost:.2f})")
 
 def stl_import_dialog():
@@ -905,11 +908,11 @@ def alex_import():
         for thing in group:
             scene.append(thing)
             thing.render(views)
-        scene.export()
+        export()
     if filename.endswith('.stl'):
         util.register_undo()
         scene.append(things.STL(filename))
-        scene.export()
+        export()
 
 def alex_open(filename):
     while len(alex_filename) > 0:
@@ -1022,7 +1025,7 @@ iso = iv.from_theta_phi(theta, phi, isocan, [CANVAS_W/2, CANVAS_H - 50], step_va
 views = iv.Views([top, side, front, iso])
 
 
-scene = things.Scene(views, selected)
+scene = things.Scene(views, selected, export_cb=export_cb)
 
 ttk.Separator(root, orient=tk.VERTICAL).grid(column=2, row=0, rowspan=10, sticky='ns')
 ttk.Separator(root, orient=tk.VERTICAL).grid(column=4, row=0, rowspan=10, sticky='ns')
