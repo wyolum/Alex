@@ -700,16 +700,16 @@ def new_part_dialog(parent, name=None):
         make_thumbnail(part)
         
     commit_button = tk.Button(part_frame, text="Commit", command=commit_new_part)
-    commit_button.grid(row=30, column=3, sticky='w')
+    commit_button.grid(row=31, column=2, sticky='e')
     commit_button.config(state='disabled')
     delete_button = tk.Button(part_frame, text="Delete", command=delete_part)
-    delete_button.grid(row=30, column=4, sticky='w')
+    delete_button.grid(row=30, column=3, sticky='e')
     
     def close_new_part_dialog():
         tl.destroy()
         
     close_button = tk.Button(part_frame, text="Close", command=close_new_part_dialog)
-    close_button.grid(row=30, column=3, sticky='e')
+    close_button.grid(row=31, column=3, sticky='e')
 
 
     row = 0
@@ -845,7 +845,7 @@ def new_part_dialog(parent, name=None):
             commit_button.config(state='disabled')
 
     validate_button = tk.Button(part_frame, text="Validate", command=validate_new_part)
-    validate_button.grid(row=row+1, column=3, sticky='w')
+    validate_button.grid(row=30, column=2, sticky='e')
     row += 1
 
     def populate_cb(event):
