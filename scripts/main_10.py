@@ -14,7 +14,7 @@ scene is a group that has a view (or grouped views) and a "selected" subgroup
 
 ###
 # TODO
-# 
+# -- update titlebar on start
 # -- length bug
 # -- add xyz pos entries for non-grouped items
 # -- add costing framework for parts_db
@@ -49,7 +49,7 @@ from numpy import sin, cos, sqrt
 
 from packages import quaternion
 from packages import interpolate
-from packages.constants import mm, inch, DEG, units
+from packages.constants import mm, inch, DEG, units, bgcolor
 from packages import parts_db
 from packages import util
 from packages import wireframes
@@ -67,7 +67,7 @@ args = parser.parse_args()
 ### Global singletons
 alex_filename = [] ### use as mutable string
 STEP = [5]          ### use as mutable int
-bgcolor = 'white'
+
 selected = things.Selected()
 
 def NumericalEntry(parent, label, onchange, from_=-1e6, to=1e6, values=None, increment=1,
@@ -259,6 +259,8 @@ def parts_db_dialog():
         scene.append(part, select=True)
     parts_db.PartDialog(root, select_cb)
 
+def new_part_dialog():
+    parts_db.new_part_dialog(root)
     
 def Alex(length, d1, d2):
     return parts_db.Part(f"{d1:.0f}{d2:.0f} Alex", length)
@@ -958,6 +960,7 @@ partmenu.add_command(label='Extruded Al', command=createAlex)
 partmenu.add_command(label='2-Way Corner', command=createCornerTwoWay)
 partmenu.add_command(label='3-Way Corner', command=createCornerThreeWay)
 partmenu.add_command(label='Part Lookup', command=parts_db_dialog)
+partmenu.add_command(label='Add new parts', command=new_part_dialog)
 menubar.add_cascade(label="Part", menu=partmenu)
 
 

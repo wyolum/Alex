@@ -1,5 +1,8 @@
 import tkinter as tk
 import tkinter.ttk as ttk
+from tkinter import filedialog
+from tkinter import colorchooser
+from tkinter import messagebox
 import os
 import os.path
 import numpy as np
@@ -12,11 +15,12 @@ import sys
 if '.' not in sys.path:
     sys.path.append('.')
 from packages import util
+from packages.util import curry
 from packages import things
+from packages import wireframes
 from packages import database
 from packages.database import String, Integer, Float, Table, Column
-from packages import wireframes
-from packages.constants import DEG, alex_scad, stl_dir
+from packages.constants import DEG, alex_scad, stl_dir, bgcolor
 
 from packages.mylistbox import listbox
 
@@ -25,20 +29,22 @@ db_fn = os.path.join(mydir, 'Alex_parts.db')
 db = sqlite3.connect(db_fn)
 
 
-L = 0xdeadbeef
-interface_table = {"2020+X":[  10,  0, 10, 1, 0, 0],
-                   "2020+Y":[   0, 10, 10, 0, 1, 0],
-                   "2020+Z":[   0,  0,  5, 0, 0, 1],
-                   "2020-X":[ -10,  0, 10,-1, 0, 0],
-                   "2020-Y":[   0,-10, 10, 0,-1, 0],
-                   "2020-Z":[   0,  0,  0, 0, 0,-1],
-                   
-                   "3030+X":[ 15, 0, 15, 1, 0, 0],
-                   "3030+Y":[ 0, 15, 15, 0, 1, 0],
-                   "3030+Z":[ 15, 15, 6, 0, 0, 1],
-                   "3030-X":[-15, 0, 15,-1, 0, 0],
-                   "3030-Y":[ 0,-15, 15, 0,-1, 0],
-                   "3030-Z":[ 0,  0,  0, 0, 0,-1]}
+interface_table = {
+    "NA": [None] * 6,
+    "2020+X":[  10,  0, 10, 1, 0, 0],
+    "2020+Y":[   0, 10, 10, 0, 1, 0],
+    "2020+Z":[   0,  0,  5, 0, 0, 1],
+    "2020-X":[ -10,  0, 10,-1, 0, 0],
+    "2020-Y":[   0,-10, 10, 0,-1, 0],
+    "2020-Z":[   0,  0,  0, 0, 0,-1],
+    
+    "3030+X":[ 15, 0, 15, 1, 0, 0],
+    "3030+Y":[ 0, 15, 15, 0, 1, 0],
+    "3030+Z":[ 15, 15, 6, 0, 0, 1],
+    "3030-X":[-15, 0, 15,-1, 0, 0],
+    "3030-Y":[ 0,-15, 15, 0,-1, 0],
+    "3030-Z":[ 0,  0,  0, 0, 0,-1]
+}
 @util.cacheable
 def lookup_interface(name):
     if name not in interface_table:
@@ -47,6 +53,26 @@ def lookup_interface(name):
     hotspot = np.array(record[:3])
     direction = np.array(record[3:])
     return Interface(name, hotspot, direction)
+
+piecewise_table = Table("Piecewise", db,
+                        Column("PartName", String()),
+                        Column("Length", Integer()),
+                        Column("Price", Float()))
+piecewise_table.create()
+try:
+    piecewise_table.create_index(("PartName", "Length"), unique=True)
+except sqlite3.OperationalError:
+    pass
+def load_piecewise(csv_fn):
+    csv_file = open(csv_fn)
+    data = list(csv.reader(csv_file))
+    csv_file.close()
+    header = data[0]
+    data = data[1:]
+    data = [l for l in data if len(l) == 3]
+    piecewise_table.insert(data)
+load_piecewise('packages/piecewise.csv')
+
 
 part_table = Table('Part', db,
                    Column('Name',String(), UNIQUE=True),
@@ -65,8 +91,8 @@ part_table = Table('Part', db,
                    Column('Interface_05', Integer()),
                    Column('Interface_06', Integer())
 )
-
 part_table.create()
+
 
 mydir = os.path.split(os.path.abspath(__file__))[0]
 csv_fn = os.path.join(mydir, 'parts.csv')
@@ -158,14 +184,19 @@ class Interface:
         return False
     
 class Part(things.Thing):
-    def __init__(self, name, length=1):
-        record = get(name)
+    def __init__(self, name_or_record, length=1):
+        if type(name_or_record) == type(''):
+            name = name_or_record
+            record = get(name)
+        else:
+            record = name_or_record
+            name = record.Name
         if record:
             things.Thing.__init__(self)
             self.name = name
             self.dim1 = record.Dim1
             self.dim2 = record.Dim2
-            if record.Length == '0xdeadbeef':
+            if record.Length == 'NA':
                 self.length = length
             else:
                 self.length = record.Length
@@ -185,7 +216,7 @@ class Part(things.Thing):
         self.wireframe = wireframes.get(self.record.Wireframe) * [self.dim1, self.dim2, self.length]
         
     def set_length(self, length):
-        if self.record.Length == '0xdeadbeef':
+        if self.record.Length == 'NA':
             things.Thing.set_length(self, length)
             self.__rescale_wireframe()
         
@@ -236,10 +267,6 @@ class Part(things.Thing):
     def tobom(self):
         return [f'{self.name},{self.dim1},{self.dim2},{self.length},{self.cost()}']
 
-def curry(f, arg):
-    def out(event):
-        f(arg)
-    return out
 imgs = [None]
 def url_shortener(url, max_len=40):
     url = url.strip()
@@ -250,6 +277,7 @@ def url_shortener(url, max_len=40):
     return url
 
 def PartDialog(parent, select_cb):
+    #parts = part_table.select(where="Name='2020 Gusset'")
     parts = part_table.select()
     columns = list(parts[0].keys())[:9]
     
@@ -258,10 +286,12 @@ def PartDialog(parent, select_cb):
     tl = tk.Toplevel(parent)
     
     data = [[getattr(line, name) for name in columns] for line in parts]
+    print(data[-1])
     names = [l[0] for l in data]
     idx = np.argsort(names)
     parts = [parts[i] for i in idx]
     names = [names[i] for i in idx]
+    data = [data[i] for i in idx]
     url_col = 4
 
     def browseto(*args):
@@ -273,13 +303,22 @@ def PartDialog(parent, select_cb):
             webbrowser.open_new(url)
     
     def item_clicked(idx, name):
-        part = Part(name)
+        try:
+            part = Part(name)
+        except ValueError:
+            raise
+            return
         name = ''.join(name.split())
-        img = ImageTk.PhotoImage(Image.open(os.path.join(stl_dir, f'{name}.png')))
+        png = os.path.join(stl_dir, f'{name}.png')
+        if not os.path.exists(png):
+            png = os.path.join(stl_dir, 'unknown.png')
+        img = ImageTk.PhotoImage(Image.open(png))
+
         display.configure(image=img)
         display.image = img
-
-        url.configure(text=url_shortener(data[idx][url_col], max_len=70))
+        if "Gus" in name:
+            print(name, idx, data[idx][url_col])
+        url.configure(text=url_shortener(data[idx][url_col], max_len=50))
         url.bind("<Button-1>", browseto)
         f = open(alex_scad, 'w')
         f.write(part.toscad())
@@ -291,11 +330,15 @@ def PartDialog(parent, select_cb):
         part = item_clicked.part
         select_cb(part)
         cancel()
+    def edit(*args):
+        name = item_clicked.part.name
+        new_part_dialog(parent, name=name)
+
     def item_selected(idx, name):
         item_clicked(idx, name)
         select()
         
-        
+    name_var = tk.StringVar()
     lb = listbox(tl, names, item_clicked, item_selected, n_row=50)
     lb.grid(row=0, column=0, rowspan=10)
 
@@ -310,25 +353,36 @@ def PartDialog(parent, select_cb):
     url.bind('<Button-1>', browseto)
 
     cancel_button = tk.Button(tl, text="Cancel", command=cancel)
-    cancel_button.grid(row=2, column=4, sticky='NE')
+    cancel_button.grid(row=2, column=4, sticky='E')
     select_button = tk.Button(tl, text="Select", command=select)
-    select_button.grid(row=2, column=5, sticky='NW')
+    select_button.grid(row=2, column=5, sticky='EW')
+    edit_button = tk.Button(tl, text="Edit", command=edit)
+    edit_button.grid(row=2, column=6, sticky='W')
     
     item_clicked(0, names[0])
     return tl
 
+def make_thumbnail(part):
+    import os
+    load_parts(csv_fn)
+    print(part.name)
+    print(part.toscad())
+    f = open('../Alex_test.scad', 'w')
+    f.write(part.toscad())
+    f.close()
+    name = ''.join(part.name.split())
+    png = f'{stl_dir}/{name}.png'
+    print(png)
+    os.system(f"/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD ../Alex_test.scad --imgsize=512,512 -o {png}")
+    
 def make_thumbnails():
     import os
     load_parts(csv_fn)
-    parts = part_table.select()
-    for part in parts:
-        print(part.Name)
-        print(Part(part.Name).toscad())
-        f = open('../Alex_test.scad', 'w')
-        f.write(Part(part.Name).toscad())
-        f.close()
-        name = ''.join(part.Name.split())
-        os.system(f"/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD ../Alex_test.scad --imgsize=512,512 -o STL/{name}.png")
+    part_records = part_table.select()
+    for part_record in part_records:
+        print(part_record.Name)
+        part = Part(part_record.Name)
+        make_thumbnail(part)
 #make_thumbnails();here
     
 def test_part_select():
@@ -350,12 +404,159 @@ def test_part_select():
     PartDialog(r, select_cb)
     r.mainloop()
 
-def validate_name(name_var):
-    name = name_var.get()
-    matches = part_table.select(where=f"name = {name}")
-    print(matches)
+def validate_name(label, var, entry, commit_button):
+    name = var.get().strip()
+    matches = part_table.select(where=f'name = "{name}"')
+    if name == '':
+        entry.config(bg="red")
+        out = False
+        commit_button.config(state="disabled")
+    elif  len(matches) == 0:
+        entry.config(bg=bgcolor)
+        out = True
+    elif len(matches) == 1:
+        ### populate fields
+        record = matches[0]
+        part = Part(record)
+        with open(alex_scad, 'w') as f:
+            f.write(part.toscad())
+        out = True
+    return out
+
+def validate_wireframe(label, var, option, commit_button, view):
+    name = var.get()
+    if name in wireframes.getlist():
+        wf = wireframes.get(name)
+        view.can.delete('all')
+        view.draw_axes()
+        view.create_path('wireframe', wf, "black", 1)
+        out = True
+        option.config(bg=bgcolor)
+    else:
+        out = False
+        option.config(bg="red")
+        commit_button.config(state="disabled")
+    return out
     
-def new_part_dialog(parent):
+def validate_stl(label, var, entry, commit_button):
+    stl = var.get().strip()
+    if not os.path.exists(stl):
+        stl = os.path.join(stl_dir, stl)
+    if os.path.exists(stl):
+        thing = things.STL(stl)
+        #with open(alex_scad, 'w') as f:
+        #    f.write(thing.toscad())
+        entry.config(bg=bgcolor)
+        out = True
+    else:
+        entry.config(bg="red")
+        out = False
+        commit_button.config(state="disabled")
+    return out
+def validate_price(label, var, entry, commit_button):
+    out = False
+    print('validate', label)
+    s = var.get()
+    if len(s) == 0:
+        var.set('0.00')
+    else:
+        if s == '{piecewise}':
+            out = True
+            entry.config(bg=bgcolor)
+        else:
+            try:
+                v = float(s)
+                entry.config(bg=bgcolor)
+            except ValueError:
+                entry.config(bg="yellow")
+                var.set('0.00')
+    return True
+
+def url_open(label, var, entry):
+    url = var.get()
+    if url.startswith('"') and url.endswith('"'):
+        url = url[1:-1]
+    webbrowser.open_new(url)
+
+def validate_url(label, var, entry, commit_button):
+    print('validate', label)
+    url = var.get().strip()
+    if url.startswith('"') and url.endswith('"'):
+        url = url[1:-1]
+    if url.startswith("http") or url.startswith('www'):
+        entry.config(bg=bgcolor)
+    else:
+        entry.config(bg="yellow")
+    return True
+def validate_color(label, var, entry, commit_button):
+    print('validate', label)
+    color = var.get()
+    if not color.startswith("#"):
+        default = '#a800ff'
+        entry.insert(0, default)
+        entry.config(bg=default)
+    return True
+def validate_length(label, var, entry, commit_button):
+    print('validate', label)
+    s = var.get()
+    try:
+        len = float(s)
+    except ValueError:
+        var.set("NA")
+    return True
+    
+def validate_dim(label, var, entry, commit_button):
+    print('validate', label)
+    s = var.get()
+    try:
+        len = float(s)
+        entry.config(bg=bgcolor)
+    except ValueError:
+        commit_button.config(state="disabled")
+        entry.config(bg="red")
+    return True
+def validate_interface(label, var, entry, commit_button):
+    print('validate', label)
+    return True
+
+def ask_stl_filename(label, entry):
+    filename = filedialog.askopenfilename(initialdir = stl_dir,
+                                          title = f"Select {label}",
+                                          filetypes = (("Mesh", "*.stl"),
+                                                       ("all files","*.*")))
+    if filename:
+        entry.delete(0, tk.END)
+        entry.insert(0, filename)
+        if os.path.exists(filename):
+            entry.config(bg=bgcolor)
+        else:
+            entry.confi(bg="red")
+            
+def ask_wireframe(label, option, var):
+    filename = filedialog.askopenfilename(title = f"Select {label}",
+                                          filetypes = (("Mesh", "*.stl"),
+                                                       ("all files","*.*")))
+    if filename:
+        if os.path.exists(filename):
+            name = os.path.split(filename)[1].title()
+            if name.lower().endswith('.stl'):
+                name = name[:-4]
+            wf = wireframes.from_stl(filename)
+            wireframes.add_wf(name, wf)
+            option.config(bg=bgcolor)
+            option['menu'].add_command(label=name)
+            var.set(name)
+        else:
+            option.confi(bg="red")
+            
+def ask_color(label, entry):
+    a, color = colorchooser.askcolor(title =f"Choose {label}")
+    if color is not None:
+        entry.delete(0, tk.END)
+        entry.insert(0, color)
+        entry.config(bg=color)
+
+def new_part_dialog(parent, name=None):
     from packages import piecewise_linear_cost_model as cm
     '''
     Entry: Column('Name',String(), UNIQUE=True)
@@ -374,36 +575,304 @@ def new_part_dialog(parent):
     Column('Interface_05', Integer())
     Column('Interface_06', Integer())
     '''
-    dialog_parent = tk.Frame(parent)
-    cost_frame, can, len_vars, cost_vars = cm.piecewise_linear_cost_model(dialog_parent)
-    cost_frame.grid(row=1, column=4, padx=20)
+    tl = tk.Toplevel(parent)
+    
+    dialog_parent = tk.Frame(tl)
+    cost_frame, can, len_vars, cost_vars, plot_cb = cm.piecewise_linear_cost_model(dialog_parent)
+    part_frame = tk.Frame(dialog_parent)
+
+    #### 3d render of wireframe
+    from packages import isometric_view as iv
+    scale = 100
+    theta = 240 * DEG
+    phi =  35 * DEG
+
+    offset = [200, 300]
+    can_frame = tk.Frame(part_frame)
+    wire_view = iv.get_view(can_frame, theta, phi, offset, scale=scale)
+    can_frame.grid(row=40, column=1, columnspan=10)
+
+    ################################################################################
+
+
+    piecewise_dialog_visible = [False]
+    def enable_piecewise_dialog():
+        price_entry.delete(0, tk.END)
+        price_entry.insert(0, '{piecewise}')
+        cost_frame.grid(row=1, column=4, padx=20)
+        piecewise_dialog_visible[0] = True
+    def disable_piecewise_dialog():
+        price_entry.delete(0, tk.END)
+        price_entry.insert(0, '0')
+        cost_frame.grid_remove()
+        
+    def toggle_piecewise_dialog():
+        piecewise_dialog_visible[0] = not piecewise_dialog_visible[0]
+        if piecewise_dialog_visible[0]:
+            enable_piecewise_dialog()
+        else:
+            disable_piecewise_dialog()
 
     ttk.Separator(dialog_parent, orient=tk.VERTICAL).grid(column=2, row=0, rowspan=100, sticky='ns', padx=20)
-    
-    part_frame = tk.Frame(dialog_parent)
-    name_var = tk.StringVar()
-    tk.Label(part_frame, text="Name").grid(row=1, column=1, sticky='e')
-    name_entry = tk.Entry(part_frame, textvariable=name_var)
-    name_entry.grid(row=1, column=2)
-    name_entry.bind('<FocusOut>', curry(validate_name, name_var))
-    
-    for i, col in enumerate(part_table.columns[1:]):
-        var = tk.StringVar()
-        tk.Label(part_frame, text=col.name).grid(row=i, column=1, sticky='e')
-        tk.Entry(part_frame, textvariable=var).grid(row=i, column=2)
 
+    validators = [validate_name,
+                  validate_wireframe,
+                  validate_stl,
+                  validate_price,
+                  validate_url,
+                  validate_color,
+                  validate_length,
+                  validate_dim,
+                  validate_dim,
+                  validate_interface,
+                  validate_interface,
+                  validate_interface,
+                  validate_interface,
+                  validate_interface,
+                  validate_interface,
+    ]
+    def validate_all():
+        out = True
+        for v in validates:
+            if not v():
+                out = False
+        return out
+    
+    validates = [] ### store no argment functions
+    variables = [] ### store variables for commit
+
+    def delete_part(*args):
+        name = name_var.get()
+        if name:
+            result = messagebox.askquestion("Overwrite", f"Delete {name}", icon='warning')
+            if result == 'yes':
+                part_table.delete(where=f'Name="{name}"')
+                print("Deleted")
+        
+    def commit_new_part():
+        wireframes.commit()
+        values = [name_var.get(),
+                  wire_var.get(),
+                  stl_var.get(),
+                  price_var.get(),
+                  url_var.get(),
+                  color_var.get(),
+                  length_var.get(),
+                  dim1_var.get(),
+                  dim2_var.get()] + [var.get() for var in interface_vars]
+        prev_records = part_table.select(where=f'Name="{values[0]}"')
+        if prev_records:
+            result = messagebox.askquestion("Overwrite", f"Overwrite {values[0]}", icon='warning')
+            if result == 'yes':
+                part_table.delete(where=f'Name="{values[0]}"')
+                print("Deleted")
+            else:
+                print("Skipping")            
+                return
+        part_table.insert([values])
+        part = Part(name_var.get())
+        make_thumbnail(part)
+        
+    commit_button = tk.Button(part_frame, text="Commit", command=commit_new_part)
+    commit_button.grid(row=30, column=3, sticky='w')
+    commit_button.config(state='disabled')
+    delete_button = tk.Button(part_frame, text="Delete", command=delete_part)
+    delete_button.grid(row=30, column=4, sticky='w')
+    
+    def close_new_part_dialog():
+        print('Close new part dialog!')
+        tl.destroy()
+        
+    close_button = tk.Button(part_frame, text="Close", command=close_new_part_dialog)
+    close_button.grid(row=30, column=3, sticky='e')
+
+
+    row = 0
+    
+    name_var = tk.StringVar()
+    variables.append(name_var)
+    tk.Label(part_frame, text="Name").grid(row=row+1, column=1, sticky='e')
+    name_entry = tk.Entry(part_frame, textvariable=name_var)
+    name_entry.grid(row=row+1, column=2)
+    populate_button = tk.Button(part_frame, text="Lookup")
+    populate_button.grid(row=row+1, column=3, sticky='w')
+    ### validate created below after other entries are created.
+    row += 1
+
+    wireframe_names = list(wireframes.getlist())
+    wire_var = tk.StringVar()
+    wire_var.set("Cube")
+    variables.append(wire_var)
+    tk.Label(part_frame, text="Wireframe").grid(row=row+1, column=1, sticky='e')
+    wire_opt = tk.OptionMenu(part_frame, wire_var, *wireframe_names)        
+    wire_opt.grid(row=row+1, column=2, sticky='w')
+    validate = curry(validators[row], ('Wireframe', wire_var, wire_opt, commit_button, wire_view))
+    validates.append(validate)
+    wire_opt.bind('<FocusOut>', validate)
+    browse_button = tk.Button(part_frame, text="New", command=curry(ask_wireframe, ('Wireframe', wire_opt, wire_var)))
+    browse_button.grid(row=row+1, column=3, sticky='w')
+    wire_var.trace('w', validate)
+    validate()
+    row += 1
+
+    stl_var = tk.StringVar()
+    variables.append(stl_var)
+    tk.Label(part_frame, text="STL").grid(row=row+1, column=1, sticky='e')
+    stl_entry = tk.Entry(part_frame, textvariable=stl_var)
+    stl_entry.grid(row=row+1, column=2)
+    validate = curry(validators[row], ('STL', stl_var, stl_entry, commit_button))
+    validates.append(validate)
+    stl_entry.bind('<FocusOut>', validate)
+    browse_button = tk.Button(part_frame, text="Browse", command=curry(ask_stl_filename, ('STL', stl_entry)))
+    browse_button.grid(row=row+1, column=3, sticky='w')
+    row += 1
+
+    price_var = tk.StringVar()
+    variables.append(price_var)
+    tk.Label(part_frame, text="Price").grid(row=row+1, column=1, sticky='e')
+    price_entry = tk.Entry(part_frame, textvariable=price_var)
+    price_entry.grid(row=row+1, column=2)
+    validate = curry(validators[row], ('Price', price_var, price_entry, commit_button))
+    validates.append(validate)
+    price_entry.bind('<FocusOut>', validate)
+    tk.Button(part_frame, text="Piecewise Linear", command=toggle_piecewise_dialog).grid(row=row+1, column=3)
+    price_var.set(0.00)
+
+    row += 1
+
+    url_var = tk.StringVar()
+    variables.append(url_var)
+    tk.Label(part_frame, text="URL").grid(row=row+1, column=1, sticky='e')
+    url_entry = tk.Entry(part_frame, textvariable=url_var)
+    url_entry.grid(row=row+1, column=2)
+    validate = curry(validators[row], ('URL', url_var, url_entry, commit_button))
+    validates.append(validate)
+    url_entry.bind('<FocusOut>', validate)
+    tk.Button(part_frame, text="Open", command=curry(url_open, ('URL', url_var, url_entry))).grid(
+        row=row+1, column=3,
+        sticky='w')
+    row += 1
+
+    color_var = tk.StringVar()
+    variables.append(color_var)
+    tk.Label(part_frame, text="Color").grid(row=row+1, column=1, sticky='e')
+    color_entry = tk.Entry(part_frame, textvariable=color_var)
+    color_entry.grid(row=row+1, column=2)
+    validate = curry(validators[row], ('Color', color_var, color_entry, commit_button))
+    validates.append(validate)
+    color_entry.bind('<FocusOut>', validate)
+    color_button = tk.Button(part_frame, text="Choose", command=curry(ask_color, ('Color', color_entry)))
+    color_button.grid(row=row+1, column=3, sticky='w')
+    row += 1
+
+    length_var = tk.StringVar()
+    variables.append(length_var)
+    tk.Label(part_frame, text="Length").grid(row=row+1, column=1, sticky='e')
+    length_entry = tk.Entry(part_frame, textvariable=length_var)
+    length_entry.grid(row=row+1, column=2)
+    validate = curry(validators[row], ('Length', length_var, length_entry, commit_button))
+    validates.append(validate)
+    length_entry.bind('<FocusOut>', validate)
+    length_var.set("NA")
+    row += 1
+    
+    dim1_var = tk.StringVar()
+    variables.append(dim1_var)
+    tk.Label(part_frame, text="Dim1").grid(row=row+1, column=1, sticky='e')
+    dim1_entry = tk.Entry(part_frame, textvariable=dim1_var)
+    dim1_entry.grid(row=row+1, column=2)
+    validate = curry(validators[row], ('Dim1', dim1_var, dim1_entry, commit_button))
+    validates.append(validate)
+    dim1_entry.bind('<FocusOut>', validate)
+    row += 1
+    
+    dim2_var = tk.StringVar()
+    variables.append(dim2_var)
+    tk.Label(part_frame, text="Dim2").grid(row=row+1, column=1, sticky='e')
+    dim2_entry = tk.Entry(part_frame, textvariable=dim2_var)
+    dim2_entry.grid(row=row+1, column=2)
+    validate = curry(validators[row], ('Dim2', dim2_var, dim2_entry, commit_button))
+    validates.append(validate)
+    dim2_entry.bind('<FocusOut>', validate)
+    row += 1
+
+    interface_names = list(interface_table.keys())
+    interface_vars = [tk.StringVar() for i in range(6)]
+    variables.extend(interface_vars)
+    
+    for i in range(6):
+        interface_var = tk.StringVar()
+        label = f"Interface_{i+1:02d}"
+        tk.Label(part_frame, text=label).grid(row=row+1, column=1, sticky='e')
+        
+        interface_vars[i].set('NA')
+        interface_opt_menu = tk.OptionMenu(part_frame, interface_vars[i], *interface_names)        
+        interface_opt_menu.grid(row=row+1, column=2, stick='w')
+        validate = curry(validators[row], (label, interface_var, interface_opt_menu, commit_button))
+        validates.append(validate)
+        interface_opt_menu.bind('<FocusOut>', validate)
+        row += 1
+
+    def validate_new_part():
+        print('validate new part!')
+        if validate_all():
+            commit_button.config(state='normal')
+        else:
+            commit_button.config(state='disabled')
+
+    validate_button = tk.Button(part_frame, text="Validate", command=validate_new_part)
+    validate_button.grid(row=row+1, column=3, sticky='w')
+    row += 1
+
+    def populate_cb(event):
+        name = name_var.get()
+        record = part_table.select(where=f'Name="{name}"')
+        if len(record) > 0:
+            record = record[0]
+        else:
+            print("No record found for", name)
+            return
+        wire_var.set(record.Wireframe)
+        stl_var.set(record.STL_filename)
+        price_var.set(record.Price)
+        if record.Price == '{piecewise}': ### from DB, should not have spaces
+           prices = piecewise_table.select(where=f'PartName = "{record.Name}"')
+           for i, price_record in enumerate(prices[:len(len_vars)]):
+               len_vars[i].set(price_record.Length)
+               cost_vars[i].set(price_record.Price)
+           for i in range(len(prices), len(len_vars)):
+               len_vars[i].set("")
+               cost_vars[i].set("")
+           plot_cb()
+           enable_piecewise_dialog()
+        else:
+           disable_piecewise_dialog()
+        url_var.set(record.URL)
+        color_var.set(record.Color)
+        length_var.set(record.Length)
+        dim1_var.set(record.Dim1)
+        dim2_var.set(record.Dim2)
+        for i in range(6):
+            interface_vars[i].set(record[f"Interface_{i+1:02d}"])
+    validate = curry(validate_name, ('Name', name_var, name_entry, commit_button))
+    if name is not None:
+        name_var.set(name)
+        populate_cb(None)
+    validates.insert(0, validate)
+    name_entry.bind('<FocusOut>', validate)
+    populate_button.bind('<Button-1>', populate_cb)
     part_frame.grid(row=1, column=1)
+    dialog_parent.grid()
+    #print("Table:")
+    #print(cm.get_table(len_vars, cost_vars))
     return dialog_parent, can, len_vars, cost_vars
 
 def test_new_part_dialog():
     from packages import piecewise_linear_cost_model as cm
 
     root = tk.Tk()
-    frame, can, len_vars, cost_vars = new_part_dialog(root)
-    frame.grid()
+    new_part_dialog(root)
     root.mainloop()
-    print("Table:")
-    print(cm.get_table(len_vars, cost_vars))
 
     
 if __name__ == '__main__':

@@ -259,7 +259,7 @@ def dedup(points):
     return keep
 
 def curry(f, args, **kw):
-    def out(event):
+    def out(ignore_event=None, *ignore_args, **ignore_kw):
         return f(*args, **kw)
     return out
 
@@ -320,9 +320,73 @@ def convexhull_test():
                   [ 124.77241336,  -96.89252372],
                   [ 107.45190528, -102.62828808]])
 
+    p = np.array([
+        [0, 0],
+        [0, .5],
+        [0, 1],
+        [1, 1],
+        [1, 0],
+        ]) #+ np.random.normal(0, 1e-4, (5, 2))
+         
     h, i = convexhull(p)
     print(h)
     pl.plot(p[:,0], p[:,1], 'b.')
     pl.plot(h[:,0], h[:,1], 'b-')
     pl.show()
-#xconvexhull_test()
+# convexhull_test()
+
+def sameedge(e1, e2, tol):
+    e1 = np.array(e1)
+    e2 = np.array(e2)
+    return np.linalg.norm(e1 - e2) < tol or np.linalg.norm(np.roll(e1, 1, axis=0) - e2) < tol
+assert sameedge([[0, 0], [0, 1]],
+               [[0, 0], [0, 1.1]], .2)
+assert not sameedge([[0, 0], [0, 1]],
+                   [[0, 0], [0, 1.1]], .05)
+assert sameedge([[0, 0], [1, 1]],
+               [[1, 1], [0, .1]], .2)
+
+def edge3d(points, point):
+    '''
+    coarrse algorithm to determine if point is on the exterior of mesh given by edges
+    '''
+    points = np.vstack([point, points])
+    hullxy, idxy = convexhull(points[:,[0, 1]])
+    hullyz, idyz = convexhull(points[:,[1, 2]])
+    hullzx, idzx = convexhull(points[:,[2, 0]])
+
+    id3d = list(set(idxy).union(idyz, idzx))
+    hull3d = points[id3d]
+    
+    print(hull3d)
+    
+    import pylab as pl
+    fig, ax = pl.subplots(2, 2)
+    ax[0,0].plot(points[:,0], points[:,1], 'b-')
+    ax[0,0].plot(hull3d[:,0], hull3d[:,1], 'ro')
+
+    ax[0,1].plot(points[:,1], points[:,2], 'b-')
+    ax[0,1].plot(hull3d[:,1], hull3d[:,2], 'ro')
+
+    ax[1,0].plot(points[:,2], points[:,0], 'b-')
+    ax[1,0].plot(hull3d[:,2], hull3d[:,0], 'ro')
+    
+    pl.show()
+    
+
+def edge3d_test():
+    ps = np.array([
+        [0, 0, 0],
+        [0, 0, 1],
+        [0, 1, 1],
+        [0, 1, 0],
+        [0, 0, 1],
+        [0, 0, 0],
+        [1, 0, 0],
+        [1, 0, 1],
+        [1, 1, 1],
+        [1, 1, 0],
+        [1, 0, 0]])
+    p = [0, .5, .5]
+    edge3d(ps, p)
+# edge3d_test()

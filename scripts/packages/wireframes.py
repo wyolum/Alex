@@ -2,7 +2,11 @@ import os.path
 import numpy as np
 from numpy import cos, sin
 
+import sys
+if '.' not in sys.path:
+    sys.path.append('.')
 from packages import constants
+from packages import things
 
 def path(pts):
     return np.array(pts)
@@ -92,25 +96,55 @@ prism_frame = path([
 #prism = Wireframe([bottom_square, prism_front, prism_back, prism_top])
 cube = Wireframe([cube_frame])
 prism = Wireframe([prism_frame])
+__wireframes = {'Cube': cube,
+                'Prism': prism}
 
 npz = 'wireframes.npz'
-def write_npz():
+def write_npz(force=False):
     mydir = constants.package_dir
-    np.savez(os.path.join(mydir, npz), Cube=cube, Prism=prism)
-    print('wrote', npz)
+    fn = os.path.join(mydir, npz)
+    if os.path.exists(fn) and not force:
+        print(npz, 'already exists')
+    else:
+        np.savez(fn, **__wireframes)
+        print('wrote', npz)
     
 def read_npz():
     mydir = os.path.split(os.path.abspath(__file__))[0]
     mynpz = os.path.join(mydir, npz)
     if os.path.exists(mynpz):
-        out = np.load(mynpz)
+        _npz = np.load(mynpz)
+        out = {}
+        for k in _npz:
+            print(k)
+            out[k] = _npz[k]
+        
     else:
         out = {}
     return out
 
-wireframes = read_npz()
+def from_stl(stl_fn):
+    wf = things.STL(stl_fn).get_wireframe()
+    mx = np.max(wf, axis=0)
+    mn = np.min(wf, axis=0)
+    dim = mx - mn
+    pos = (mx + mn) / 2
+    pos[2] = mn[2]
+    return (wf - pos) / dim
+
+def add_wf(name, wf):
+    names = [n.lower for n in list(__wireframes.keys())]
+    if name.lower() in names:
+        raise ValueErrror(f'{name} already exists in wireframes')
+    else:
+        __wireframes[name] = wf
+def getlist():
+    return list(__wireframes.keys())
+def commit():
+    write_npz(force=True)
+__wireframes = read_npz()
 def get(name):
-    return wireframes[name]
+    return __wireframes[name]
 
 if __name__ == '__main__':
     import isometric_view as iv

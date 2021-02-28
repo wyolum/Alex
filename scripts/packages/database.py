@@ -37,6 +37,7 @@ class Table:
         place_holders = ','.join('?' * len(values[0]))
         cols = ','.join([col.name for col in self.columns])
         sql = 'INSERT INTO %s(%s) VALUES (%s);' % (self.name, cols, place_holders)
+        #print('sql:', sql)
         rowcount = 0
         for row in values:
             ### add quote to string fields
@@ -47,6 +48,16 @@ class Table:
             self.db.commit()
         return rowcount
 
+    def delete(self, where):
+        sql = f'DELETE FROM {self.name} WHERE {where}'
+        print(sql)
+        try:
+            cur = self.db.execute(sql)
+            self.db.commit()
+        except sqlite3.OperationalError:
+            print(sql)
+            raise
+        
     def select(self, where=None):
         sql = 'SELECT * FROM %s' % self.name
         if where is not None:

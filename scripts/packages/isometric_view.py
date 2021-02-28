@@ -1,6 +1,8 @@
 import numpy as np
+import tkinter as tk
 
 from packages import util
+from packages.constants import bgcolor
 
 class Rectangle:
     def __init__(self, c1, c2):
@@ -24,7 +26,7 @@ class Rectangle:
 
 def noop(*args, **kw):
     pass
-bgcolor = "white"
+
 class IsoView:
     def __init__(self, can, ihat, jhat, offset, step_var,
                  shift_key=None, control_key=None, scale=1, bgcolor=bgcolor):
@@ -333,3 +335,27 @@ def from_theta_phi(theta, phi, can, offset, step_var, scale, shift_key=None, con
 
     return IsoView(can, -iso_x, iso_y, offset, step_var, shift_key=shift_key, control_key=control_key, scale=scale, bgcolor=bgcolor)
     
+def get_view(parent, theta, phi, offset, scale=1):
+    
+    pov = -np.array([np.sin(phi),
+                    0,
+                    np.cos(phi)])
+
+    pov = np.array([[np.cos(theta), np.sin(theta), 0],
+                    [-np.sin(theta),  np.cos(theta), 0],
+                    [         0,           0, 1]]) @ pov
+
+    iso_z  = np.array([0, 0, 1])
+    iso_z = iso_z - (iso_z @ pov) * pov
+    iso_z /= np.linalg.norm(iso_z)
+    iso_x = np.cross(pov, iso_z)
+    iso_y = np.cross(iso_z, iso_x)
+    
+    can = tk.Canvas(parent, width=400, height=400)
+    can.grid()
+
+    class step_constant:
+        def get(self):
+            return 1
+    view = IsoView(can, -iso_x, iso_y, offset, step_constant, scale=scale)
+    return view

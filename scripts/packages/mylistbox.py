@@ -5,9 +5,10 @@ def listbox(parent, items, item_clicked, item_selected, n_row=40):
 
     def myclick(event=None):
         idx = lb.curselection()
-        out = lb.get(idx)
-        label['text'] = out
-        item_clicked(idx[0], out)
+        if idx:
+            out = lb.get(idx)
+            label['text'] = out
+            item_clicked(idx[0], out)
     def myselect(event):
         myclick(event)
         idx = lb.curselection()

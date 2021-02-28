@@ -5,8 +5,7 @@ import sys
 if '.' not in sys.path:
     sys.path.append('.')
 from packages.util import curry
-
-bgcolor = 'white'
+from packages.constants import bgcolor
 
 margin = 50
 W = 400 + 2 * margin
@@ -69,7 +68,7 @@ def plot(can, len_vars, cost_vars):
     can.create_line(margin, H - margin, margin, margin, fill='black')
     can.create_line(path[-1,0], H - margin + 4, path[-1, 0], H - margin-4, fill='black')
     can.create_line(margin - 4, path[-1, 1], margin + 4, path[-1, 1], fill='black')
-    can.create_text(margin/2, H/2, text='Cost [USD]', angle=90)
+    can.create_text(margin/2, H/2, text='Price [USD]', angle=90)
     can.create_text(W/2, H-margin/2, text='mm')
     can.create_text(path[-1,0], H-margin/2, text=str(int(round(mytable[-1, 0]))))
     if mytable[-1, 1] > 1000:
@@ -157,7 +156,7 @@ def piecewise_linear_cost_model(parent):
     string_table = default_table[:]
 
     frame = tk.Frame(parent)
-    tk.Label(frame, text="Piecewise Linear Cost").grid(row=9, column=1, columnspan=4)
+    tk.Label(frame, text="Piecewise Linear Price").grid(row=9, column=1, columnspan=4)
     tk.Label(frame, text="Length [mm]").grid(row=10, column=1)
     tk.Label(frame, text="Price [USD]").grid(row=10, column=3)
 
@@ -193,8 +192,9 @@ def piecewise_linear_cost_model(parent):
         if len(string_table[i][1]) > 0:
             c.delete(0, tk.END)
             c.insert(0, dollar(string_table[i][1]))
-    plot(can, len_vars, cost_vars)
-    return frame, can, len_vars, cost_vars
+    plot_cb = curry(plot, (can, len_vars, cost_vars))
+    plot_cb()
+    return frame, can, len_vars, cost_vars, plot_cb
 
 if __name__ == '__main__':
     frame, can, len_vars, cost_vars = piecewise_linear_cost_model(root)

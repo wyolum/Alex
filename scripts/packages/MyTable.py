@@ -423,7 +423,7 @@ class Table(Frame):
                 if colname.strip().lower() == 'url':
                     self.cells[i][j].full_url = dij
                     dij = url_shortener(dij)
-                if str(dij).strip().lower() == '0xdeadbeef':
+                if str(dij).strip().lower() == 'NA':
                     dij = 'Variable'
                 if str(dij).lower().endswith('.stl'):
                     # img = ''.join(dij[:-3].split()) + 'png'
