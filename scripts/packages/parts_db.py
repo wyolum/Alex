@@ -371,11 +371,11 @@ def PartDialog(parent, select_cb):
     url.bind('<Button-1>', browseto)
 
     cancel_button = tk.Button(tl, text="Cancel", command=cancel)
-    cancel_button.grid(row=2, column=4, sticky='E')
+    cancel_button.grid(row=2, column=3, sticky='E')
     select_button = tk.Button(tl, text="Select", command=select)
-    select_button.grid(row=2, column=5, sticky='EW')
+    select_button.grid(row=2, column=4, sticky='EW')
     edit_button = tk.Button(tl, text="Edit", command=edit)
-    edit_button.grid(row=2, column=6, sticky='W')
+    edit_button.grid(row=2, column=5, sticky='W')
     
     item_clicked(0, names[0])
     return tl

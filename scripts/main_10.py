@@ -773,6 +773,45 @@ def cube_dialog(*args):
     tk.Button(button_f, text="Ok", command=on_submit).grid(row=1, column=1)
     tk.Button(button_f, text="Cancel", command=on_cancel).grid(row=1, column=2)
 
+def help_dialog(*args):
+    def on_cancel(*args):
+        tl.destroy()
+    def on_ok(*args):
+        pass
+    tl = tk.Toplevel(root)
+    frame = tk.Frame(tl)
+
+    hotkeys = [
+        ['Escape', 'cancel'],
+        ['Right', 'slew_right'],
+        ['Up', 'slew_up'],
+        ['Down', 'slew_down'],
+        ['i', 'slew_back'],
+        ['j', 'slew_forward'],
+        ['Left', 'slew_left'],
+        ['a', 'toggle_axes'],
+        ['Control-d', 'dup_selected'],
+        ['Control-n', 'createAlex'],
+        ['Control-a', 'select_all'],
+        ['Delete', 'delete_selected'],
+        ['Control-g', 'group_selected'],
+        ['Control-u', 'ungroup_selected'],
+        ['MouseWheel', 'Zoom'],
+        ['Control-z', 'undo'],
+        ['Control-y', 'redo'],
+    ]
+
+
+    row = 1
+    for hotkey in hotkeys:
+        tk.Label(frame, text=hotkey[0]).grid(row=row, column=1, sticky='e')
+        tk.Label(frame, text=hotkey[1]).grid(row=row, column=2, sticky='w')
+        row += 1
+    button_f = tk.Frame(frame)
+    button_f.grid(row=row, column=1, columnspan=2)
+    tk.Button(button_f, text="Ok", command=on_ok).grid(row=1, column=1)
+    button_f.grid()
+    frame.grid()
 def alex_save():
     if len(alex_filename) == 0:
         filename = filedialog.asksaveasfilename(
@@ -971,6 +1010,12 @@ menubar.add_cascade(label="Part", menu=partmenu)
 wizardmenu = tk.Menu(menubar, tearoff=0)
 wizardmenu.add_command(label="Cube", command=cube_dialog)
 menubar.add_cascade(label="Wizard", menu=wizardmenu)
+
+helpmenu = tk.Menu(menubar, tearoff=0)
+wizardmenu.add_command(label="Hot keys", command=help_dialog)
+menubar.add_cascade(label="Help", menu=wizardmenu)
+
+
 root.config(menu=menubar)
 ################################################################################
 
