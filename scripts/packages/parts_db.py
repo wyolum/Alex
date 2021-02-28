@@ -23,6 +23,7 @@ from packages.database import String, Integer, Float, Table, Column
 from packages.constants import DEG, alex_scad, stl_dir, bgcolor
 from packages.interpolate import interp1d
 from packages.mylistbox import listbox
+from packages import piecewise_linear_cost_model as cm
 
 mydir = os.path.split(os.path.abspath(__file__))[0]
 db_fn = os.path.join(mydir, 'Alex_parts.db')
@@ -198,8 +199,13 @@ class Part(things.Thing):
             self.price = record.Price
             if self.price == '{piecewise}':
                 result = piecewise_table.select(where=f"PartName='{name}'")
-                self.lengths = np.array([(r.Length) for r in result])
-                self.prices = np.array([(r.Price) for r in result])
+                if len(result) == 0:
+                    self.lengths = np.array([300, 5000])
+                    self.prices = np.array([0, 0])
+                else:
+                    self.lengths = np.array([(r.Length) for r in result])
+                    self.prices = np.array([(r.Price) for r in result])
+                
                 self.min_len = np.min(self.lengths)
                 self.max_len = np.max(self.lengths)
                 self.price_function = lambda x: interp1d(self.lengths, self.prices, x)
@@ -330,8 +336,6 @@ def PartDialog(parent, select_cb):
 
         display.configure(image=img)
         display.image = img
-        if "Gus" in name:
-            print(name, idx, data[idx][url_col])
         url.configure(text=url_shortener(data[idx][url_col], max_len=50))
         url.bind("<Button-1>", browseto)
         f = open(alex_scad, 'w')
@@ -467,24 +471,32 @@ def validate_stl(label, var, entry, commit_button):
         out = False
         commit_button.config(state="disabled")
     return out
-def validate_price(label, var, entry, commit_button):
+def validate_price(label, var, entry, commit_button, len_vars, cost_vars):
     out = False
-    print('validate', label)
+    print('validate', label, var.get())
     s = var.get()
     if len(s) == 0:
+        out = True
         var.set('0.00')
     else:
         if s == '{piecewise}':
-            out = True
-            entry.config(bg=bgcolor)
+            out = len(cm.get_table(len_vars, cost_vars)) > 0
+            print('table:', len(cm.get_table(len_vars, cost_vars)) > 0, out)
+            if out:
+                entry.config(bg=bgcolor)
+            else:
+                entry.config(bg="red")
         else:
             try:
                 v = float(s)
                 entry.config(bg=bgcolor)
+                out = True
             except ValueError:
-                entry.config(bg="yellow")
+                entry.config(bg=bgcolor)
                 var.set('0.00')
-    return True
+                out = True
+    print('validate_price::out', out)
+    return out
 
 def url_open(label, var, entry):
     url = var.get()
@@ -571,7 +583,6 @@ def ask_color(label, entry):
         entry.config(bg=color)
 
 def new_part_dialog(parent, name=None):
-    from packages import piecewise_linear_cost_model as cm
     '''
     Entry: Column('Name',String(), UNIQUE=True)
     FileDialog: Column('Wireframe', Integer())
@@ -617,7 +628,8 @@ def new_part_dialog(parent, name=None):
         piecewise_dialog_visible[0] = True
     def disable_piecewise_dialog():
         price_entry.delete(0, tk.END)
-        price_entry.insert(0, '0')
+        if price_var.get() == '{piecewise}':
+            price_entry.delete(0, tk.END)
         cost_frame.grid_remove()
         
     def toggle_piecewise_dialog():
@@ -694,7 +706,6 @@ def new_part_dialog(parent, name=None):
     delete_button.grid(row=30, column=4, sticky='w')
     
     def close_new_part_dialog():
-        print('Close new part dialog!')
         tl.destroy()
         
     close_button = tk.Button(part_frame, text="Close", command=close_new_part_dialog)
@@ -746,11 +757,10 @@ def new_part_dialog(parent, name=None):
     tk.Label(part_frame, text="Price").grid(row=row+1, column=1, sticky='e')
     price_entry = tk.Entry(part_frame, textvariable=price_var)
     price_entry.grid(row=row+1, column=2)
-    validate = curry(validators[row], ('Price', price_var, price_entry, commit_button))
+    validate = curry(validators[row], ('Price', price_var, price_entry, commit_button, len_vars, cost_vars))
     validates.append(validate)
     price_entry.bind('<FocusOut>', validate)
     tk.Button(part_frame, text="Piecewise Linear", command=toggle_piecewise_dialog).grid(row=row+1, column=3)
-    price_var.set(0.00)
 
     row += 1
 
@@ -839,6 +849,7 @@ def new_part_dialog(parent, name=None):
     row += 1
 
     def populate_cb(event):
+        print("Populate cb!!")
         name = name_var.get()
         record = part_table.select(where=f'Name="{name}"')
         if len(record) > 0:
@@ -860,8 +871,8 @@ def new_part_dialog(parent, name=None):
            plot_cb()
            enable_piecewise_dialog()
         else:
-            price_var.set(recort.Price)
-            disable_piecewise_dialog()
+            price_var.set(record.Price)
+            # disable_piecewise_dialog()
         url_var.set(record.URL)
         color_var.set(record.Color)
         length_var.set(record.Length)
