@@ -783,12 +783,12 @@ def help_dialog(*args):
 
     hotkeys = [
         ['Escape', 'cancel'],
+        ['Left', 'slew_left'],
         ['Right', 'slew_right'],
         ['Up', 'slew_up'],
         ['Down', 'slew_down'],
         ['i', 'slew_back'],
         ['j', 'slew_forward'],
-        ['Left', 'slew_left'],
         ['a', 'toggle_axes'],
         ['Control-d', 'dup_selected'],
         ['Control-n', 'createAlex'],
@@ -1012,8 +1012,8 @@ wizardmenu.add_command(label="Cube", command=cube_dialog)
 menubar.add_cascade(label="Wizard", menu=wizardmenu)
 
 helpmenu = tk.Menu(menubar, tearoff=0)
-wizardmenu.add_command(label="Hot keys", command=help_dialog)
-menubar.add_cascade(label="Help", menu=wizardmenu)
+helpmenu.add_command(label="Hot keys", command=help_dialog)
+menubar.add_cascade(label="Help", menu=helpmenu)
 
 
 root.config(menu=menubar)

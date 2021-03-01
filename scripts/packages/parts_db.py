@@ -216,7 +216,11 @@ class Part(things.Thing):
                 self.length = length
             else:
                 self.length = record.Length
-            self.wireframe = wireframes.get(record.Wireframe) * [self.dim1, self.dim2, self.length]
+            try:
+                wf = wireframes.get(record.Wireframe)
+            except KeyError:
+                wf = wireframes.get('Cube')
+            self.wireframe = wf * [self.dim1, self.dim2, self.length]
             self.stl_fn = os.path.join(mydir, 'STL', record.STL_filename)
             self.color = record.Color
             self.record = record
@@ -517,10 +521,6 @@ def validate_url(label, var, entry, commit_button):
 def validate_color(label, var, entry, commit_button):
     print('validate', label)
     color = var.get()
-    if not color.startswith("#"):
-        default = '#a800ff'
-        entry.insert(0, default)
-        entry.config(bg=default)
     return True
 def validate_length(label, var, entry, commit_button):
     print('validate', label)
@@ -673,6 +673,7 @@ def new_part_dialog(parent, name=None):
             result = messagebox.askquestion("Overwrite", f"Delete {name}", icon='warning')
             if result == 'yes':
                 part_table.delete(where=f'Name="{name}"')
+                piecewise_table.delete(where=f'PartName="{name}"')
                 print("Deleted")
         
     def commit_new_part():
@@ -696,6 +697,13 @@ def new_part_dialog(parent, name=None):
                 print("Skipping")            
                 return
         part_table.insert([values])
+        if price_var.get() == '{piecewise}':
+            price_list = cm.get_table(len_vars, cost_vars)
+            name = name_var.get()
+            prices = [(name, l, p) for l, p in price_list]
+            piecewise_table.delete(where=f'PartName="{name}"')
+            piecewise_table.insert(prices)
+            
         part = Part(name_var.get())
         make_thumbnail(part)
         
@@ -849,7 +857,6 @@ def new_part_dialog(parent, name=None):
     row += 1
 
     def populate_cb(event):
-        print("Populate cb!!")
         name = name_var.get()
         record = part_table.select(where=f'Name="{name}"')
         if len(record) > 0:

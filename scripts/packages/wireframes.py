@@ -1,6 +1,6 @@
 import os.path
 import numpy as np
-from numpy import cos, sin
+from numpy import cos, sin, pi
 
 import sys
 if '.' not in sys.path:
@@ -87,7 +87,30 @@ prism_frame = path([
     
     [ .5, -.5, 0], # 2
 ])    
-    
+
+theta = np.linspace(0, pi/4, 3)
+peak = np.array([0, 0, 1])
+cone = []
+for i in range(8):
+    t = theta + i * pi / 4
+    arc = np.column_stack([cos(t)/2, sin(t)/2, np.zeros(len(t))])
+    cone.append(arc)
+    cone.append(peak)
+
+theta = np.linspace(0, pi/4, 3)
+cylinder = []
+top = []
+for i in range(8):
+    t = theta + i * pi / 4
+    arc = np.column_stack([cos(t)/2, sin(t)/2, np.zeros(len(t))])
+    cylinder.append(arc)
+    cylinder.append(arc[-1] + [0, 0, 1])
+    cylinder.append(arc[-1])
+cylinder = cylinder[:-2]
+theta = np.linspace(0, 2 * pi, 17)
+top = np.column_stack([cos(theta)/2, sin(theta)/2, np.ones(len(theta))])
+cylinder.append(top)
+cylinder = np.vstack(cylinder)
 
 #print(bottom_square)
 #print(top_square)
@@ -96,8 +119,13 @@ prism_frame = path([
 #prism = Wireframe([bottom_square, prism_front, prism_back, prism_top])
 cube = Wireframe([cube_frame])
 prism = Wireframe([prism_frame])
+cone = Wireframe([np.vstack(cone)])
+cylinder = Wireframe([cylinder])
+
 __wireframes = {'Cube': cube,
-                'Prism': prism}
+                'Prism': prism,
+                'Cone': cone,
+                'Cylinder': cylinder}
 
 npz = 'wireframes.npz'
 def write_npz(force=False):
@@ -132,9 +160,14 @@ def from_stl(stl_fn):
     pos[2] = mn[2]
     return (wf - pos) / dim
 
-def add_wf(name, wf):
+def remove_wf(name):
+    del __wireframes[name]
+def rename_wf(old, new):
+    add_wf(new, get(old), force=True)
+    remove_wf(old)
+def add_wf(name, wf, force=False):
     names = [n.lower for n in list(__wireframes.keys())]
-    if name.lower() in names:
+    if name.lower() in names and not force:
         raise ValueErrror(f'{name} already exists in wireframes')
     else:
         __wireframes[name] = wf
@@ -187,7 +220,17 @@ if __name__ == '__main__':
     view2 = iv.IsoView(can2, [1, 0, 0], [0, 1, 0], [200, 200], Unit())
 
     views = iv.Views([view1, view2])
-    draw_wireframe(cube + [0, 0, 0], [200, 200, 200], views)
+    draw_wireframe(cube, 100, views)
     draw_wireframe(prism, 100, views)
-    root.mainloop()
+    draw_wireframe(cone, 100, views)
+    draw_wireframe(cylinder, 100, views)
+    #root.mainloop()
 
+    #add_wf('Cone', cone, force=True)
+    #add_wf('Cylinder', cylinder, force=True)
+    #remove_wf('Aaa')
+    #rename_wf('Corner_Plate_Threeway_Wf', 'T-Plate')
+    #rename_wf('Gusset_Wireframe', 'Corner-Plate')
+    #commit()
+    print(getlist())
+    
