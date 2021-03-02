@@ -11,5 +11,6 @@ DEG = pi / 180.
 package_dir = os.path.split(os.path.abspath(__file__))[0]
 alex_scad = os.path.join(package_dir, '../', 'Alex_test.scad')
 stl_dir = os.path.join(package_dir, 'STL')
+npy_dir = os.path.join(package_dir, 'wireframes')
 
 bgcolor = "white"

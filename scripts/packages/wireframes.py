@@ -1,6 +1,10 @@
 import os.path
 import numpy as np
 from numpy import cos, sin, pi
+import sys
+if '.' not in sys.path:
+    sys.path.append('.')
+from packages.constants import npy_dir
 
 import sys
 if '.' not in sys.path:
@@ -135,7 +139,6 @@ def write_npz(force=False):
         print(npz, 'already exists')
     else:
         np.savez(fn, **__wireframes)
-        print('wrote', npz)
     
 def read_npz():
     mydir = os.path.split(os.path.abspath(__file__))[0]
@@ -144,7 +147,6 @@ def read_npz():
         _npz = np.load(mynpz)
         out = {}
         for k in _npz:
-            # print(k)
             out[k] = _npz[k]
         
     else:
@@ -160,24 +162,39 @@ def from_stl(stl_fn):
     pos[2] = mn[2]
     return (wf - pos) / dim
 
+stale_npz = False
 def remove_wf(name):
-    del __wireframes[name]
+    if name in __wireframes:
+        stale_npz = True
+        del __wireframes[name]
 def rename_wf(old, new):
-    add_wf(new, get(old), force=True)
-    remove_wf(old)
+    if new != old:
+        add_wf(new, get(old), force=True)
+        remove_wf(old)
 def add_wf(name, wf, force=False):
     names = [n.lower for n in list(__wireframes.keys())]
     if name.lower() in names and not force:
         raise ValueErrror(f'{name} already exists in wireframes')
     else:
+        stale_npz = True
         __wireframes[name] = wf
+        np.save(f'{npy_dir}/{"".join(name.split())}.npy', wf)
 def getlist():
     return list(__wireframes.keys())
 def commit():
-    write_npz(force=True)
+    if stale_npz:
+        write_npz(force=True)
 __wireframes = read_npz()
 def get(name):
-    return __wireframes[name]
+    npy = f'{npy_dir}/{"".join(name.split())}.npy'
+    if name not in __wireframes:
+        if os.path.exists(npy):
+            wf = np.load(npy)
+            add_wf(name, wf)
+        else:
+            raise ValueError(f"Wireframe '{name}' not found")
+    out = __wireframes[name]
+    return out
 
 if __name__ == '__main__':
     import isometric_view as iv
@@ -232,5 +249,4 @@ if __name__ == '__main__':
     #rename_wf('Corner_Plate_Threeway_Wf', 'T-Plate')
     #rename_wf('Gusset_Wireframe', 'Corner-Plate')
     #commit()
-    print(getlist())
     

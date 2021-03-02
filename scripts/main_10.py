@@ -33,6 +33,7 @@ numpy-stl required for stl imports
     > const install numpy-stl
     ''')
     raise
+
 import sys
 import pickle
 import argparse
@@ -196,19 +197,31 @@ def ungroup_selected(*args):
 def rotate_roll():
     if len(selected) > 0:
         util.register_undo()
-    selected.rotate(roll=1)
+    if control_key.pressed():
+        rt_angles = .5
+    else:
+        rt_angles = 1
+    selected.rotate(roll=rt_angles)
     selected.render(views, selected=True)
     export()
 def rotate_pitch():
     if len(selected) > 0:
         util.register_undo()
-    selected.rotate(pitch=1)
+    if control_key.pressed():
+        rt_angles = .5
+    else:
+        rt_angles = 1
+    selected.rotate(pitch=rt_angles)
     selected.render(views, selected=True)
     export()
 def rotate_yaw():
     if len(selected) > 0:
         util.register_undo()
-    selected.rotate(yaw=1)
+    if control_key.pressed():
+        rt_angles = .5
+    else:
+        rt_angles = 1
+    selected.rotate(yaw=rt_angles)
     selected.render(views, selected=True)
     export()
     
@@ -1002,8 +1015,8 @@ partmenu.add_command(label='Extruded Al', command=createAlex)
 partmenu.add_command(label='2-Way Corner', command=createCornerTwoWay)
 partmenu.add_command(label='3-Way Corner', command=createCornerThreeWay)
 partmenu.add_separator()
-partmenu.add_command(label='Part Lookup', command=parts_db_dialog)
-partmenu.add_command(label='Add new parts', command=new_part_dialog)
+partmenu.add_command(label='Part Library', command=parts_db_dialog)
+partmenu.add_command(label='Add New Part', command=new_part_dialog)
 menubar.add_cascade(label="Part", menu=partmenu)
 
 

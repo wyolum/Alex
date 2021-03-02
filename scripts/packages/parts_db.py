@@ -1,3 +1,4 @@
+import re
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import filedialog
@@ -46,6 +47,27 @@ interface_table = {
     "3030-Y":[ 0,-15, 15, 0,-1, 0],
     "3030-Z":[ 0,  0,  0, 0, 0,-1]
 }
+
+def assimilate_stl(part_name, fn):
+    base = os.path.split(fn)[1]
+    std_fn = f'{stl_dir}/{base}'
+    if os.path.exists(std_fn):
+        new_fn = std_fn
+    else:
+        new_fn = f'{stl_dir}/{part_name}.stl'
+    if not os.path.exists(new_fn):
+        thing = things.STL(fn)
+        pts = thing.mesh.vectors.reshape((-1, 3))
+        maxs = np.max(pts, axis=0)
+        mins = np.min(pts, axis=0)
+        dims = maxs - mins
+        mid = (maxs + mins) / 2.
+        print(np.amax(thing.mesh.vectors, axis=0))
+        thing.mesh.vectors = (thing.mesh.vectors - mid) / dims + [0, 0, .5]
+        thing.mesh.save(new_fn)
+    return os.path.split(new_fn)[1]
+#assimilate_stl('junk', 'rattleCAD_road_20150823.stl');here
+    
 @util.cacheable
 def lookup_interface(name):
     if name not in interface_table:
@@ -221,7 +243,7 @@ class Part(things.Thing):
             except KeyError:
                 wf = wireframes.get('Cube')
             self.wireframe = wf * [self.dim1, self.dim2, self.length]
-            self.stl_fn = os.path.join(mydir, 'STL', record.STL_filename)
+            self.stl_fn = os.path.join(stl_dir, record.STL_filename)
             self.color = record.Color
             self.record = record
             
@@ -302,20 +324,23 @@ def url_shortener(url, max_len=40):
     return url
 
 def PartDialog(parent, select_cb):
-    #parts = part_table.select(where="Name='2020 Gusset'")
-    parts = part_table.select()
-    columns = list(parts[0].keys())[:9]
+    def get_parts():
+        parts = part_table.select()
+        columns = list(parts[0].keys())[:9]
+        data = [[getattr(line, name) for name in columns] for line in parts]
+        names = [l[0] for l in data]
+        idx = np.argsort(names)
+        parts = [parts[i] for i in idx]
+        names = [names[i] for i in idx]
+        data = [data[i] for i in idx]
+        data = dict(zip(names, data))
+        return parts, names, columns, data
+    parts, names, columns, data = get_parts()
     
     
     n_col = len(columns)
     tl = tk.Toplevel(parent)
-    
-    data = [[getattr(line, name) for name in columns] for line in parts]
-    names = [l[0] for l in data]
-    idx = np.argsort(names)
-    parts = [parts[i] for i in idx]
-    names = [names[i] for i in idx]
-    data = [data[i] for i in idx]
+
     url_col = 4
 
     def browseto(*args):
@@ -326,21 +351,22 @@ def PartDialog(parent, select_cb):
                 url = url[1:-1]
             webbrowser.open_new(url)
     
-    def item_clicked(idx, name):
+    def item_clicked(name):
         try:
             part = Part(name)
         except ValueError:
             raise
             return
-        name = ''.join(name.split())
-        png = os.path.join(stl_dir, f'{name}.png')
+        png = ''.join(name.split())
+        png = os.path.join(stl_dir, f'{png}.png')
         if not os.path.exists(png):
             png = os.path.join(stl_dir, 'unknown.png')
         img = ImageTk.PhotoImage(Image.open(png))
 
         display.configure(image=img)
         display.image = img
-        url.configure(text=url_shortener(data[idx][url_col], max_len=50))
+        #url.configure(text=url_shortener(data[idx][url_col], max_len=50))
+        url.configure(text=url_shortener(data[name][url_col], max_len=50))
         url.bind("<Button-1>", browseto)
         f = open(alex_scad, 'w')
         f.write(part.toscad())
@@ -354,12 +380,28 @@ def PartDialog(parent, select_cb):
         cancel()
     def edit(*args):
         name = item_clicked.part.name
-        new_part_dialog(parent, name=name)
+        new_part_dialog(parent, name=name, onclose=relist, copy=False)
+    def copy(*args):
+        name = item_clicked.part.name
+        new_part_dialog(parent, name=name, onclose=relist, copy=True)
 
     def item_selected(idx, name):
-        item_clicked(idx, name)
+        item_clicked(name)
         select()
-        
+
+    def relist(name):
+        lb.delete(0, len(names));
+        new_parts, new_names, new_columns, new_data = get_parts()        
+        for i, item in enumerate(new_names):
+            lb.insert(i, item);
+        for k in list(data.keys()):
+            if k not in new_data:
+                del data[k]
+        for k in list(new_data.keys()):
+            if k not in data:
+                data[k] = new_data[k]
+        if name in data:
+            item_clicked(name)
     name_var = tk.StringVar()
     lb = listbox(tl, names, item_clicked, item_selected, n_row=50)
     lb.grid(row=0, column=0, rowspan=10)
@@ -367,7 +409,7 @@ def PartDialog(parent, select_cb):
     img = ImageTk.PhotoImage(Image.open(os.path.join(stl_dir, f'2020CornerTwoWay.png')))
     imgs[0] = img
     display = tk.Label(tl, image=img)
-    display.grid(row=0, column=2, sticky='N', columnspan=4)
+    display.grid(row=1, column=2, sticky='N', columnspan=10)
 
     url = tk.Label(tl)
     url.configure(fg='blue')
@@ -379,9 +421,11 @@ def PartDialog(parent, select_cb):
     select_button = tk.Button(tl, text="Select", command=select)
     select_button.grid(row=2, column=4, sticky='EW')
     edit_button = tk.Button(tl, text="Edit", command=edit)
-    edit_button.grid(row=2, column=5, sticky='W')
+    edit_button.grid(row=2, column=5, sticky='EW')
+    copy_button = tk.Button(tl, text="Copy", command=copy)
+    copy_button.grid(row=2, column=6, sticky='W')
     
-    item_clicked(0, names[0])
+    item_clicked(names[0])
     return tl
 
 def make_thumbnail(part):
@@ -582,24 +626,7 @@ def ask_color(label, entry):
         entry.insert(0, color)
         entry.config(bg=color)
 
-def new_part_dialog(parent, name=None):
-    '''
-    Entry: Column('Name',String(), UNIQUE=True)
-    FileDialog: Column('Wireframe', Integer())
-    FileDialog: Column('STL_filename', String())
-    Entry: Column('Price', Float())
-    Entry: Column('URL', String())
-    Entry: Column('Color', String())
-    Entry: Column('Length', Integer())
-    Column('Dim1', Integer())
-    Column('Dim2', Integer())
-    Column('Interface_01', Integer())
-    Column('Interface_02', Integer())
-    Column('Interface_03', Integer())
-    Column('Interface_04', Integer())
-    Column('Interface_05', Integer())
-    Column('Interface_06', Integer())
-    '''
+def new_part_dialog(parent, name=None, onclose=None, copy=False):
     tl = tk.Toplevel(parent)
     
     dialog_parent = tk.Frame(tl)
@@ -677,15 +704,14 @@ def new_part_dialog(parent, name=None):
                 #print("Deleted")
         
     def commit_new_part():
-        wireframes.commit()
-        values = [name_var.get(),
-                  wire_var.get(),
-                  stl_var.get(),
-                  price_var.get(),
-                  url_var.get(),
-                  color_var.get(),
-                  length_var.get(),
-                  dim1_var.get(),
+        values = [name_var.get(),   # 0
+                  wire_var.get(),   # 1
+                  stl_var.get(),    # 2 STL 
+                  price_var.get(),  # 3 
+                  url_var.get(),    # 4 
+                  color_var.get(),  # 5 
+                  length_var.get(), # 6 
+                  dim1_var.get(),   # 7 
                   dim2_var.get()] + [var.get() for var in interface_vars]
         prev_records = part_table.select(where=f'Name="{values[0]}"')
         if prev_records:
@@ -696,6 +722,8 @@ def new_part_dialog(parent, name=None):
             else:
                 #print("Skipping")            
                 return
+        ### import stl file into library
+        values[2] = assimilate_stl(values[0], values[2])
         part_table.insert([values])
         if price_var.get() == '{piecewise}':
             price_list = cm.get_table(len_vars, cost_vars)
@@ -706,6 +734,7 @@ def new_part_dialog(parent, name=None):
             
         part = Part(name_var.get())
         make_thumbnail(part)
+        wireframes.commit()
         
     commit_button = tk.Button(part_frame, text="Commit", command=commit_new_part)
     commit_button.grid(row=31, column=2, sticky='e')
@@ -714,6 +743,8 @@ def new_part_dialog(parent, name=None):
     delete_button.grid(row=30, column=3, sticky='e')
     
     def close_new_part_dialog():
+        if(onclose):
+            onclose(name_var.get())
         tl.destroy()
         
     close_button = tk.Button(part_frame, text="Close", command=close_new_part_dialog)
@@ -891,6 +922,18 @@ def new_part_dialog(parent, name=None):
     if name is not None:
         name_var.set(name)
         populate_cb(None)
+        if copy:
+            copy_matcher = re.compile(r'(.*) x\d\d\d')
+            match = copy_matcher.search(name)
+            if match:
+                name = match.group(1)
+            similar_names = [l.Name for l in part_table.select(where=f'name like "{name} x___"')]
+            copy_num = len([n for n in similar_names if copy_matcher.search(n)]) + 1
+            copy_name = f'{name} x{copy_num:03d}'
+            name_var.set(copy_name)
+            name_entry.focus_set()
+            name_entry.select_range(len(copy_name)-5, tk.END)
+            name_entry.icursor(tk.END)
     validates.insert(0, validate)
     name_entry.bind('<FocusOut>', validate)
     populate_button.bind('<Button-1>', populate_cb)

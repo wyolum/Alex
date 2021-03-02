@@ -222,14 +222,13 @@ def restore(scn, sel):
         things.TheScene.append(thing)
         things.TheScene.selected.append(thing)
         thing.render(things.TheScene.view, selected=True)
-    print(len(sel), len(things.TheScene.selected))
+    #print(len(sel), len(things.TheScene.selected))
         
 def undo(*args, **kw):
     from packages import things
 
     #### save current state for redo if this is the latest
     if history_i[0] == len(history):
-        print('add current state to end for redo')
         history.append((things.TheScene.dup(), things.TheScene.selected.dup()))
         #history_i[0] += 1
     
@@ -293,6 +292,7 @@ def convexhull(points):
     '''
     return induces of convex hull
     '''
+    points = points + np.random.uniform(-.0001, .0001, np.shape(points))
     unique_i = dedup(points)
     p = points[unique_i]
     n = len(p)
@@ -314,7 +314,10 @@ def convexhull(points):
         if len(hull) > 2:
             remove = []
             for j in range(2, len(hull) + 1):
-                p3 = [hull[- j - 1], hull[-j], hull[-1]]
+                if len(hull) == 3:
+                    p3 = hull
+                else:
+                    p3 = [hull[- j - 1], hull[-j], hull[-1]]
                 if getv(p3) < 0:
                     remove.append(j)
                 else:

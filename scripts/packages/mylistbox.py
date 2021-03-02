@@ -8,12 +8,12 @@ def listbox(parent, items, item_clicked, item_selected, n_row=40):
         if idx:
             out = lb.get(idx)
             label['text'] = out
-            item_clicked(idx[0], out)
+            item_clicked(out)
     def myselect(event):
         myclick(event)
         idx = lb.curselection()
         out = lb.get(idx)
-        item_selected(idx[0], out)
+        item_selected(out)
     frame = tk.Frame(parent)
     label = tk.Label(frame)
     label.grid(row=1, column=0)
@@ -24,6 +24,10 @@ def listbox(parent, items, item_clicked, item_selected, n_row=40):
     lb.bind('<<ListboxSelect>>', myclick)
     lb.bind('<Double-Button-1>', myselect)
 
+    frame.get = lb.get
+    frame.insert = lb.insert
+    frame.delete = lb.delete
+    frame.index = lb.index
     return frame
 
 

@@ -46,7 +46,8 @@ class IsoView:
         self.dragging = False
         self.drag_initialized = False
         self.axes_on = True
-
+        self.click_pt = np.array([0, 0])
+        
         ### UI tracking
         self.button1_down = False
         if shift_key is None:
