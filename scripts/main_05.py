@@ -26,7 +26,7 @@ def snap_to_grid(v, step):
     return (v / step).astype(int) * step
     
     
-def get_integer_rotation(roll=0, pitch=0, yaw=0):
+def get_right_rotation(roll=0, pitch=0, yaw=0):
     orient = np.eye(3)
     for i in range(roll % 4):
         orient = ROLL @ orient
@@ -395,7 +395,7 @@ class Thing:
         rotate in right angles
         x, y, z -- integer number of right angles (nominally between 0 and 3)
         '''
-        self.orient = get_integer_rotation(roll, pitch, yaw) @ self.orient
+        self.orient = get_right_rotation(roll, pitch, yaw) @ self.orient
         return self
     
     def translate(self, v):
@@ -496,7 +496,7 @@ class Group(Thing):
         c = center_of_rotation
 
         print("center of rotation", c)
-        R = get_integer_rotation(*args, **kw)
+        R = get_right_rotation(*args, **kw)
         for thing in self.things:
             thing.rotate(*args, **kw)
             p0 = thing.pos.copy()

@@ -144,7 +144,7 @@ def read_npz():
         _npz = np.load(mynpz)
         out = {}
         for k in _npz:
-            print(k)
+            # print(k)
             out[k] = _npz[k]
         
     else:

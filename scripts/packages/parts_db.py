@@ -464,7 +464,7 @@ def validate_stl(label, var, entry, commit_button):
     stl = var.get().strip()
     if not os.path.exists(stl):
         stl = os.path.join(stl_dir, stl)
-    if os.path.exists(stl):
+    if os.path.exists(stl) and os.path.isfile(stl):
         thing = things.STL(stl)
         #with open(alex_scad, 'w') as f:
         #    f.write(thing.toscad())
@@ -477,7 +477,7 @@ def validate_stl(label, var, entry, commit_button):
     return out
 def validate_price(label, var, entry, commit_button, len_vars, cost_vars):
     out = False
-    print('validate', label, var.get())
+    #print('validate', label, var.get())
     s = var.get()
     if len(s) == 0:
         out = True
@@ -485,7 +485,7 @@ def validate_price(label, var, entry, commit_button, len_vars, cost_vars):
     else:
         if s == '{piecewise}':
             out = len(cm.get_table(len_vars, cost_vars)) > 0
-            print('table:', len(cm.get_table(len_vars, cost_vars)) > 0, out)
+            #print('table:', len(cm.get_table(len_vars, cost_vars)) > 0, out)
             if out:
                 entry.config(bg=bgcolor)
             else:
@@ -499,7 +499,7 @@ def validate_price(label, var, entry, commit_button, len_vars, cost_vars):
                 entry.config(bg=bgcolor)
                 var.set('0.00')
                 out = True
-    print('validate_price::out', out)
+    #print('validate_price::out', out)
     return out
 
 def url_open(label, var, entry):
@@ -509,7 +509,7 @@ def url_open(label, var, entry):
     webbrowser.open_new(url)
 
 def validate_url(label, var, entry, commit_button):
-    print('validate', label)
+    #print('validate', label)
     url = var.get().strip()
     if url.startswith('"') and url.endswith('"'):
         url = url[1:-1]
@@ -519,11 +519,11 @@ def validate_url(label, var, entry, commit_button):
         entry.config(bg="yellow")
     return True
 def validate_color(label, var, entry, commit_button):
-    print('validate', label)
+    #print('validate', label)
     color = var.get()
     return True
 def validate_length(label, var, entry, commit_button):
-    print('validate', label)
+    #print('validate', label)
     s = var.get()
     try:
         len = float(s)
@@ -532,7 +532,7 @@ def validate_length(label, var, entry, commit_button):
     return True
     
 def validate_dim(label, var, entry, commit_button):
-    print('validate', label)
+    #print('validate', label)
     s = var.get()
     try:
         len = float(s)
@@ -542,7 +542,7 @@ def validate_dim(label, var, entry, commit_button):
         entry.config(bg="red")
     return True
 def validate_interface(label, var, entry, commit_button):
-    print('validate', label)
+    #print('validate', label)
     return True
 
 def ask_stl_filename(label, entry):
@@ -674,7 +674,7 @@ def new_part_dialog(parent, name=None):
             if result == 'yes':
                 part_table.delete(where=f'Name="{name}"')
                 piecewise_table.delete(where=f'PartName="{name}"')
-                print("Deleted")
+                #print("Deleted")
         
     def commit_new_part():
         wireframes.commit()
@@ -692,9 +692,9 @@ def new_part_dialog(parent, name=None):
             result = messagebox.askquestion("Overwrite", f"Overwrite {values[0]}", icon='warning')
             if result == 'yes':
                 part_table.delete(where=f'Name="{values[0]}"')
-                print("Deleted")
+                #print("Deleted")
             else:
-                print("Skipping")            
+                #print("Skipping")            
                 return
         part_table.insert([values])
         if price_var.get() == '{piecewise}':
@@ -846,7 +846,7 @@ def new_part_dialog(parent, name=None):
         row += 1
 
     def validate_new_part():
-        print('validate new part!')
+        #print('validate new part!')
         if validate_all():
             commit_button.config(state='normal')
         else:
@@ -862,7 +862,7 @@ def new_part_dialog(parent, name=None):
         if len(record) > 0:
             record = record[0]
         else:
-            print("No record found for", name)
+            #print("No record found for", name)
             return
         wire_var.set(record.Wireframe)
         stl_var.set(record.STL_filename)

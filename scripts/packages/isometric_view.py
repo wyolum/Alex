@@ -63,7 +63,7 @@ class IsoView:
         wf2d = wf @ self.B
         hull, hull_i = util.convexhull(wf2d)
         width = max([1, np.min([self.get_scale(), 3])]) * 2
-        self.create_path("highlight", wf[hull_i], 'red', width)
+        self.create_path("highlight", wf[hull_i], 'red', width) ### consider changing
 
     def toggle_axes(self):
         self.axes_on = not self.axes_on
@@ -128,6 +128,8 @@ class IsoView:
                 self.erase(subthing)
                 
     def onpress(self, event):
+        if not hasattr(self, 'scene'):
+            return
         self.click_pt = np.array([event.x, event.y])
         self.start = self.B @ self.click_pt / self.scale
         self.last = self.start
@@ -163,7 +165,7 @@ class IsoView:
                             self.dragging = False
                             for thing in self.scene.selected.ungroup():
                                 thing.render(self.scene.view, selected=False)
-                        else:                          ### cant drag the axis
+                        else:                                          ### cant drag the axis
                             for thing in self.scene.things:            ### grab containing group
                                 if thing.contains(clicked):
                                     clicked = thing
@@ -189,6 +191,8 @@ class IsoView:
                             thing.render(self.scene.view, selected=False)
 
     def ondrag(self, event):
+        if not hasattr(self, 'scene'):
+            return
         self.mouse_x = event.x
         self.mouse_y = event.y
         if self.dragging:
@@ -220,6 +224,8 @@ class IsoView:
             
             
     def onrelease(self, event):
+        if not hasattr(self, 'scene'):
+            return
         self.button1_down = False
         self.drag_initialized = False
         self.can.delete('selection_box')

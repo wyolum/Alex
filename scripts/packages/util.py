@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import sin, cos, pi
 
 class KeyboardTracker:
     '''
@@ -106,6 +107,9 @@ def closest_test():
     pl.show()
 #closest_test()
 
+def snap_to_grid(v, step):
+    return (v / step).astype(int) * step
+    
 ROLL = np.array([[1, 0, 0],
                  [0, 0, -1],
                  [0, 1, 0]])
@@ -116,10 +120,32 @@ YAW = np.array([[0, -1, 0],
                 [1, 0, 0],
                 [0, 0, 1]])
 
-def snap_to_grid(v, step):
-    return (v / step).astype(int) * step
-    
-def get_integer_rotation(roll=0, pitch=0, yaw=0):
+def get_roll(theta):
+    return np.array([[1, 0, 0],
+                     [0, cos(theta), -sin(theta)],
+                     [0, sin(theta),  cos(theta)]])
+def get_pitch(theta):
+    return np.array([[cos(theta), 0, -sin(theta)],
+                     [0, 1, 0],
+                     [sin(theta), 0, cos(theta)]])
+def get_yaw(theta):
+    return np.array([[cos(theta), -sin(theta), 0],
+                     [sin(theta), cos(theta), 0],
+                     [0, 0, 1]])
+
+def get_right_rotation(roll=0, pitch=0, yaw=0):
+    '''
+    Return rotation matrix for give angles given above in right angles.
+    1 ==>  90 or -270 DEG
+    2 ==> 180 or -180 DEG
+    3 ==> 270 or  -90 DEG
+    4 ==> 360 or    0 DEG
+
+    It also works with fractional angles.
+    '''
+    return (get_roll(2 * pi * roll / 4) @
+            get_pitch(2 * pi * pitch / 4) @
+            get_yaw(2 * pi * yaw / 4))
     orient = np.eye(3)
     for i in range(roll % 4):
         orient = ROLL @ orient

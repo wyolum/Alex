@@ -53,7 +53,7 @@ class Thing:
         rotate in right angles
         x, y, z -- integer number of right angles (nominally between 0 and 3)
         '''
-        self.orient = util.get_integer_rotation(roll, pitch, yaw) @ self.orient
+        self.orient = util.get_right_rotation(roll, pitch, yaw) @ self.orient
         return self
     
     def translate(self, v):
@@ -180,7 +180,7 @@ class Group(Thing):
         else:
             center_of_rotation = self.get_center()
         c = center_of_rotation
-        R = util.get_integer_rotation(*args, **kw)
+        R = util.get_right_rotation(*args, **kw)
         for thing in self.things:
             thing.rotate(*args, **kw)
             p0 = thing.pos.copy()

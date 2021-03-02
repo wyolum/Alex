@@ -878,7 +878,7 @@ def alex_set_titlebar():
         fn = ''
     cost = scene.cost()
     selected_cost = selected.cost()
-    print(cost, selected_cost)
+    #print(cost, selected_cost)
     root.winfo_toplevel().title(f"Alex {fn} ${cost:.2f} (${selected_cost:.2f})")
 
 def stl_import_dialog():
