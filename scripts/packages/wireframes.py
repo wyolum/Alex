@@ -1,3 +1,4 @@
+import glob
 import os.path
 import numpy as np
 from numpy import cos, sin, pi
@@ -131,26 +132,11 @@ __wireframes = {'Cube': cube,
                 'Cone': cone,
                 'Cylinder': cylinder}
 
-npz = 'wireframes.npz'
-def write_npz(force=False):
-    mydir = constants.package_dir
-    fn = os.path.join(mydir, npz)
-    if os.path.exists(fn) and not force:
-        print(npz, 'already exists')
-    else:
-        np.savez(fn, **__wireframes)
-    
-def read_npz():
-    mydir = os.path.split(os.path.abspath(__file__))[0]
-    mynpz = os.path.join(mydir, npz)
-    if os.path.exists(mynpz):
-        _npz = np.load(mynpz)
-        out = {}
-        for k in _npz:
-            out[k] = _npz[k]
-        
-    else:
-        out = {}
+def read_npy():
+    out = {}
+    for fn in glob.glob(f'{npy_dir}/*.npy'):
+        name = os.path.split(fn)[1][:-4]
+        out[name] = np.load(fn)
     return out
 
 def from_stl(stl_fn):
@@ -162,31 +148,28 @@ def from_stl(stl_fn):
     pos[2] = mn[2]
     return (wf - pos) / dim
 
-stale_npz = False
 def remove_wf(name):
     if name in __wireframes:
-        stale_npz = True
         del __wireframes[name]
 def rename_wf(old, new):
     if new != old:
         add_wf(new, get(old), force=True)
         remove_wf(old)
 def add_wf(name, wf, force=False):
-    names = [n.lower for n in list(__wireframes.keys())]
+    names = list(__wireframes.keys())
     if name.lower() in names and not force:
         raise ValueErrror(f'{name} already exists in wireframes')
     else:
-        stale_npz = True
         __wireframes[name] = wf
-        np.save(f'{npy_dir}/{"".join(name.split())}.npy', wf)
+        np.save(f'{npy_dir}/{name}.npy', wf)
 def getlist():
-    return list(__wireframes.keys())
-def commit():
-    if stale_npz:
-        write_npz(force=True)
-__wireframes = read_npz()
+    out = list(__wireframes.keys())
+    out.sort()
+    return out
+
+__wireframes = read_npy()
 def get(name):
-    npy = f'{npy_dir}/{"".join(name.split())}.npy'
+    npy = f'{npy_dir}/{name}.npy'
     if name not in __wireframes:
         if os.path.exists(npy):
             wf = np.load(npy)
@@ -200,7 +183,6 @@ if __name__ == '__main__':
     import isometric_view as iv
     import tkinter as tk
     from things import Group
-    write_npz()
     
     scene = Group()
     selected_group = Group()

@@ -734,7 +734,6 @@ def new_part_dialog(parent, name=None, onclose=None, copy=False):
             
         part = Part(name_var.get())
         make_thumbnail(part)
-        wireframes.commit()
         
     commit_button = tk.Button(part_frame, text="Commit", command=commit_new_part)
     commit_button.grid(row=31, column=2, sticky='e')
