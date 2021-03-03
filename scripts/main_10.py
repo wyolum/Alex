@@ -109,7 +109,6 @@ def get_view_under_mouse(event):
     else:
         out = None
         delta_xy = None
-    print()
     return out, delta_xy
 
 def OnMouseWheel(event):
