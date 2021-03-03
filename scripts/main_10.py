@@ -139,6 +139,7 @@ def OnMouseButton4_5(event):
                 zoom_in(delta_xyz)
             for i in range(-event.delta):
                 zoom_out(delta_xyz)
+            break
     
 def export(*args):
     scene.export()
@@ -1034,7 +1035,7 @@ partmenu.add_command(label='2-Way Corner', command=createCornerTwoWay)
 partmenu.add_command(label='3-Way Corner', command=createCornerThreeWay)
 partmenu.add_separator()
 partmenu.add_command(label='Part Library', command=parts_db_dialog)
-partmenu.add_command(label='Add New Part', command=new_part_dialog)
+# partmenu.add_command(label='Add New Part', command=new_part_dialog)
 menubar.add_cascade(label="Part", menu=partmenu)
 
 

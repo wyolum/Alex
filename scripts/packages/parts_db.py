@@ -384,6 +384,8 @@ def PartDialog(parent, select_cb):
     def copy(*args):
         name = item_clicked.part.name
         new_part_dialog(parent, name=name, onclose=relist, copy=True)
+    def on_new_part(*args):
+        new_part_dialog(parent, name=None, onclose=relist)
 
     def item_selected(idx, name):
         item_clicked(name)
@@ -423,7 +425,9 @@ def PartDialog(parent, select_cb):
     edit_button = tk.Button(tl, text="Edit", command=edit)
     edit_button.grid(row=2, column=5, sticky='EW')
     copy_button = tk.Button(tl, text="Copy", command=copy)
-    copy_button.grid(row=2, column=6, sticky='W')
+    copy_button.grid(row=2, column=6, sticky='EW')
+    new_button = tk.Button(tl, text="New", command=on_new_part)
+    new_button.grid(row=2, column=7, sticky='W')
     
     item_clicked(names[0])
     return tl
