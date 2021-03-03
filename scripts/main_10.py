@@ -95,7 +95,6 @@ def NumericalEntry(parent, label, onchange, from_=-1e6, to=1e6, values=None, inc
 
 
 def get_view_under_mouse(event):
-
     x, y = event.x, event.y
     winxy = np.array([root.winfo_rootx(), root.winfo_rooty()])
     for i, view in enumerate(views):
@@ -110,6 +109,7 @@ def get_view_under_mouse(event):
     else:
         out = None
         delta_xy = None
+    print()
     return out, delta_xy
 
 def OnMouseWheel(event):
@@ -121,7 +121,26 @@ def OnMouseWheel(event):
         for i in range(-event.delta):
             zoom_out(delta_xyz)
             
-
+def get_widget_under_mouse(root):
+    x,y = root.winfo_pointerxy()
+    widget = root.winfo_containing(x,y)
+    return widget
+    
+def OnMouseButton4_5(event):
+    if event.num == 4:
+        event.delta = 1
+    else:
+        event.delta = -1
+    wid = get_widget_under_mouse(root)
+    for view in views:
+        if view.can == wid:
+            delta_xy = event.x, event.y
+            delta_xyz = view.invert_2d(delta_xy)
+            for i in range(event.delta):
+                zoom_in(delta_xyz)
+            for i in range(-event.delta):
+                zoom_out(delta_xyz)
+    
 def export(*args):
     scene.export()
 def export_cb(*args):
@@ -1110,6 +1129,8 @@ root.bind('<Delete>', delete_selected)
 root.bind('<Control-g>', group_selected)
 root.bind('<Control-u>', ungroup_selected)
 root.bind("<MouseWheel>", OnMouseWheel)
+root.bind("<Button-4>", OnMouseButton4_5)
+root.bind("<Button-5>", OnMouseButton4_5)
 
 root.bind('<Control-z>', util.undo)
 root.bind('<Control-y>', util.redo)
