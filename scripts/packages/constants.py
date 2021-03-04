@@ -14,3 +14,4 @@ stl_dir = os.path.join(package_dir, 'STL')
 npy_dir = os.path.join(package_dir, 'wireframes')
 
 bgcolor = "white"
+hlcolor = '#0432ff' ## Blueberry

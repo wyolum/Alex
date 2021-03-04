@@ -140,29 +140,38 @@ def OnMouseButton4_5(event):
             for i in range(-event.delta):
                 zoom_out(delta_xyz)
             break
-    
+
+def mouse_in_views():
+    return str(get_widget_under_mouse(root)) == '.!canvas'
+
 def export(*args):
     scene.export()
 def export_cb(*args):
     alex_set_titlebar()
 def slew_left(*args):
-    delta = np.array([-10, 0, 0])
-    views.slew(delta)
+    if mouse_in_views():
+        delta = np.array([-10, 0, 0])
+        views.slew(delta)
 def slew_right(*args):
-    delta = np.array([10, 0, 0])
-    views.slew(delta)
+    if mouse_in_views():
+        delta = np.array([10, 0, 0])
+        views.slew(delta)
 def slew_up(*args):
-    delta = np.array([0, 0, 10])
-    views.slew(delta)
+    if mouse_in_views():
+        delta = np.array([0, 0, 10])
+        views.slew(delta)
 def slew_down(*args):
-    delta = np.array([0, 0, -10])
-    views.slew(delta)
+    if mouse_in_views():
+        delta = np.array([0, 0, -10])
+        views.slew(delta)
 def slew_back(*args):
-    delta = np.array([0, 10, 0])
-    views.slew(delta)
+    if mouse_in_views():
+        delta = np.array([0, 10, 0])
+        views.slew(delta)
 def slew_forward(*args):
-    delta = np.array([0, -10, 0])
-    views.slew(delta)
+    if mouse_in_views():
+        delta = np.array([0, -10, 0])
+        views.slew(delta)
 
 def cancel(*args):
     unselect_all()
@@ -786,8 +795,9 @@ def cube_dialog(*args):
             group.append(corner)
         if False:
             pass
-
-        scene.selected.ungroup()
+        
+        unselect_all()
+        #scene.selected.ungroup()
         scene.append(group, select=True)
         on_cancel()
 
@@ -854,6 +864,7 @@ def help_dialog(*args):
         ['i', 'slew_back'],
         ['j', 'slew_forward'],
         ['a', 'toggle_axes'],
+        ['z', 'zoom_fit_selected'],
         ['Control-d', 'dup_selected'],
         ['Control-n', 'createAlex'],
         ['Control-a', 'select_all'],
@@ -1152,11 +1163,11 @@ if args.filename is not None:
 
 root.bind('<Escape>', cancel)
 root.bind('<Right>', slew_right)
+root.bind('<Left>', slew_left)
 root.bind('<Up>', slew_up)
 root.bind('<Down>', slew_down)
 root.bind('i', slew_back)
 root.bind('j', slew_forward)
-root.bind('<Left>', slew_left)
 root.bind('a', toggle_axes)
 root.bind('<Control-d>', dup_selected)
 root.bind('<Control-n>', createAlex)

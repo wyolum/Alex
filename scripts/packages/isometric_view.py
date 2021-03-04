@@ -2,7 +2,7 @@ import numpy as np
 import tkinter as tk
 
 from packages import util
-from packages.constants import bgcolor
+from packages.constants import bgcolor, hlcolor
 
 class Rectangle:
     def __init__(self, c1, c2):
@@ -64,7 +64,7 @@ class IsoView:
         wf2d = wf @ self.B
         hull, hull_i = util.convexhull(wf2d)
         width = max([1, np.min([self.get_scale(), 3])]) * 2
-        self.create_path("highlight", wf[hull_i], 'red', width) ### consider changing
+        self.create_path("highlight", wf[hull_i], hlcolor, width) ### consider changing
 
     def toggle_axes(self):
         self.axes_on = not self.axes_on
