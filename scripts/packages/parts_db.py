@@ -301,6 +301,25 @@ class Part(things.Thing):
         out.append(f'translate([{pos[0]}, {pos[1]}, {pos[2]}])')
         out.append(f'  rotate(a={angle / DEG:.0f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
         out.append(f'  color("{self.color}")scale([{self.dim1}, {self.dim2}, {self.length}])import("{self.stl_fn}");')
+
+        #T = np.zeros((4, 4))
+        #T[:3,:3] = self.orient @ np.diag([self.dim1, self.dim2, self.length])
+        #T[:3,3] = self.pos
+        #T[3,:3] = np.zeros(3)
+        #T[3, 3] = 1
+        #v = self.get_verts()
+        #n = len(v)
+        #wf = np.hstack([wireframes.get('Cube'), np.ones((n, 1))])
+        ##print(T, np.linalg.norm(v - (T @ wf.T)[:3].T))
+        #def format_T(T):
+        #    lines =  [','.join(map(str, l)) for l in T]
+        #    lines = [f'  [{l}]' for l in lines]
+        #    linefeed = '\n'
+        #    linesep = ',\n  '
+        #    return f"[{linefeed}  {linesep.join(lines)}{linefeed}]"
+        #out.append('')
+        #out.append(f'color("{self.color}")')
+        #out.append((f'  multmatrix(m={format_T(T)})import("{self.stl_fn}");'))
         return '\n'.join(out)
 
     def dup(self):
