@@ -6,6 +6,8 @@ __pycache__/
 # C extensions
 *.so
 
+Alex_test.scad
+
 # Distribution / packaging
 .Python
 build/
