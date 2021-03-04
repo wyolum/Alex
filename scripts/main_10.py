@@ -287,7 +287,9 @@ def zoom_fit_selected(ignored=None):
 
         # print(offset_new_top, top.offset, delta_xy)
         views.slew(top.B @ delta_xy + front.B @ [0, delta_z])
-
+def flip_z_selected(ignored=None):
+    selected.mirror([0, 0, 1])
+    selected.render(views, selected=True)
 def select(part):
     scene.selected.append(part)
     part.render(scene.view, selected=True)
@@ -576,9 +578,11 @@ class SideBar:
             self.zoom_in_button = tk.Button(self.zoom_panel, command=zoom_in_lots, text='Zoom In')
             self.zoom_out_button = tk.Button(self.zoom_panel, command=zoom_out_lots, text='Zoom Out')
             self.zoom_fit_button = tk.Button(self.zoom_panel, text="Zoom Fit", command=zoom_fit_selected)
+            self.flip_z_button = tk.Button(self.zoom_panel, text="Mirror Z", command=flip_z_selected)
             self.zoom_in_button.grid(row=1, column=1)
             self.zoom_out_button.grid(row=2, column=1)
             self.zoom_fit_button.grid(row=3, column=1)
+            self.flip_z_button.grid(row=4, column=1)
             
         
 

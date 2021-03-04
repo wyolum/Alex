@@ -54,10 +54,14 @@ class Thing:
         x, y, z -- integer number of right angles (nominally between 0 and 3)
         '''
         self.orient = util.get_right_rotation(roll, pitch, yaw) @ self.orient
+        print('rotate', self.orient)
         return self
 
     def mirror(self, normal):
-        pass
+        return self
+        self.orient = (np.eye(3) - 2 * np.outer(normal, normal)) @ self.orient
+        print('mirror', self.orient)
+        return self
     
     def translate(self, v):
         self.pos = self.pos + v
@@ -103,6 +107,11 @@ class Group(Thing):
             out.append('   ' + str(thing) + ',')
         out.append('])')
         return '\n'.join(out)
+
+    def mirror(self, normal):
+        for thing in self:
+            thing.mirror(normal)
+        return self
 
     def get_verts(self):
         out = []
