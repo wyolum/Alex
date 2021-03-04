@@ -1176,7 +1176,7 @@ root.bind('<Delete>', delete_selected)
 root.bind('<Control-g>', group_selected)
 root.bind('<Control-u>', ungroup_selected)
 root.bind("<MouseWheel>", OnMouseWheel)
-root.bind("z", zoom_fit_selected)
+root.bind("f", zoom_fit_selected)
 root.bind("<Button-4>", OnMouseButton4_5)
 root.bind("<Button-5>", OnMouseButton4_5)
 

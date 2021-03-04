@@ -55,6 +55,9 @@ class Thing:
         '''
         self.orient = util.get_right_rotation(roll, pitch, yaw) @ self.orient
         return self
+
+    def mirror(self, normal):
+        pass
     
     def translate(self, v):
         self.pos = self.pos + v
