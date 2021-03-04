@@ -21,7 +21,7 @@ from packages import things
 from packages import wireframes
 from packages import database
 from packages.database import String, Integer, Float, Table, Column
-from packages.constants import DEG, alex_scad, stl_dir, bgcolor
+from packages.constants import DEG, alex_scad, stl_dir, bgcolor, openscad_path
 from packages.interpolate import interp1d
 from packages.mylistbox import listbox
 from packages import piecewise_linear_cost_model as cm
@@ -459,13 +459,13 @@ def make_thumbnail(part):
     load_parts(csv_fn)
     print(part.name)
     print(part.toscad())
-    f = open('../Alex_test.scad', 'w')
+    f = open(alex_scad, 'w')
     f.write(part.toscad())
     f.close()
     name = ''.join(part.name.split())
     png = f'{stl_dir}/{name}.png'
     print(png)
-    os.system(f"/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD ../Alex_test.scad --imgsize=512,512 -o {png}")
+    os.system(f"{openscad_path} ../Alex_test.scad --imgsize=512,512 -o {png}")
     
 def make_thumbnails():
     import os
