@@ -889,9 +889,9 @@ def alex_save():
         group = things.Group()
         for i in range(len(scene)):
             group.append(scene[i])
+
         with open(filename, 'wb') as f:
-            print(dir(group))
-            pickle.dump(group, f)
+            pickle.dump(group.things, f)
         alex_set_titlebar()
 
 def alex_save_as():

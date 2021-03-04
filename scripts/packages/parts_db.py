@@ -207,6 +207,9 @@ class Interface:
         return False
     
 class Part(things.Thing):
+    def price_function(self, x):
+        return interp1d(self.lengths, self.prices, x)
+        
     def __init__(self, name_or_record, length=1):
         if type(name_or_record) == type(''):
             name = name_or_record
@@ -230,8 +233,8 @@ class Part(things.Thing):
                 
                 self.min_len = np.min(self.lengths)
                 self.max_len = np.max(self.lengths)
-                self.price_function = lambda x: interp1d(self.lengths, self.prices, x)
-            
+                
+                #self.price_function = lambda x: interp1d(self.lengths, self.prices, x)
             self.dim1 = record.Dim1
             self.dim2 = record.Dim2
             if record.Length == 'NA':
