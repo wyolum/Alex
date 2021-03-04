@@ -70,9 +70,6 @@ class IsoView:
         self.axes_on = not self.axes_on
         self.draw_axes()
         
-    def invert_2d(self, v2d):
-        return self.B @ (v2d - self.offset)/self.scale
-    
     def redraw(self):
         self.can.delete('all')
         self.draw_axes()
@@ -91,9 +88,15 @@ class IsoView:
     def get_scale(self):
         return self.scale
 
+    def invert_2d(self, v2d):
+        return self.B @ (v2d - self.offset)/self.scale
+    
+    def project_2d(self, path):
+        return path @ self.B * self.get_scale() + self.offset
+    
     def create_polygon(self, thing, path, color, width):
         tag = str(thing)
-        path = path @ self.B * self.get_scale() + self.offset
+        path = self.project_2d(path)
         id = self.can.create_polygon(*path.ravel(),
                                      tags=(tag,),
                                      fill=color,

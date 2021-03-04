@@ -246,13 +246,38 @@ def rotate_yaw():
     
 def zoom_in(mouse_xyz=None, amt=.9):
     views.set_scale(views.get_scale() / amt, mouse_xyz)
-
 def zoom_out(mouse_xyz=None, amt=.9):
     views.set_scale(views.get_scale() * amt, mouse_xyz)
 def zoom_in_lots():
     zoom_in(amt=.8)
 def zoom_out_lots():
     zoom_out(amt=.8)
+
+def zoom_fit_selected(view=None):
+    verts = scene.selected.get_verts()
+    if len(verts) > 0:
+        if view is None:
+            view = iso
+        window_dims = np.array([view.can.winfo_width(),view.can.winfo_height()])
+        
+        wf2d = view.project_2d(verts)
+        d = np.max(wf2d, axis=0) - np.min(wf2d, axis=0)
+        D = .8 * np.min(window_dims / d)
+
+        #print(window_dims, d, D)
+        views.set_scale(D * view.scale)
+        #wf2d = view.project_2d(verts)
+        #d = np.max(wf2d, axis=0) - np.min(wf2d, axis=0)
+        #D = 1 * np.max(window_dims / d)
+        #print(window_dims, d, D)
+        #here
+        wf2d = view.project_2d(verts)
+        
+        m3 = (np.max(verts, axis=0) + np.min(verts, axis=0)) / 2
+        c2 = window_dims / 2
+        offset_new = c2 - m3 @ view.B * view.scale
+        delta = offset_new - view.offset
+        views.slew(view.B @ delta)
 
 def select(part):
     scene.selected.append(part)
@@ -525,28 +550,35 @@ class SideBar:
         self.new_part_button = tk.Button(self.frame, command=createAlex, text='New Alex')
         self.new_part_button.grid(row=10, column=1)
 
-        self.export_button = tk.Button(self.frame, command=export, text='Export')
+        #self.export_button = tk.Button(self.frame, command=export, text='Export')
         #self.export_button.grid(row=13, column=1)
-        if args.zoom_buttons:
-            self.zoom_in_button = tk.Button(self.frame, command=zoom_in_lots, text='Zoom In')
-            self.zoom_out_button = tk.Button(self.frame, command=zoom_out_lots, text='Zoom Out')
-            self.zoom_in_button.grid(row=14, column=1)
-            self.zoom_out_button.grid(row=15, column=1)
         self.step_frame, self.step_entry, self.step_var = NumericalEntry(self.frame,
                                                                          'STEP:',
                                                                          self.step_change,
                                                                          from_=1,
                                                                          increment=1,
                                                                          var_factory=tk.IntVar)
-        self.step_frame.grid(row=16, column=1, pady=10)
+        self.step_frame.grid(row=11, column=1, pady=10)
         self.step_var.set(5)
+        if args.zoom_buttons:
+            self.zoom_panel = tk.Frame(self.frame)
+            self.zoom_panel.grid(row=12, column=1)
+            
+            self.zoom_in_button = tk.Button(self.zoom_panel, command=zoom_in_lots, text='Zoom In')
+            self.zoom_out_button = tk.Button(self.zoom_panel, command=zoom_out_lots, text='Zoom Out')
+            self.zoom_fit_button = tk.Button(self.zoom_panel, text="Zoom Fit", command=zoom_fit_selected)
+            self.zoom_in_button.grid(row=1, column=1)
+            self.zoom_out_button.grid(row=2, column=1)
+            self.zoom_fit_button.grid(row=3, column=1)
+            
+        
 
         ## why does this not take its own column
         ttk.Separator(self.frame, orient=tk.HORIZONTAL).grid(row=17, column=1, rowspan=10, sticky='ew')
         
         self.ap = AlignmentPanel(self.frame)
         self.ap.grid(row=18, column=1, pady=50)
-        
+
 
     def step_change(self, id, text, mode):
         try:
@@ -857,9 +889,9 @@ def alex_save():
         group = things.Group()
         for i in range(len(scene)):
             group.append(scene[i])
-        f = open(filename, 'wb')
-        pickle.dump(group, f)
-        f.close()
+        with open(filename, 'wb') as f:
+            print(dir(group))
+            pickle.dump(group, f)
         alex_set_titlebar()
 
 def alex_save_as():
@@ -1096,10 +1128,14 @@ phi =  35 * DEG
 ihat, jhat, khat = np.eye(3)
 
 step_var = sidebar.step_var
-top = iv.IsoView(topcan, ihat , -jhat , [CANVAS_W/2, CANVAS_H/2], step_var, shift_key=shift_key, control_key=control_key, scale=scale)
-side = iv.IsoView(sidecan, jhat , -khat , [CANVAS_W/2, CANVAS_H - 50], step_var, shift_key=shift_key, control_key=control_key, scale=scale)
-front = iv.IsoView(frontcan, ihat , -khat, [CANVAS_W/2, CANVAS_H - 50], step_var, shift_key=shift_key, control_key=control_key, scale=scale)
-iso = iv.from_theta_phi(theta, phi, isocan, [CANVAS_W/2, CANVAS_H - 50], step_var, shift_key=shift_key, control_key=control_key, scale=scale)
+top = iv.IsoView(topcan, ihat , -jhat , [CANVAS_W/2, CANVAS_H/2], step_var, shift_key=shift_key,
+                 control_key=control_key, scale=scale)
+side = iv.IsoView(sidecan, jhat , -khat , [CANVAS_W/2, CANVAS_H - 50], step_var, shift_key=shift_key,
+                  control_key=control_key, scale=scale)
+front = iv.IsoView(frontcan, ihat , -khat, [CANVAS_W/2, CANVAS_H - 50], step_var, shift_key=shift_key,
+                   control_key=control_key, scale=scale)
+iso = iv.from_theta_phi(theta, phi, isocan, [CANVAS_W/2, CANVAS_H - 50], step_var, shift_key=shift_key,
+                        control_key=control_key, scale=scale)
 views = iv.Views([top, side, front, iso])
 
 
