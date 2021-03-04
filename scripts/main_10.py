@@ -253,31 +253,31 @@ def zoom_in_lots():
 def zoom_out_lots():
     zoom_out(amt=.8)
 
-def zoom_fit_selected(view=None):
+def zoom_fit_selected(ignored=None):
     verts = scene.selected.get_verts()
     if len(verts) > 0:
-        if view is None:
-            view = iso
-        window_dims = np.array([view.can.winfo_width(),view.can.winfo_height()])
+        window_dims = np.array([top.can.winfo_width(),
+                                top.can.winfo_height(),
+                                front.can.winfo_height()])
         
-        wf2d = view.project_2d(verts)
-        d = np.max(wf2d, axis=0) - np.min(wf2d, axis=0)
-        D = .8 * np.min(window_dims / d)
+        wfxy = top.project_2d(verts)
+        wfz = front.project_2d(verts)[:,1]
+        wfxyz = np.column_stack([wfxy, wfz])
 
-        #print(window_dims, d, D)
-        views.set_scale(D * view.scale)
-        #wf2d = view.project_2d(verts)
-        #d = np.max(wf2d, axis=0) - np.min(wf2d, axis=0)
-        #D = 1 * np.max(window_dims / d)
-        #print(window_dims, d, D)
-        #here
-        wf2d = view.project_2d(verts)
+        d = np.max(wfxyz, axis=0) - np.min(wfxyz, axis=0)
+        D = .8 * np.min(window_dims / d)
+        views.set_scale(D * top.scale)
         
         m3 = (np.max(verts, axis=0) + np.min(verts, axis=0)) / 2
-        c2 = window_dims / 2
-        offset_new = c2 - m3 @ view.B * view.scale
-        delta = offset_new - view.offset
-        views.slew(view.B @ delta)
+        c2_top = window_dims[:2] / 2
+        c2_front = window_dims[1::2] / 2
+        offset_new_top = c2_top - m3 @ top.B * top.scale
+        offset_new_front = c2_front - m3 @ front.B * front.scale
+        delta_xy = offset_new_top - top.offset
+        delta_z = (offset_new_front - front.offset)[1]
+
+        # print(offset_new_top, top.offset, delta_xy)
+        views.slew(top.B @ delta_xy + front.B @ [0, delta_z])
 
 def select(part):
     scene.selected.append(part)
@@ -1150,6 +1150,16 @@ if args.filename is not None:
     alex_open(args.filename)
 
 
+def click(event):
+    if control_key.pressed():
+        wid = get_widget_under_mouse(root)
+        view = None
+        for v in views:
+            if v.can == wid:
+                view = v
+                break
+        zoom_fit_selected(view)
+    
 root.bind('<Escape>', cancel)
 root.bind('<Right>', slew_right)
 root.bind('<Up>', slew_up)
@@ -1165,6 +1175,7 @@ root.bind('<Delete>', delete_selected)
 root.bind('<Control-g>', group_selected)
 root.bind('<Control-u>', ungroup_selected)
 root.bind("<MouseWheel>", OnMouseWheel)
+root.bind("<Button-1>", click)
 root.bind("<Button-4>", OnMouseButton4_5)
 root.bind("<Button-5>", OnMouseButton4_5)
 
