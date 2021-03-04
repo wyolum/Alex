@@ -265,7 +265,7 @@ def zoom_fit_selected(ignored=None):
         wfxyz = np.column_stack([wfxy, wfz])
 
         d = np.max(wfxyz, axis=0) - np.min(wfxyz, axis=0)
-        D = .8 * np.min(window_dims / d)
+        D = .75 * np.min(window_dims / d)
         views.set_scale(D * top.scale)
         
         m3 = (np.max(verts, axis=0) + np.min(verts, axis=0)) / 2
@@ -1150,16 +1150,6 @@ if args.filename is not None:
     alex_open(args.filename)
 
 
-def click(event):
-    if control_key.pressed():
-        wid = get_widget_under_mouse(root)
-        view = None
-        for v in views:
-            if v.can == wid:
-                view = v
-                break
-        zoom_fit_selected(view)
-    
 root.bind('<Escape>', cancel)
 root.bind('<Right>', slew_right)
 root.bind('<Up>', slew_up)
@@ -1175,7 +1165,7 @@ root.bind('<Delete>', delete_selected)
 root.bind('<Control-g>', group_selected)
 root.bind('<Control-u>', ungroup_selected)
 root.bind("<MouseWheel>", OnMouseWheel)
-root.bind("<Button-1>", click)
+root.bind("z", zoom_fit_selected)
 root.bind("<Button-4>", OnMouseButton4_5)
 root.bind("<Button-5>", OnMouseButton4_5)
 

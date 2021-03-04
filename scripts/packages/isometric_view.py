@@ -134,8 +134,6 @@ class IsoView:
     def onpress(self, event):
         if not hasattr(self, 'scene'):
             return
-        if self.control_key.pressed():
-            return
         self.click_pt = np.array([event.x, event.y])
         self.start = self.B @ self.click_pt / self.scale
         self.last = self.start
