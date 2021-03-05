@@ -84,7 +84,8 @@ def NumericalEntry(parent, label, onchange, from_=-1e6, to=1e6, values=None, inc
         else:
             entry = tk.Spinbox(frame, values=values, textvariable=var, increment=increment, width=5)
         
-    tk.Label(frame, text=label).grid(row=1, column=1)
+    label = tk.Label(frame, text=label)
+    label.grid(row=1, column=1)
     entry.grid(row=1, column=2)
     return frame, entry, var
 
@@ -175,6 +176,9 @@ def slew_forward(*args):
 
 def cancel(*args):
     unselect_all()
+    sidebar.new_part_button.focus_set()
+    #iso_button.focus_set()
+    #isocan.focus_set()
     
 def toggle_axes(*args):
     views.toggle_axes()
@@ -1158,7 +1162,8 @@ tk.Button(root, text="Front", image=rt_angle_pitch_image, compound=tk.RIGHT,
 
 isocan = tk.Canvas(root, width=CANVAS_W, height=CANVAS_H)
 isocan.grid(row=2, column=5);
-tk.Button(root, text="Iso", bg=bgcolor).grid(row=2, column=5, sticky="NW")
+iso_button = tk.Button(root, text="Iso", bg=bgcolor)
+iso_button.grid(row=2, column=5, sticky="NW")
 
 scale = 1.
 theta = 240 * DEG
