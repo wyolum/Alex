@@ -1,3 +1,5 @@
+import glob
+import sys
 import os
 from distutils import spawn
 
@@ -16,7 +18,16 @@ npy_dir = os.path.join(package_dir, 'wireframes')
 
 
 openscad_path = spawn.find_executable('openscad')
-
+if openscad_path is None:
+    if sys.platform == 'darwin':
+        for root, dirs, files in os.walk('/Applications/OpenSCAD.app', topdown = False):
+            for file in files:
+                if file.lower() == "openscad":
+                    openscad_path = f'{root}/{file}'
+                    break
+        else:
+            openscad_path = '/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD'
+# print('openscad_path', openscad_path)
 bgcolor = "white"
 hlcolor = '#0432ff' ## Blueberry
 

@@ -465,7 +465,7 @@ def make_thumbnail(part):
     name = ''.join(part.name.split())
     png = f'{stl_dir}/{name}.png'
     print(png)
-    os.system(f"{openscad_path} ../Alex_test.scad --imgsize=512,512 -o {png}")
+    os.system(f"{openscad_path} {alex_scad} --imgsize=512,512 -o {png}")
     
 def make_thumbnails():
     import os

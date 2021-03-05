@@ -348,10 +348,12 @@ def createAlex(*args):
     d2 = np.max([20, sidebar.dim2_var.get()])
 
     x = sidebar.x_var.get()
-    y = sidebar.x_var.get()
-    z = sidebar.x_var.get()
+    y = sidebar.y_var.get()
+    z = sidebar.z_var.get()
     part = Alex(length, d1, d2)
+    part.translate([x, y, z])
     scene.append(part, select=True)
+    print(part.pos)
     
 def noop(*args, **kw):
     pass
@@ -467,7 +469,25 @@ def highlight_last_selected(event):
 
 def unhighlight_last_selected(event):
     scene.view.erase("highlight")
+
+def TranslatePanel(parent):
+    frame = tk.Frame(parent)
+    def translate():
+        x = x_var.get()
+        y = y_var.get()
+        z = z_var.get()
+        selected.translate([x, y, z])
+        selected.render(views, selected=True)
     
+    x_frame, x_entry, x_var = NumericalEntry(frame, 'x:', noop, increment=1, var_factory=tk.IntVar)
+    y_frame, y_entry, y_var = NumericalEntry(frame, 'y:', noop, increment=1, var_factory=tk.IntVar)
+    z_frame, z_entry, z_var = NumericalEntry(frame, 'z:', noop, increment=1, var_factory=tk.IntVar)
+    x_frame.grid(row=1, column=1)
+    y_frame.grid(row=2, column=1)
+    z_frame.grid(row=3, column=1)
+    translate_button = tk.Button(frame, text="Translate!", command=translate).grid(row=4, column=1)
+    return frame
+
 def AlignmentPanel(parent):
     frame = tk.Frame(parent)
     frame.bind('<Enter>', highlight_last_selected)
@@ -526,23 +546,26 @@ class SideBar:
         self.frame = tk.Frame(self.parent)
         self.frame.grid(row=1, column=1, rowspan=10, sticky="NW")
 
+        self.new_part_button = tk.Button(self.frame, command=createAlex, text='New Alex')
+        self.new_part_button.grid(row=1, column=1)
+
         self.length_frame, self.length_entry, self.length_var = NumericalEntry(self.frame,
                                                                                'L:',
                                                                                self.length_change,
                                                                                var_factory=tk.IntVar)
-        self.length_frame.grid(row=1, column=1)
+        self.length_frame.grid(row=2, column=1)
         self.dim1_frame, self.dim1_entry, self.dim1_var = NumericalEntry(self.frame,
                                                                          'D1:',
                                                                          self.dim1_change,
                                                                          values=(20, 30, 40),
                                                                          var_factory=tk.IntVar)
-        self.dim1_frame.grid(row=2, column=1)
+        self.dim1_frame.grid(row=3, column=1)
         self.dim2_frame, self.dim2_entry, self.dim2_var = NumericalEntry(self.frame,
                                                                          'D2:',
                                                                          self.dim2_change,
                                                                          values=(20, 30, 40, 60, 80),
                                                                          var_factory=tk.IntVar)
-        self.dim2_frame.grid(row=3, column=1)
+        self.dim2_frame.grid(row=4, column=1)
 
         self.length_var.set(100)
         self.dim1_var.set(20)
@@ -557,10 +580,10 @@ class SideBar:
         self.z_frame, self.z_entry, self.z_var = NumericalEntry(self.frame,
                                                                 'z:',
                                                                 self.z_change)
+        #self.x_frame.grid(row=4, column=1)
+        #self.y_frame.grid(row=5, column=1)
+        #self.z_frame.grid(row=6, column=1)
         
-        self.new_part_button = tk.Button(self.frame, command=createAlex, text='New Alex')
-        self.new_part_button.grid(row=10, column=1)
-
         #self.export_button = tk.Button(self.frame, command=export, text='Export')
         #self.export_button.grid(row=13, column=1)
         self.step_frame, self.step_entry, self.step_var = NumericalEntry(self.frame,
@@ -588,10 +611,12 @@ class SideBar:
 
         ## why does this not take its own column
         ttk.Separator(self.frame, orient=tk.HORIZONTAL).grid(row=17, column=1, rowspan=10, sticky='ew')
-        
+
+        self.translate_panel = TranslatePanel(self.frame)
+        self.translate_panel.grid(row=17, column=1, pady=5)
         self.ap = AlignmentPanel(self.frame)
         self.ap.grid(row=18, column=1, pady=50)
-
+        
 
     def step_change(self, id, text, mode):
         try:
@@ -671,7 +696,7 @@ class SideBar:
                 self.x_entry.config(bg=bgcolor)
 
                 selected.translate([x - selected.pos[0], 0, 0])
-                selected.render(views)
+                selected.render(views, selected=True)
         except:
             self.x_entry.config(bg='red')
 
@@ -681,9 +706,8 @@ class SideBar:
                 y = self.y_var.get()
                 self.y_entry.config(bg=bgcolor)
 
-                for thing in selected:
-                    thing.translate([0, y - thing.pos[1], 0])
-                    thing.render(views)
+                selected.translate([0, y - selected.pos[1], 0])
+                selected.render(views, selected=True)
         except Exception as e:
             self.y_entry.config(bg='red')
 
@@ -693,10 +717,10 @@ class SideBar:
                 z = self.z_var.get()
                 self.z_entry.config(bg=bgcolor)
 
-                for thing in selected:
-                    thing.translate([0, 0, z - thing.pos[2]])
-                    thing.render(views)
+                selected.translate([0, 0, z - selected.pos[2]])
+                selected.render(views, selected=True)
         except:
+            raise
             self.z_entry.config(bg='red')
 
 def cube_dialog(*args):
@@ -1143,14 +1167,14 @@ phi =  35 * DEG
 ihat, jhat, khat = np.eye(3)
 
 step_var = sidebar.step_var
-top = iv.IsoView(topcan, ihat , -jhat , [CANVAS_W/2, CANVAS_H/2], step_var, shift_key=shift_key,
-                 control_key=control_key, scale=scale)
-side = iv.IsoView(sidecan, jhat , -khat , [CANVAS_W/2, CANVAS_H - 50], step_var, shift_key=shift_key,
-                  control_key=control_key, scale=scale)
-front = iv.IsoView(frontcan, ihat , -khat, [CANVAS_W/2, CANVAS_H - 50], step_var, shift_key=shift_key,
-                   control_key=control_key, scale=scale)
-iso = iv.from_theta_phi(theta, phi, isocan, [CANVAS_W/2, CANVAS_H - 50], step_var, shift_key=shift_key,
-                        control_key=control_key, scale=scale)
+top = iv.IsoView(topcan, ihat , -jhat , [CANVAS_W/2, CANVAS_H/2], step_var, sidebar.x_var, sidebar.y_var, sidebar.z_var,
+                 shift_key=shift_key, control_key=control_key, scale=scale)
+side = iv.IsoView(sidecan, jhat , -khat , [CANVAS_W/2, CANVAS_H - 50], step_var, sidebar.x_var, sidebar.y_var, sidebar.z_var,
+                  shift_key=shift_key, control_key=control_key, scale=scale)
+front = iv.IsoView(frontcan, ihat , -khat, [CANVAS_W/2, CANVAS_H - 50], step_var, sidebar.x_var, sidebar.y_var, sidebar.z_var,
+                   shift_key=shift_key, control_key=control_key, scale=scale)
+iso = iv.from_theta_phi(theta, phi, isocan, [CANVAS_W/2, CANVAS_H - 50], step_var, sidebar.x_var, sidebar.y_var, sidebar.z_var,
+                        shift_key=shift_key, control_key=control_key, scale=scale)
 views = iv.Views([top, side, front, iso])
 
 
@@ -1187,4 +1211,6 @@ root.bind("<Button-5>", OnMouseButton4_5)
 root.bind('<Control-z>', util.undo)
 root.bind('<Control-y>', util.redo)
 export()
+icon_image = ImageTk.PhotoImage(Image.open('../resources/icon.png'))
+root.iconphoto(False, icon_image)
 root.mainloop()

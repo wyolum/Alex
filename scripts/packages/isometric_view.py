@@ -28,7 +28,7 @@ def noop(*args, **kw):
     pass
 
 class IsoView:
-    def __init__(self, can, ihat, jhat, offset, step_var,
+    def __init__(self, can, ihat, jhat, offset, step_var, x_var, y_var, z_var,
                  shift_key=None, control_key=None, scale=1, bgcolor=bgcolor):
         self.can = can
         self.can.config(bg=bgcolor)
@@ -39,6 +39,9 @@ class IsoView:
         self.scale=scale
         self.offset = np.array(offset)
         self.step_var = step_var
+        self.x_var = x_var
+        self.y_var = y_var
+        self.z_var = z_var
         self.can.bind('<ButtonPress-1>', self.onpress)
         self.can.bind('<ButtonRelease-1>', self.onrelease)
         self.can.bind('<Motion>', self.ondrag)
@@ -247,6 +250,10 @@ class IsoView:
                     self.scene.selected.append(thing)
                     thing.render(self.scene.view, selected=True)
         self.scene.export()
+        if len(self.scene.selected) > 0:
+            self.x_var.set(self.scene.selected.pos[0])
+            self.y_var.set(self.scene.selected.pos[1])
+            self.z_var.set(self.scene.selected.pos[2])
         
     def draw_axes(self):
         if self.axes_on:
@@ -328,7 +335,8 @@ class Views:
     def highlight_part(self, *args, **kw):
         self.apply('highlight_part', *args, **kw)
         
-def from_theta_phi(theta, phi, can, offset, step_var, scale, shift_key=None, control_key=None, bgcolor=bgcolor):
+def from_theta_phi(theta, phi, can, offset, step_var, x_var, y_var, z_var,
+                   scale, shift_key=None, control_key=None, bgcolor=bgcolor):
     pov = -np.array([np.sin(phi),
                      0,
                     np.cos(phi)])
@@ -343,7 +351,8 @@ def from_theta_phi(theta, phi, can, offset, step_var, scale, shift_key=None, con
     iso_x = np.cross(pov, iso_z)
     iso_y = np.cross(iso_z, iso_x)
 
-    return IsoView(can, -iso_x, iso_y, offset, step_var, shift_key=shift_key, control_key=control_key, scale=scale, bgcolor=bgcolor)
+    return IsoView(can, -iso_x, iso_y, offset, step_var, x_var, y_var, z_var,
+                   shift_key=shift_key, control_key=control_key, scale=scale, bgcolor=bgcolor)
     
 def get_view(parent, theta, phi, offset, scale=1):
     

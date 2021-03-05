@@ -7,16 +7,28 @@ def listbox(parent, items, item_clicked, item_selected, n_row=40):
         idx = lb.curselection()
         if idx:
             out = lb.get(idx)
-            label['text'] = out
+            search.delete(0, tk.END)
+            search.insert(0, out)
             item_clicked(out)
     def myselect(event):
         myclick(event)
         idx = lb.curselection()
         out = lb.get(idx)
         item_selected(out)
+    def search_changed(*args):
+        search_str = search_var.get()
+        i = 0
+        lb.delete(0, tk.END)
+        for item in items:
+            if search_str.lower() in item.lower():
+                lb.insert(i, item)
+                i += 1
+        
     frame = tk.Frame(parent)
-    label = tk.Label(frame)
-    label.grid(row=1, column=0)
+    search_var = tk.StringVar()
+    #search_var.trace('w', search_changed)
+    search = tk.Entry(frame, width=20, textvariable=search_var)
+    search.grid(row=1, column=0)
     
     var = tk.StringVar(value=items)
     lb = tk.Listbox(frame, listvariable=var, selectmode='single', height=n_row)

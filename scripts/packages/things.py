@@ -54,13 +54,11 @@ class Thing:
         x, y, z -- integer number of right angles (nominally between 0 and 3)
         '''
         self.orient = util.get_right_rotation(roll, pitch, yaw) @ self.orient
-        print('rotate', self.orient)
         return self
 
     def mirror(self, normal):
         return self
         self.orient = (np.eye(3) - 2 * np.outer(normal, normal)) @ self.orient
-        print('mirror', self.orient)
         return self
     
     def translate(self, v):
@@ -92,6 +90,7 @@ class Group(Thing):
         self.things = things
         if len(things) > 0:
             self.pos = np.mean(self.get_verts(), axis=0)
+            # self.pos[2] = np.min(self.get_verts[:,2])
     def __len__(self):
         return len(self.things)
     
