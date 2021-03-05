@@ -373,8 +373,8 @@ def get_view(parent, theta, phi, offset, scale=1):
     can = tk.Canvas(parent, width=400, height=400)
     can.grid()
 
-    class step_constant:
+    class constant:
         def get(self):
             return 1
-    view = IsoView(can, -iso_x, iso_y, offset, step_constant, scale=scale)
+    view = IsoView(can, -iso_x, iso_y, offset, constant, constant, constant, constant, scale=scale)
     return view
