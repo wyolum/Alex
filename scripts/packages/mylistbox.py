@@ -27,11 +27,11 @@ def listbox(parent, items, item_clicked, item_selected, n_row=40):
     frame = tk.Frame(parent)
     search_var = tk.StringVar()
     #search_var.trace('w', search_changed)
-    search = tk.Entry(frame, width=20, textvariable=search_var)
+    search = tk.Entry(frame, width=40, textvariable=search_var)
     search.grid(row=1, column=0)
     
     var = tk.StringVar(value=items)
-    lb = tk.Listbox(frame, listvariable=var, selectmode='single', height=n_row)
+    lb = tk.Listbox(frame, listvariable=var, selectmode='single', height=n_row, width=40)
     lb.grid(row=2, column=0)
     lb.bind('<<ListboxSelect>>', myclick)
     lb.bind('<Double-Button-1>', myselect)

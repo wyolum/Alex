@@ -14,11 +14,6 @@ scene is a group that has a view (or grouped views) and a "selected" subgroup
 
 ###
 # TODO
-# -- update titlebar on start
-# -- length bug
-# -- add xyz pos entries for non-grouped items
-# -- add costing framework for parts_db
-# -- add in necessary stl code directly
 # -- add tool tips
 '''
 
@@ -351,11 +346,11 @@ def createAlex(*args):
     d1 = np.max([20, sidebar.dim1_var.get()])
     d2 = np.max([20, sidebar.dim2_var.get()])
 
-    x = sidebar.x_var.get()
-    y = sidebar.y_var.get()
-    z = sidebar.z_var.get()
+    #x = sidebar.x_var.get()
+    #y = sidebar.y_var.get()
+    #z = sidebar.z_var.get()
     part = Alex(length, d1, d2)
-    part.translate([x, y, z])
+    #part.translate([x, y, z])
     scene.append(part, select=True)
     print(part.pos)
     
@@ -476,6 +471,7 @@ def unhighlight_last_selected(event):
 
 def TranslatePanel(parent):
     frame = tk.Frame(parent)
+    @util.undoable
     def translate():
         x = x_var.get()
         y = y_var.get()
@@ -673,7 +669,7 @@ class SideBar:
         except Exception as e:
             self.dim1_var.set(self.last_dim1)
             #self.dim1_entry.config(bg='red')
-            raise
+            #raise
     def dim2_change(self, id, text, mode):
         try:
             if hasattr(self, 'dim2_var'):
@@ -887,27 +883,6 @@ def help_dialog(*args):
     tl = tk.Toplevel(root)
     frame = tk.Frame(tl)
 
-    hotkeys = [
-        ['Escape', 'cancel'],
-        ['Left', 'slew_left'],
-        ['Right', 'slew_right'],
-        ['Up', 'slew_up'],
-        ['Down', 'slew_down'],
-        ['i', 'slew_back'],
-        ['j', 'slew_forward'],
-        ['a', 'toggle_axes'],
-        ['z', 'zoom_fit_selected'],
-        ['Control-d', 'dup_selected'],
-        ['Control-n', 'createAlex'],
-        ['Control-a', 'select_all'],
-        ['Delete', 'delete_selected'],
-        ['Control-g', 'group_selected'],
-        ['Control-u', 'ungroup_selected'],
-        ['MouseWheel', 'Zoom'],
-        ['Control-z', 'undo'],
-        ['Control-y', 'redo'],
-    ]
-
 
     row = 1
     for hotkey in hotkeys:
@@ -1085,6 +1060,33 @@ def alex_open_dialog():
 ################################################################################
 
 root = tk.Tk()
+
+hotkeys = [
+    ('<Escape>', cancel),
+    ('<Right>', slew_right),
+    ('<Left>', slew_left),
+    ('<Up>', slew_up),
+    ('<Down>', slew_down),
+    ('i', slew_back),
+    ('j', slew_forward),
+    ('a', toggle_axes),
+    ('<Control-d>', dup_selected),
+    ('<Control-n>', createAlex),
+    ('<Control-a>', select_all),
+    ('<Delete>', delete_selected),
+    ('<Control-g>', group_selected),
+    ('<Control-u>', ungroup_selected),
+    ("<MouseWheel>", OnMouseWheel),
+    ("f", zoom_fit_selected),
+    ("<Button-4>", OnMouseButton4_5),
+    ("<Button-5>", OnMouseButton4_5),
+    ('<Control-z>', util.undo),
+    ('<Control-y>', util.redo),
+]
+for event, command in hotkeys:
+    root.bind(event, command)
+
+
 key_tracker = util.KeyboardTracker(root)
 shift_key = util.ShiftTracker(key_tracker)
 control_key = util.ControlTracker(key_tracker)
@@ -1119,8 +1121,9 @@ wizardmenu.add_command(label="Cube", command=cube_dialog)
 menubar.add_cascade(label="Wizard", menu=wizardmenu)
 
 helpmenu = tk.Menu(menubar, tearoff=0)
-helpmenu.add_command(label="Hot keys", command=help_dialog)
-menubar.add_cascade(label="Help", menu=helpmenu)
+for event, command in hotkeys:
+    helpmenu.add_command(label=f'{str(command).split()[1]} {event}', command=command)
+menubar.add_cascade(label="Hotkeys", menu=helpmenu)
 
 
 root.config(menu=menubar)
@@ -1194,27 +1197,27 @@ if args.filename is not None:
     alex_open(args.filename)
 
 
-root.bind('<Escape>', cancel)
-root.bind('<Right>', slew_right)
-root.bind('<Left>', slew_left)
-root.bind('<Up>', slew_up)
-root.bind('<Down>', slew_down)
-root.bind('i', slew_back)
-root.bind('j', slew_forward)
-root.bind('a', toggle_axes)
-root.bind('<Control-d>', dup_selected)
-root.bind('<Control-n>', createAlex)
-root.bind('<Control-a>', select_all)
-root.bind('<Delete>', delete_selected)
-root.bind('<Control-g>', group_selected)
-root.bind('<Control-u>', ungroup_selected)
-root.bind("<MouseWheel>", OnMouseWheel)
-root.bind("f", zoom_fit_selected)
-root.bind("<Button-4>", OnMouseButton4_5)
-root.bind("<Button-5>", OnMouseButton4_5)
-
-root.bind('<Control-z>', util.undo)
-root.bind('<Control-y>', util.redo)
+if False:
+    root.bind('<Escape>', cancel)
+    root.bind('<Right>', slew_right)
+    root.bind('<Left>', slew_left)
+    root.bind('<Up>', slew_up)
+    root.bind('<Down>', slew_down)
+    root.bind('i', slew_back)
+    root.bind('j', slew_forward)
+    root.bind('a', toggle_axes)
+    root.bind('<Control-d>', dup_selected)
+    root.bind('<Control-n>', createAlex)
+    root.bind('<Control-a>', select_all)
+    root.bind('<Delete>', delete_selected)
+    root.bind('<Control-g>', group_selected)
+    root.bind('<Control-u>', ungroup_selected)
+    root.bind("<MouseWheel>", OnMouseWheel)
+    root.bind("f", zoom_fit_selected)
+    root.bind("<Button-4>", OnMouseButton4_5)
+    root.bind("<Button-5>", OnMouseButton4_5)
+    root.bind('<Control-z>', util.undo)
+    root.bind('<Control-y>', util.redo)
 export()
 icon_image = ImageTk.PhotoImage(Image.open('../resources/icon.png'))
 root.iconphoto(False, icon_image)

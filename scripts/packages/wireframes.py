@@ -6,6 +6,7 @@ import sys
 if '.' not in sys.path:
     sys.path.append('.')
 from packages.constants import npy_dir
+from packages.stl_to_wireframe import from_stl
 
 import sys
 if '.' not in sys.path:
@@ -139,7 +140,7 @@ def read_npy():
         out[name] = np.load(fn)
     return out
 
-def from_stl(stl_fn):
+def from_stl_to_bounding_box(stl_fn):
     wf = things.STL(stl_fn).get_wireframe()
     mx = np.max(wf, axis=0)
     mn = np.min(wf, axis=0)
@@ -215,15 +216,18 @@ if __name__ == '__main__':
     class Unit:
         def get(self):
             return 1
-    view1 = iv.IsoView(can1, -iso_x, iso_y, [200, 300], Unit())
-    view2 = iv.IsoView(can2, [1, 0, 0], [0, 1, 0], [200, 200], Unit())
+    unit = Unit()
+    view1 = iv.IsoView(can1, -iso_x, iso_y, [200, 300], unit, unit, unit, unit)
+    view2 = iv.IsoView(can2, [1, 0, 0], [0, 1, 0], [200, 200], unit, unit, unit, unit)
 
     views = iv.Views([view1, view2])
-    draw_wireframe(cube, 100, views)
-    draw_wireframe(prism, 100, views)
-    draw_wireframe(cone, 100, views)
-    draw_wireframe(cylinder, 100, views)
-    #root.mainloop()
+    print(from_stl('packages/STL/CornerTwoWay.stl'))
+    draw_wireframe(from_stl('packages/STL/2020 Angle Bracket.stl'), 100, views)
+    #draw_wireframe(cube, 100, views)
+    #draw_wireframe(prism, 100, views)
+    #draw_wireframe(cone, 100, views)
+    #draw_wireframe(cylinder, 100, views)
+    root.mainloop()
 
     #add_wf('Cone', cone, force=True)
     #add_wf('Cylinder', cylinder, force=True)

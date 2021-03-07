@@ -293,6 +293,12 @@ def convexhull(points):
     return induces of convex hull
     '''
     points = points + np.random.uniform(-.0001, .0001, np.shape(points))
+    nan_i = np.where(np.isnan(np.sum(points, axis=1)))[0]
+    non_nan_i = np.logical_not(np.isnan(np.sum(points, axis=1)))
+    midpoint = (np.max(points[non_nan_i], axis=0) + np.min(points[non_nan_i], axis=0)) / 2
+    for i in nan_i:
+        points[i] = midpoint
+
     unique_i = dedup(points)
     p = points[unique_i]
     n = len(p)
@@ -302,6 +308,7 @@ def convexhull(points):
     sorted = np.argsort(theta)
     hull = [p[sorted[0]]]
     out = [unique_i[sorted[0]]]
+    
     idx = np.arange(3)
     def getv(p3):
         return np.linalg.det(np.diff(p3, axis=0))

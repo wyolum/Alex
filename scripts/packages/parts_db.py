@@ -248,6 +248,7 @@ class Part(things.Thing):
             self.wireframe = wf * [self.dim1, self.dim2, self.length]
             self.stl_fn = os.path.join(stl_dir, record.STL_filename)
             self.color = record.Color
+            self.url = record.URL
             self.record = record
             
             self.interfaces = []
@@ -334,7 +335,7 @@ class Part(things.Thing):
             out = self.price
         return out
     def tobom(self):
-        return [f'{self.name},{self.dim1},{self.dim2},{self.length},{self.cost()}']
+        return [f'{self.name},{self.dim1},{self.dim2},{self.length},${self.cost():.2f},{self.url}']
 
 imgs = [None]
 def url_shortener(url, max_len=40):

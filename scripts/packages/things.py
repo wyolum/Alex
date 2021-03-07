@@ -134,20 +134,19 @@ class Group(Thing):
         for wf in wfs:
             out[i:i+len(wf)] = wf
             i += len(wf)
-        x = np.max(out, axis=0)
-        n = np.min(out, axis=0)
-        return np.array([[n[0], n[1], n[2]],
-                         [n[0], n[1], x[2]],
-                         [n[0], x[1], x[2]],
-                         [n[0], x[1], n[2]],
-                         [n[0], n[1], n[2]],
-                         [x[0], n[1], n[2]],
-                         [x[0], n[1], x[2]],
-                         [x[0], x[1], x[2]],
-                         [x[0], x[1], n[2]],
-                         [x[0], n[1], n[2]]])
-                         
-                         
+        non_nan = np.logical_not(np.isnan(np.sum(out, axis=1)))
+        x = np.max(out[non_nan], axis=0)
+        n = np.min(out[non_nan], axis=0)
+        out = np.array([[n[0], n[1], n[2]],
+                        [n[0], n[1], x[2]],
+                        [n[0], x[1], x[2]],
+                        [n[0], x[1], n[2]],
+                        [n[0], n[1], n[2]],
+                        [x[0], n[1], n[2]],
+                        [x[0], n[1], x[2]],
+                        [x[0], x[1], x[2]],
+                        [x[0], x[1], n[2]],
+                        [x[0], n[1], n[2]]])
         return out
     
     def contains(self, thing):
