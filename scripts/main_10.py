@@ -898,8 +898,10 @@ def alex_save():
     if len(alex_filename) == 0:
         filename = filedialog.asksaveasfilename(
             title = "Select file",
-            filetypes = (("Extruded AL","*.alex"),
+            filetypes = (("Extruded AL","*.xcad"),
                          ("all files","*.*")))
+        if alex_filename.endswith('.xcad.xcad'):
+            alex_filename = alexfilename[:,-5]
         alex_filename.append(filename)
     else:
         filename = alex_filename[0]
@@ -915,7 +917,7 @@ def alex_save():
 def alex_save_as():
     filename = filedialog.asksaveasfilename(
                                             title = "Select file",
-                                            filetypes = (("Extruded AL","*.alex"),
+                                            filetypes = (("Extruded AL","*.xcad"),
                                                          ("all files","*.*")))
     if filename:
         while len(alex_filename) > 0:
@@ -939,7 +941,7 @@ def alex_bom():
     out = '\n'.join(out)
     if alex_filename:
         base = alex_filename[0]
-        if base.endswith('.alex'):
+        if base.endswith('.xcad'):
             with open(alex_filename[0][:-4] + 'csv', 'w') as f:
                 f.write(out)
     print(out)
@@ -1010,18 +1012,18 @@ def stl_import_dialog():
     frame.grid(row=1, column=1)
     
 def alex_import():
-    filetypes = (("Extruded AL","*.alex"),
+    filetypes = (("Extruded AL","*.xcad"),
                  ("Mesh", "*.stl"),
                  ("all files","*.*"))
     if not STL_SUPPORTED:
-        filetypes = (("Extruded AL","*.alex"),
+        filetypes = (("Extruded AL","*.xcad"),
                      ("all files","*.*"))
     filename = filedialog.askopenfilename(
         #initialdir = "/",
         title = "Select file",
         filetypes=filetypes
     )
-    if filename.endswith('.alex'):
+    if filename.endswith('.xcad'):
         f = open(filename, 'rb')
         group = pickle.load(f)
         f.close()
@@ -1053,7 +1055,7 @@ def alex_open(filename):
 def alex_open_dialog():
     filename = filedialog.askopenfilename(
                                           title = "Select file",
-                                          filetypes = (("Extruded AL","*.alex"),
+                                          filetypes = (("Extruded AL","*.xcad"),
                                                        ("all files","*.*")))
     if filename:
         alex_open(filename)

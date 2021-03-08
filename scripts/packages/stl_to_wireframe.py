@@ -46,18 +46,20 @@ class Edge:
             print(self, other, 'not connected')
             out = np.nan
         return out
-    def plot(self, color=None, alpha=1):
+    def plot(self, color=None, alpha=1, arrow=False):
         d = (self.p1 - self.p0)
         ## shrink d by head width
-        head_width = .05
-        d = d * la.norm(d) / (la.norm(d) + head_width)
         if color is None:
             style = '-'
         else:
             style = '%s-' % color
-        # pl.arrow(self.p0[0], self.p0[1], d[0], d[1], color=color, head_width=head_width, alpha=alpha)
-        pl.plot([self.p0[0], self.p1[0]],
-                [self.p0[1], self.p1[1]], style, alpha=alpha)
+        if arrow:
+            head_width = .0125
+            d = d * la.norm(d) / (la.norm(d) + head_width)
+            pl.arrow(self.p0[0], self.p0[1], d[0], d[1], color=color, head_width=head_width, alpha=alpha)
+        else:
+            pl.plot([self.p0[0], self.p1[0]],
+                    [self.p0[1], self.p1[1]], style, alpha=alpha)
         
 class Path:
     def __init__(self, edges):
@@ -131,9 +133,9 @@ class Path:
             out.append(self.edges[-1].angle(self.edges[0]))
         return np.array(out)
 
-    def plot(self, color=None):
+    def plot(self, arrow=False, color=None):
         for e in self.edges:
-            e.plot(color=color)
+            e.plot(arrow=arrow, color=color)
             
         if len(self.edges) > 0:
             last = self.edges[0]
@@ -152,7 +154,8 @@ class Path:
                 pl.fill(xy[:,0], xy[:,1], alpha=.3)
                 # print(xy)
             else:
-                pl.plot(xy[:,0], xy[:,1], 'r')
+                pass
+                # pl.plot(xy[:,0], xy[:,1], 'r')
     def contains(self, p):
         if self.closed():
             angle_sum = 0
@@ -207,18 +210,21 @@ def perimeter_edges(edges):
                 best = option
         path.append(best)
         if False:
-            pl.clf()
-            for t in stl:
-                for e in t:
-                    e.plot(color='r', alpha=.3)
+            pl.close('all')
+            pl.figure(figsize=(6, 6))
+            for e in edges:
+                e.plot(color='r', alpha=.05)
             for op in options:
                 op.plot(color='k')
-            path.plot(color='g')
             best.plot(color='b')
+            path.plot(color='g', arrow=True)
+            pl.axis('equal')
+            pl.axis('off')
             #print(options)
             #print(most_ccw, best)
             #print()
-            pl.show()
+            pl.savefig(f'/Users/justin/code/Alex/images/path/{len(path):04d}.png')
+            # pl.show()
     ### thow away all edges that are not contained in perimeter.
     keep = []
     for i, e in enumerate(edges):
@@ -290,7 +296,7 @@ def from_stl(stl_fn):
     return _wf
 
 if __name__ == '__main__':
-    wf = from_stl(f'{stl_dir}/corner_plate_threeway_wf.stl')
+    wf = from_stl(f'{stl_dir}/alex11.stl')
     pl.close('all')
     pl.figure(); pl.gca(projection='3d')
     pl.plot(wf[:,0],
