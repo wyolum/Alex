@@ -28,8 +28,6 @@ from packages import piecewise_linear_cost_model as cm
 
 mydir = os.path.split(os.path.abspath(__file__))[0]
 db_fn = os.path.join(mydir, 'Alex_parts.db')
-db = sqlite3.connect(db_fn)
-
 
 interface_table = {
     "NA": [None] * 6,
@@ -68,14 +66,7 @@ def assimilate_stl(part_name, fn):
     return os.path.split(new_fn)[1]
 #assimilate_stl('junk', 'rattleCAD_road_20150823.stl');here
     
-@util.cacheable
-def lookup_interface(name):
-    if name not in interface_table:
-        raise ValueError(f"Interface named {name} not found")
-    record = interface_table[name]
-    hotspot = np.array(record[:3])
-    direction = np.array(record[3:])
-    return Interface(name, hotspot, direction)
+db = sqlite3.connect(db_fn)
 
 piecewise_table = Table("Piecewise", db,
                         Column("PartName", String()),
@@ -86,17 +77,6 @@ try:
     piecewise_table.create_index(("PartName", "Length"), unique=True)
 except sqlite3.OperationalError:
     pass
-def load_piecewise(csv_fn):
-    csv_file = open(csv_fn)
-    data = list(csv.reader(csv_file))
-    csv_file.close()
-    header = data[0]
-    data = data[1:]
-    data = [l for l in data if len(l) == 3]
-    piecewise_table.insert(data)
-load_piecewise('packages/piecewise.csv')
-
-
 part_table = Table('Part', db,
                    Column('Name',String(), UNIQUE=True),
                    Column('Wireframe', Integer()),
@@ -115,7 +95,24 @@ part_table = Table('Part', db,
                    Column('Interface_06', Integer())
 )
 part_table.create()
+@util.cacheable
+def lookup_interface(name):
+    if name not in interface_table:
+        raise ValueError(f"Interface named {name} not found")
+    record = interface_table[name]
+    hotspot = np.array(record[:3])
+    direction = np.array(record[3:])
+    return Interface(name, hotspot, direction)
 
+def load_piecewise(csv_fn):
+    csv_file = open(csv_fn)
+    data = list(csv.reader(csv_file))
+    csv_file.close()
+    header = data[0]
+    data = data[1:]
+    data = [l for l in data if len(l) == 3]
+    piecewise_table.insert(data)
+load_piecewise('packages/piecewise.csv')
 
 mydir = os.path.split(os.path.abspath(__file__))[0]
 csv_fn = os.path.join(mydir, 'parts.csv')

@@ -50,7 +50,7 @@ class Table:
 
     def delete(self, where):
         sql = f'DELETE FROM {self.name} WHERE {where}'
-        #print(sql)
+        #<print(sql)
         try:
             cur = self.db.execute(sql)
             self.db.commit()
