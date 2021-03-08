@@ -3,7 +3,10 @@ from numpy import linalg as la
 import pylab as pl
 from mpl_toolkits.mplot3d import Axes3D
 from stl import mesh
-
+import sys
+if '.' not in sys.path:
+    sys.path.append('.')
+from packages.constants import stl_dir
 DEG = np.pi / 180
 
 na = np.newaxis
@@ -259,6 +262,15 @@ def get_face(vectors, d, eps=eps):
 def from_stl(stl_fn):
     stl = mesh.Mesh.from_file(stl_fn)
     vectors = stl.vectors
+    #### normalize
+    mx = np.amax(vectors.reshape((-1, 3)), axis=0)
+    mn = np.amin(vectors.reshape((-1, 3)), axis=0)
+
+    dim = mx - mn
+    pos = (mx + mn) / 2
+    pos[2] = mn[2]
+    vectors = (vectors - pos) / dim
+
     ds = np.vstack([np.eye(3),
                     -np.eye(3)])
     wf = []
@@ -278,7 +290,7 @@ def from_stl(stl_fn):
     return _wf
 
 if __name__ == '__main__':
-    wf = from_stl('../STL/corner_plate_threeway_wf.stl')
+    wf = from_stl(f'{stl_dir}/corner_plate_threeway_wf.stl')
     pl.close('all')
     pl.figure(); pl.gca(projection='3d')
     pl.plot(wf[:,0],

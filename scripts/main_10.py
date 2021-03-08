@@ -940,7 +940,8 @@ def alex_bom():
     if alex_filename:
         base = alex_filename[0]
         if base.endswith('.alex'):
-            open(alex_filename[0][:-4] + 'csv', 'w').write(out)
+            with open(alex_filename[0][:-4] + 'csv', 'w') as f:
+                f.write(out)
     print(out)
         
 def alex_clear_all():
