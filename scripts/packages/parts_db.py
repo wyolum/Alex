@@ -802,7 +802,7 @@ def ask_color(label, entry):
 
 def get_library_names():
     full_names = glob.glob(f'{part_libraries_dir}/*')
-    names = ['Main']
+    names = ['Main'] ## put main first!
     for full_name in full_names:
         if os.path.isdir(full_name):
             name = os.path.split(full_name)[-1]
@@ -961,7 +961,7 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
 
 
     row = 0
-    lib_names = get_library_names()
+    lib_names = [n for n in get_library_names() if n != 'Main']
     lib_var = tk.StringVar()
     lib_var.set("User")
     #variables.append(lib_var) ##???
