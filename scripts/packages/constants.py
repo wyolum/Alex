@@ -15,7 +15,9 @@ package_dir = os.path.split(os.path.abspath(__file__))[0]
 alex_scad = os.path.join(package_dir, '../', 'Alex_test.scad')
 stl_dir = os.path.join(package_dir, 'STL')
 npy_dir = os.path.join(package_dir, 'wireframes')
-
+scripts_dir = os.path.split(package_dir)[0]
+alex_dir = os.path.split(scripts_dir)[0]
+part_libraries_dir = os.path.join(alex_dir, 'part_libraries')
 
 openscad_path = spawn.find_executable('openscad')
 if openscad_path is None:

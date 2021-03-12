@@ -1,3 +1,4 @@
+import os.path
 import numpy as np
 try:
     from stl import mesh
@@ -8,7 +9,7 @@ except ImportError:
 import sys
 if '.' not in sys.path:
     sys.path.append('.')
-from packages.constants import mm, DEG
+from packages.constants import mm, DEG, alex_dir
 from packages import util
 from packages import wireframes
 from packages import quaternion
@@ -272,7 +273,8 @@ class STL(Thing):
         bottom = mins[2]
         self.length = top - bottom
 
-        self.wireframe = wireframes.get('Cube')
+        #self.wireframe = wireframes.get('Cube')
+        self.wireframe = np.load(os.path.join(alex_dir, 'part_libraries', 'Main', 'Wireframes', 'Cube.npy'))
         d1 = right - left
         d2 = back - front
         length = top - bottom

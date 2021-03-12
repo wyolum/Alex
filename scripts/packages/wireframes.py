@@ -221,8 +221,8 @@ if __name__ == '__main__':
     view2 = iv.IsoView(can2, [1, 0, 0], [0, 1, 0], [200, 200], unit, unit, unit, unit)
 
     views = iv.Views([view1, view2])
-    print(from_stl('packages/STL/CornerTwoWay.stl'))
-    draw_wireframe(from_stl('packages/STL/2020 Angle Bracket.stl'), 100, views)
+    print(from_stl('../part_libraries/Main/STL/CornerTwoWay.stl'))
+    draw_wireframe(from_stl('../part_libraries/Main/STL/2020 Angle Bracket.stl'), 100, views)
     #draw_wireframe(cube, 100, views)
     #draw_wireframe(prism, 100, views)
     #draw_wireframe(cone, 100, views)

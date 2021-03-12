@@ -1,9 +1,12 @@
+import shutil
+import glob
 import re
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import filedialog
 from tkinter import colorchooser
 from tkinter import messagebox
+from tkinter import simpledialog
 import os
 import os.path
 import numpy as np
@@ -21,13 +24,13 @@ from packages import things
 from packages import wireframes
 from packages import database
 from packages.database import String, Integer, Float, Table, Column
-from packages.constants import DEG, alex_scad, stl_dir, bgcolor, openscad_path
+from packages.constants import DEG, alex_scad, bgcolor, openscad_path, part_libraries_dir
 from packages.interpolate import interp1d
 from packages.mylistbox import listbox
 from packages import piecewise_linear_cost_model as cm
 
 mydir = os.path.split(os.path.abspath(__file__))[0]
-db_fn = os.path.join(mydir, 'Alex_parts.db')
+db_fn = os.path.join(part_libraries_dir, 'Main', 'Parts.db')
 
 interface_table = {
     "NA": [None] * 6,
@@ -46,13 +49,13 @@ interface_table = {
     "3030-Z":[ 0,  0,  0, 0, 0,-1]
 }
 
-def assimilate_stl(part_name, fn):
+def assimilate_stl(lib, part_name, fn):
     base = os.path.split(fn)[1]
-    std_fn = f'{stl_dir}/{base}'
+    std_fn = f'{lib.stl_dir}/{base}'
     if os.path.exists(std_fn):
         new_fn = std_fn
     else:
-        new_fn = f'{stl_dir}/{part_name}.stl'
+        new_fn = f'{lib.stl_dir}/{part_name}.stl'
     if not os.path.exists(new_fn):
         thing = things.STL(fn)
         pts = thing.mesh.vectors.reshape((-1, 3))
@@ -64,22 +67,22 @@ def assimilate_stl(part_name, fn):
         thing.mesh.vectors = (thing.mesh.vectors - mid) / dims + [0, 0, .5]
         thing.mesh.save(new_fn)
     return os.path.split(new_fn)[1]
-#assimilate_stl('junk', 'rattleCAD_road_20150823.stl');here
+#assimilate_stl(lib, 'junk', 'rattleCAD_road_20150823.stl');here
     
 db = sqlite3.connect(db_fn)
 
-piecewise_table = Table("Piecewise", db,
+piecewise_table = Table("Piecewise",
                         Column("PartName", String()),
                         Column("Length", Integer()),
                         Column("Price", Float()))
-piecewise_table.create()
+piecewise_table.create(db)
 try:
-    piecewise_table.create_index(("PartName", "Length"), unique=True)
+    piecewise_table.create_index(db, ("PartName", "Length"), unique=True)
 except sqlite3.OperationalError:
     pass
-part_table = Table('Part', db,
+part_table = Table('Part',
                    Column('Name',String(), UNIQUE=True),
-                   Column('Wireframe', Integer()),
+                   Column('Wireframe', String()),
                    Column('STL_filename', String()),
                    Column('Price', Float()),
                    Column('URL', String()),
@@ -87,14 +90,14 @@ part_table = Table('Part', db,
                    Column('Length', Integer()),
                    Column('Dim1', Integer()),
                    Column('Dim2', Integer()),
-                   Column('Interface_01', Integer()),
-                   Column('Interface_02', Integer()),
-                   Column('Interface_03', Integer()),
-                   Column('Interface_04', Integer()),
-                   Column('Interface_05', Integer()),
-                   Column('Interface_06', Integer())
+                   Column('Interface_01', String()),
+                   Column('Interface_02', String()),
+                   Column('Interface_03', String()),
+                   Column('Interface_04', String()),
+                   Column('Interface_05', String()),
+                   Column('Interface_06', String())
 )
-part_table.create()
+part_table.create(db)
 @util.cacheable
 def lookup_interface(name):
     if name not in interface_table:
@@ -111,7 +114,7 @@ def load_piecewise(csv_fn):
     header = data[0]
     data = data[1:]
     data = [l for l in data if len(l) == 3]
-    piecewise_table.insert(data)
+    piecewise_table.insert(db, data)
 load_piecewise('packages/piecewise.csv')
 
 mydir = os.path.split(os.path.abspath(__file__))[0]
@@ -132,13 +135,13 @@ def load_parts(csv_fn):
                 assert interface
                 # print('Interface:', interface.hotspot, interface.direction)
     
-    part_table.insert(data)
+    part_table.insert(db, data)
 
 
-#print(part_table.select())
+#print(part_table.select(db))
 
-def get(name):
-    record = part_table.select(where=f'Name="{name}"') ## name is unique
+def get(db, name):
+    record = part_table.select(db, where=f'Name="{name}"') ## name is unique
     if len(record) == 0:
         raise ValueError(f"No item named {name}.")
     return record[0]
@@ -202,17 +205,126 @@ class Interface:
                 if self.engaged_with(proj, p2, owner_bb, owner, thing):
                     return True
         return False
+
+class Library:
+    def __init__(self, library_name):
+        self.name = library_name
+
+        self.dir = os.path.join(part_libraries_dir, self.name)
+        self.db_filename = os.path.join(self.dir, 'Parts.db')
+        self.wireframe_dir = os.path.join(self.dir, 'Wireframes')
+        self.thumbnail_dir = os.path.join(self.dir, 'Thumbnails')
+        self.wireframes = {}
+        self.stl_dir = os.path.join(self.dir, 'STL')
+        if not os.path.exists(self.dir):
+            os.mkdir(self.dir)
+            os.mkdir(self.wireframe_dir)
+            os.mkdir(self.thumbnail_dir)
+            os.mkdir(self.stl_dir)
+        if not os.path.exists(self.db_filename):
+            self.db = sqlite3.connect(self.db_filename)
+            self.initialize_db()
+            copied_part_name = '2020 Corner Two Way'
+            example = Main.get_part(copied_part_name)
+            wireframe = example.record.Wireframe
+            values = example.get_db_values()
+            for i, v in enumerate(values):
+                print(i, v, part_table.columns[i].name)
+            values[0] = "Example Part"
+            stl_fn = values[2]
+            print('stl_fn', stl_fn)
+            shutil.copyfile(os.path.join(Main.stl_dir, stl_fn),
+                            os.path.join(self.stl_dir, stl_fn))
+            shutil.copyfile(os.path.join(Main.wireframe_dir, wireframe + '.npy'),
+                            os.path.join(self.wireframe_dir, wireframe + '.npy'))
+            shutil.copyfile(os.path.join(Main.thumbnail_dir, 'unknown.png'),
+                            os.path.join(self.thumbnail_dir, 'unknown.png'))
+            
+            self.insert([values])
+            if example.price == '{piecewise}':
+                result = piecewise_table.select(Main.db, where=f"PartName='{copied_part_name}'")
+                if len(result) == 0:
+                    raise ValueError('Expected example part to be complete!')
+                values = [(r.Name, r.Length, r.Price) for r in records]
+                piecewise_table.insert(self.db, values)
+            
+        else:
+            self.db = sqlite3.connect(self.db_filename)
+        
+    def delete_part(self, name):
+        part_table.delete(self.db, where=f'Name="{name}"')
+        
+    def initialize_db(self):
+        piecewise_table.create(self.db)
+        part_table.create(self.db)
+        piecewise_table.create_index(self.db, ("PartName", "Length"), unique=True)
+
+    def get_names(self, where=''):
+        return [r.Name for r in self.part_list()]
     
+    def part_list(self, where=None):
+        return part_table.select(self.db, where=where)
+
+    def get_part(self, part_name):
+        records = part_table.select(self.db, where=f'Name="{part_name}"')
+        if len(records) == 1:
+            out = Part(self, records[0])
+        else:
+            raise ValueError(f"More than one part named {part_name}.")
+        return out
+    
+    def get_wireframe_names(self):
+        out = []
+        for fn in glob.glob(os.path.join(self.wireframe_dir, '*.npy')):
+            name = os.path.split(fn)[1][:-4]
+            out.append(name)
+        out.sort()
+        return out
+
+    def get_wireframe(self, name):
+        if name not in self.wireframes:
+            self.wireframes[name] = np.load(os.path.join(self.wireframe_dir, name + '.npy'))
+        return self.wireframes[name]
+    
+    def insert(self, values):
+        part_table.insert(self.db, values)
+
+    def make_thumbnail(self, part):
+        print(part.name)
+        print(part.toscad())
+        f = open(alex_scad, 'w')
+        f.write(part.toscad())
+        f.close()
+        name = ''.join(part.name.split())
+        png = f'{part.lib.thumbnail_dir}/{name}.png'
+        print(png)
+        os.system(f"{openscad_path} {alex_scad} --imgsize=512,512 -o {png}")
+
+    def make_thumbnails(self):
+        import os
+        part_records = part_table.select(self.db)
+        for part_record in part_records:
+            print(part_record.Name)
+            part = Part(part_record.Name)
+            make_thumbnail(part)
+    #make_thumbnails();here
+        
+Main = Library('Main')
+
 class Part(things.Thing):
     def price_function(self, x):
         return interp1d(self.lengths, self.prices, x)
         
-    def __init__(self, name_or_record, length=1):
+    def __init__(self, lib, name_or_record, length=1):
+        self.lib = lib
         if type(name_or_record) == type(''):
             name = name_or_record
-            record = get(name)
+            records = part_table.select(lib.db, where=f'Name="{name}"')
+            assert len(records) == 1
+            record = records[0]
             assert record
         else:
+            print(name_or_record)
             record = name_or_record
             name = record.Name
         if record:
@@ -220,7 +332,7 @@ class Part(things.Thing):
             self.name = name
             self.price = record.Price
             if self.price == '{piecewise}':
-                result = piecewise_table.select(where=f"PartName='{name}'")
+                result = piecewise_table.select(lib.db, where=f"PartName='{name}'")
                 if len(result) == 0:
                     self.lengths = np.array([300, 5000])
                     self.prices = np.array([0, 0])
@@ -230,7 +342,9 @@ class Part(things.Thing):
                 
                 self.min_len = np.min(self.lengths)
                 self.max_len = np.max(self.lengths)
-                
+            else:
+                self.lengths = []
+                self.prices = []
                 #self.price_function = lambda x: interp1d(self.lengths, self.prices, x)
             self.dim1 = record.Dim1
             self.dim2 = record.Dim2
@@ -239,11 +353,11 @@ class Part(things.Thing):
             else:
                 self.length = record.Length
             try:
-                wf = wireframes.get(record.Wireframe)
+                wf = self.lib.get_wireframe(record.Wireframe)
             except KeyError:
-                wf = wireframes.get('Cube')
+                wf = self.lib.get_wireframe.get('Cube')
             self.wireframe = wf * [self.dim1, self.dim2, self.length]
-            self.stl_fn = os.path.join(stl_dir, record.STL_filename)
+            self.stl_fn = os.path.join(lib.stl_dir, record.STL_filename)
             self.color = record.Color
             self.url = record.URL
             self.record = record
@@ -255,9 +369,21 @@ class Part(things.Thing):
                 if name != 'NA':
                     interface = lookup_interface(name)
                     self.interfaces.append(interface)
-                
+
+    def get_db_values(self):
+        values = [self.name,      # 0
+                  self.record.Wireframe, # 1
+                  os.path.split(self.stl_fn)[-1],    # 2 STL 
+                  self.price,     # 3 
+                  self.url,       # 4 
+                  self.color,     # 5 
+                  self.length,    # 6 
+                  self.dim1,      # 7 
+                  self.dim2] + [face.name for face in self.interfaces] + ['NA' for i in range(6 - len(self.interfaces))]
+        return values
+    
     def __rescale_wireframe(self):
-        self.wireframe = wireframes.get(self.record.Wireframe) * [self.dim1, self.dim2, self.length]
+        self.wireframe = self.lib.get_wireframe(self.record.Wireframe) * [self.dim1, self.dim2, self.length]
         
     def set_length(self, length):
         if self.record.Length == 'NA':
@@ -321,7 +447,7 @@ class Part(things.Thing):
         return '\n'.join(out)
 
     def dup(self):
-        out = Part(self.name, self.length)
+        out = Part(self.lib, self.name, self.length)
         out.translate(self.pos)
         out.orient = self.orient.copy()
         return out
@@ -343,17 +469,27 @@ def url_shortener(url, max_len=40):
         url = url[:max_len - 3] + '...'
     return url
 
-def PartDialog(parent, select_cb):
+def PartDialog(parent, select_cb, lib=None):
+    if lib is None:
+        lib = Main
+    PartDialog.lib = lib
+    
     def get_parts():
-        parts = part_table.select()
-        columns = list(parts[0].keys())[:9]
-        data = [[getattr(line, name) for name in columns] for line in parts]
-        names = [l[0] for l in data]
-        idx = np.argsort(names)
-        parts = [parts[i] for i in idx]
-        names = [names[i] for i in idx]
-        data = [data[i] for i in idx]
-        data = dict(zip(names, data))
+        print('get_parts():: lib', PartDialog.lib.name)
+        parts = PartDialog.lib.part_list()
+        if len(parts) > 0:
+            columns = list(parts[0].keys())[:9]
+            data = [[getattr(line, name) for name in columns] for line in parts]
+            names = [l[0] for l in data]
+            idx = np.argsort(names)
+            parts = [parts[i] for i in idx]
+            names = [names[i] for i in idx]
+            data = [data[i] for i in idx]
+            data = dict(zip(names, data))
+        else:
+            names = []
+            columns = []
+            data = {}
         return parts, names, columns, data
     parts, names, columns, data = get_parts()
     
@@ -373,14 +509,14 @@ def PartDialog(parent, select_cb):
     
     def item_clicked(name):
         try:
-            part = Part(name)
+            part = Part(PartDialog.lib, name)
         except ValueError:
             raise
             return
         png = ''.join(name.split())
-        png = os.path.join(stl_dir, f'{png}.png')
+        png = os.path.join(PartDialog.lib.thumbnail_dir, f'{png}.png')
         if not os.path.exists(png):
-            png = os.path.join(stl_dir, 'unknown.png')
+            png = os.path.join(PartDialog.lib.thumbnail_dir, 'unknown.png')
         img = ImageTk.PhotoImage(Image.open(png))
 
         display.configure(image=img)
@@ -400,20 +536,22 @@ def PartDialog(parent, select_cb):
         cancel()
     def edit(*args):
         name = item_clicked.part.name
-        new_part_dialog(parent, name=name, onclose=relist, copy=False)
+        new_part_dialog(parent, lib=PartDialog.lib, name=name, onclose=relist, copy=False)
     def copy(*args):
         name = item_clicked.part.name
-        new_part_dialog(parent, name=name, onclose=relist, copy=True)
+        new_part_dialog(parent, lib=PartDialog.lib, name=name, onclose=relist, copy=True)
     def on_new_part(*args):
-        new_part_dialog(parent, name=None, onclose=relist)
+        new_part_dialog(parent, lib=PartDialog.lib, name=None, onclose=relist)
 
     def item_selected(idx, name):
         item_clicked(name)
         select()
 
-    def relist(name):
-        lb.delete(0, len(names));
-        new_parts, new_names, new_columns, new_data = get_parts()        
+    def relist(lib, name=None):
+        PartDialog.lib = lib
+        tl.winfo_toplevel().title(f"Library: {lib.name}")
+        lb.delete(0, tk.END);
+        new_parts, new_names, new_columns, new_data = get_parts()
         for i, item in enumerate(new_names):
             lb.insert(i, item);
         for k in list(data.keys()):
@@ -422,20 +560,49 @@ def PartDialog(parent, select_cb):
         for k in list(new_data.keys()):
             if k not in data:
                 data[k] = new_data[k]
-        if name in data:
+        if name and name in data:
             item_clicked(name)
+        else:
+            if len(new_names) > 0:
+                item_clicked(new_names[0])
+
     name_var = tk.StringVar()
+    menubar = tk.Menu(tl)
+    libmenu = tk.Menu(menubar, tearoff=0)
+    libmenu.add_command(label="Main", command=lambda *args: relist(Main))
+    for full_name in glob.glob(f'{part_libraries_dir}/*'):
+        if os.path.isdir(full_name):
+            if os.path.isfile(os.path.join(f'{full_name}/Parts.db')):
+                name = os.path.split(full_name)[1]
+                if name != 'Main':
+                    _lib = Library(name)
+                    libmenu.add_command(label=name, command=curry(relist, (_lib,)))
+    def create_new_library():
+        new_library_name = simpledialog.askstring("Input", "Library name:",
+                                                  parent=tl)
+        if new_library_name:
+            lib = Library(new_library_name)
+            PartDialog.lib = lib
+            relist(lib)
+
+    libmenu.add_separator()
+    libmenu.add_command(label="New", command=lambda *args: create_new_library())
+    menubar.add_cascade(label="Library", menu=libmenu)
+    tl.config(menu=menubar)
+    tl.winfo_toplevel().title(f"Library: Main")
+
+
     lb = listbox(tl, names, item_clicked, item_selected, n_row=50)
     lb.grid(row=0, column=0, rowspan=10)
 
-    img = ImageTk.PhotoImage(Image.open(os.path.join(stl_dir, f'2020CornerTwoWay.png')))
+    img = ImageTk.PhotoImage(Image.open(os.path.join(PartDialog.lib.thumbnail_dir, f'unknown.png')))
     imgs[0] = img
     display = tk.Label(tl, image=img)
-    display.grid(row=1, column=2, sticky='N', columnspan=10)
+    display.grid(row=0, column=2, sticky='N', columnspan=10)
 
     url = tk.Label(tl)
     url.configure(fg='blue')
-    url.grid(row=1, column=2, sticky='NW', columnspan=4)
+    url.grid(row=0, column=2, sticky='NW', columnspan=4)
     url.bind('<Button-1>', browseto)
 
     cancel_button = tk.Button(tl, text="Cancel", command=cancel)
@@ -452,28 +619,6 @@ def PartDialog(parent, select_cb):
     item_clicked(names[0])
     return tl
 
-def make_thumbnail(part):
-    import os
-    load_parts(csv_fn)
-    print(part.name)
-    print(part.toscad())
-    f = open(alex_scad, 'w')
-    f.write(part.toscad())
-    f.close()
-    name = ''.join(part.name.split())
-    png = f'{stl_dir}/{name}.png'
-    print(png)
-    os.system(f"{openscad_path} {alex_scad} --imgsize=512,512 -o {png}")
-    
-def make_thumbnails():
-    import os
-    load_parts(csv_fn)
-    part_records = part_table.select()
-    for part_record in part_records:
-        print(part_record.Name)
-        part = Part(part_record.Name)
-        make_thumbnail(part)
-#make_thumbnails();here
     
 def test_part_select():
     load_parts(csv_fn)
@@ -491,12 +636,12 @@ def test_part_select():
     r = tk.Tk()
     def select_cb(part):
         print(part)
-    PartDialog(r, select_cb)
+    PartDialog(db, r, select_cb)
     r.mainloop()
 
-def validate_name(label, var, entry, commit_button):
+def validate_name(lib, label, var, entry, commit_button):
     name = var.get().strip()
-    matches = part_table.select(where=f'name = "{name}"')
+    matches = lib.part_list(where=f'name = "{name}"')
     if name == '':
         entry.config(bg="red")
         out = False
@@ -507,31 +652,32 @@ def validate_name(label, var, entry, commit_button):
     elif len(matches) == 1:
         ### populate fields
         record = matches[0]
-        part = Part(record)
+        part = Part(lib, record)
         with open(alex_scad, 'w') as f:
             f.write(part.toscad())
         out = True
     return out
 
-def validate_wireframe(label, var, option, commit_button, view):
+def validate_wireframe(lib, label, var, option, commit_button, view):
     name = var.get()
-    if name in wireframes.getlist():
-        wf = wireframes.get(name)
+    if name in lib.get_wireframe_names():
+        wf = lib.get_wireframe(name)
         view.can.delete('all')
         view.draw_axes()
         view.create_path('wireframe', wf, "black", 1)
         out = True
         option.config(bg=bgcolor)
     else:
+        print(lib.get_names())
         out = False
         option.config(bg="red")
         commit_button.config(state="disabled")
     return out
     
-def validate_stl(label, var, entry, commit_button):
+def validate_stl(lib, label, var, entry, commit_button):
     stl = var.get().strip()
-    if not os.path.exists(stl):
-        stl = os.path.join(stl_dir, stl)
+    if not os.path.exists(stl): ### see if it is in the library already
+        stl = os.path.join(lib.stl_dir, stl)
     if os.path.exists(stl) and os.path.isfile(stl):
         thing = things.STL(stl)
         #with open(alex_scad, 'w') as f:
@@ -613,8 +759,8 @@ def validate_interface(label, var, entry, commit_button):
     #print('validate', label)
     return True
 
-def ask_stl_filename(label, entry):
-    filename = filedialog.askopenfilename(initialdir = stl_dir,
+def ask_stl_filename(lib, label, entry):
+    filename = filedialog.askopenfilename(initialdir = lib.stl_dir,
                                           title = f"Select {label}",
                                           filetypes = (("Mesh", "*.stl"),
                                                        ("all files","*.*")))
@@ -650,7 +796,7 @@ def ask_color(label, entry):
         entry.insert(0, color)
         entry.config(bg=color)
 
-def new_part_dialog(parent, name=None, onclose=None, copy=False):
+def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
     tl = tk.Toplevel(parent)
     
     dialog_parent = tk.Frame(tl)
@@ -710,8 +856,9 @@ def new_part_dialog(parent, name=None, onclose=None, copy=False):
     ]
     def validate_all():
         out = True
-        for v in validates:
+        for i, v in enumerate(validates):
             if not v():
+                print("Failed {i}th validator")
                 out = False
         return out
     
@@ -723,8 +870,8 @@ def new_part_dialog(parent, name=None, onclose=None, copy=False):
         if name:
             result = messagebox.askquestion("Overwrite", f"Delete {name}", icon='warning')
             if result == 'yes':
-                part_table.delete(where=f'Name="{name}"')
-                piecewise_table.delete(where=f'PartName="{name}"')
+                part_table.delete(lib.db, where=f'Name="{name}"')
+                piecewise_table.delete(lib.db, where=f'PartName="{name}"')
                 #print("Deleted")
         
     def commit_new_part():
@@ -737,27 +884,28 @@ def new_part_dialog(parent, name=None, onclose=None, copy=False):
                   length_var.get(), # 6 
                   dim1_var.get(),   # 7 
                   dim2_var.get()] + [var.get() for var in interface_vars]
-        prev_records = part_table.select(where=f'Name="{values[0]}"')
+        prev_records = part_table.select(lib.db, where=f'Name="{values[0]}"')
         if prev_records:
             result = messagebox.askquestion("Overwrite", f"Overwrite {values[0]}", icon='warning')
             if result == 'yes':
-                part_table.delete(where=f'Name="{values[0]}"')
+                part_table.delete(lib.db, where=f'Name="{values[0]}"')
                 #print("Deleted")
             else:
                 #print("Skipping")            
                 return
         ### import stl file into library
-        values[2] = assimilate_stl(values[0], values[2])
-        part_table.insert([values])
+        values[2] = assimilate_stl(lib, values[0], values[2])
+        lib.insert([values])
         if price_var.get() == '{piecewise}':
             price_list = cm.get_table(len_vars, cost_vars)
             name = name_var.get()
             prices = [(name, l, p) for l, p in price_list]
-            piecewise_table.delete(where=f'PartName="{name}"')
-            piecewise_table.insert(prices)
+
+            piecewise_table.delete(lib.db, where=f'PartName="{name}"')
+            piecewise_table.insert(lib.db, prices)
             
-        part = Part(name_var.get())
-        make_thumbnail(part)
+        part = Part(lib, name_var.get())
+        lib.make_thumbnail(part)
         
     commit_button = tk.Button(part_frame, text="Commit", command=commit_new_part)
     commit_button.grid(row=31, column=2, sticky='e')
@@ -767,7 +915,7 @@ def new_part_dialog(parent, name=None, onclose=None, copy=False):
     
     def close_new_part_dialog():
         if(onclose):
-            onclose(name_var.get())
+            onclose(lib, name_var.get())
         tl.destroy()
         
     close_button = tk.Button(part_frame, text="Close", command=close_new_part_dialog)
@@ -786,14 +934,15 @@ def new_part_dialog(parent, name=None, onclose=None, copy=False):
     ### validate created below after other entries are created.
     row += 1
 
-    wireframe_names = list(wireframes.getlist())
+    wireframe_names = lib.get_wireframe_names()
     wire_var = tk.StringVar()
     wire_var.set("Cube")
     variables.append(wire_var)
     tk.Label(part_frame, text="Wireframe").grid(row=row+1, column=1, sticky='e')
-    wire_opt = tk.OptionMenu(part_frame, wire_var, *wireframe_names)        
+    wire_opt = tk.OptionMenu(part_frame, wire_var, *wireframe_names)
     wire_opt.grid(row=row+1, column=2, sticky='w')
-    validate = curry(validators[row], ('Wireframe', wire_var, wire_opt, commit_button, wire_view))
+    
+    validate = curry(validators[row], (lib, 'Wireframe', wire_var, wire_opt, commit_button, wire_view))
     validates.append(validate)
     wire_opt.bind('<FocusOut>', validate)
     browse_button = tk.Button(part_frame, text="New", command=curry(ask_wireframe, ('Wireframe', wire_opt, wire_var)))
@@ -807,10 +956,10 @@ def new_part_dialog(parent, name=None, onclose=None, copy=False):
     tk.Label(part_frame, text="STL").grid(row=row+1, column=1, sticky='e')
     stl_entry = tk.Entry(part_frame, textvariable=stl_var)
     stl_entry.grid(row=row+1, column=2)
-    validate = curry(validators[row], ('STL', stl_var, stl_entry, commit_button))
+    validate = curry(validators[row], (lib, 'STL', stl_var, stl_entry, commit_button))
     validates.append(validate)
     stl_entry.bind('<FocusOut>', validate)
-    browse_button = tk.Button(part_frame, text="Browse", command=curry(ask_stl_filename, ('STL', stl_entry)))
+    browse_button = tk.Button(part_frame, text="Browse", command=curry(ask_stl_filename, (lib, 'STL', stl_entry)))
     browse_button.grid(row=row+1, column=3, sticky='w')
     row += 1
 
@@ -912,7 +1061,7 @@ def new_part_dialog(parent, name=None, onclose=None, copy=False):
 
     def populate_cb(event):
         name = name_var.get()
-        record = part_table.select(where=f'Name="{name}"')
+        record = part_table.select(lib.db, where=f'Name="{name}"')
         if len(record) > 0:
             record = record[0]
         else:
@@ -922,7 +1071,7 @@ def new_part_dialog(parent, name=None, onclose=None, copy=False):
         stl_var.set(record.STL_filename)
         price_var.set(record.Price)
         if record.Price == '{piecewise}': ### from DB, should not have spaces
-           prices = piecewise_table.select(where=f'PartName = "{record.Name}"')
+           prices = piecewise_table.select(lib.db, where=f'PartName = "{record.Name}"')
            for i, price_record in enumerate(prices[:len(len_vars)]):
                len_vars[i].set(price_record.Length)
                cost_vars[i].set(price_record.Price)
@@ -941,7 +1090,7 @@ def new_part_dialog(parent, name=None, onclose=None, copy=False):
         dim2_var.set(record.Dim2)
         for i in range(6):
             interface_vars[i].set(record[f"Interface_{i+1:02d}"])
-    validate = curry(validate_name, ('Name', name_var, name_entry, commit_button))
+    validate = curry(validate_name, (lib, 'Name', name_var, name_entry, commit_button))
     if name is not None:
         name_var.set(name)
         populate_cb(None)
@@ -950,7 +1099,7 @@ def new_part_dialog(parent, name=None, onclose=None, copy=False):
             match = copy_matcher.search(name)
             if match:
                 name = match.group(1)
-            similar_names = [l.Name for l in part_table.select(where=f'name like "{name} x___"')]
+            similar_names = [l.Name for l in part_table.select(lib.db, where=f'name like "{name} x___"')]
             copy_num = len([n for n in similar_names if copy_matcher.search(n)]) + 1
             copy_name = f'{name} x{copy_num:03d}'
             name_var.set(copy_name)
