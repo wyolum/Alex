@@ -239,6 +239,9 @@ class Library:
                             os.path.join(self.wireframe_dir, wireframe + '.npy'))
             shutil.copyfile(os.path.join(Main.thumbnail_dir, 'unknown.png'),
                             os.path.join(self.thumbnail_dir, 'unknown.png'))
+            thumbnail = f"{''.join(copied_part_name.split())}.png"
+            shutil.copyfile(os.path.join(Main.thumbnail_dir, thumbnail),
+                            os.path.join(self.thumbnail_dir, 'ExamplePart.png'))
             
             self.insert([values])
             if example.price == '{piecewise}':
@@ -475,7 +478,6 @@ def PartDialog(parent, select_cb, lib=None):
     PartDialog.lib = lib
     
     def get_parts():
-        print('get_parts():: lib', PartDialog.lib.name)
         parts = PartDialog.lib.part_list()
         if len(parts) > 0:
             columns = list(parts[0].keys())[:9]
