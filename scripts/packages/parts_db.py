@@ -800,6 +800,18 @@ def ask_color(label, entry):
         entry.insert(0, color)
         entry.config(bg=color)
 
+def get_library_names():
+    full_names = glob.glob(f'{part_libraries_dir}/*')
+    names = ['Main']
+    for full_name in full_names:
+        if os.path.isdir(full_name):
+            name = os.path.split(full_name)[-1]
+            if name != 'Main':
+                if os.path.exists(os.path.join(full_name, 'Parts.db')):
+                    ### looks like a lib dir
+                    names.append(name)
+    return names
+    
 def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
     tl = tk.Toplevel(parent)
     
@@ -949,7 +961,7 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
 
 
     row = 0
-    lib_names = ['Main', 'User']
+    lib_names = get_library_names()
     lib_var = tk.StringVar()
     lib_var.set("User")
     #variables.append(lib_var) ##???
