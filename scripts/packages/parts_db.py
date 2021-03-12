@@ -963,7 +963,10 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
     row = 0
     lib_names = [n for n in get_library_names() if n != 'Main']
     lib_var = tk.StringVar()
-    lib_var.set("User")
+    if lib == Main:
+        lib_var.set("User")
+    else:
+        lib_var.set(lib.name)
     #variables.append(lib_var) ##???
     tk.Label(part_frame, text="Save to library:").grid(row=row+1, column=1, sticky='e')
     lib_opt = tk.OptionMenu(part_frame, lib_var, *lib_names)
