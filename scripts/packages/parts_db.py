@@ -582,7 +582,7 @@ def PartDialog(parent, select_cb, lib=None):
         if os.path.isdir(full_name):
             if os.path.isfile(os.path.join(f'{full_name}/Parts.db')):
                 name = os.path.split(full_name)[1]
-                if name != 'MainXXX':
+                if name != 'Main':
                     _lib = Library(name)
                     libmenu.add_command(label=name, command=curry(relist, (_lib,)))
     def create_new_library():
@@ -965,7 +965,7 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
 
 
     row = 0
-    lib_names = [n for n in get_library_names() if n != 'Main']
+    lib_names = [n for n in get_library_names() if n != 'Main_xxx']
     lib_var = tk.StringVar()
     if lib == Main:
         lib_var.set("User")
