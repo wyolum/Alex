@@ -49,7 +49,7 @@ interface_table = {
     "3030-Z":[ 0,  0,  0, 0, 0,-1]
 }
 
-def assimilate_stl(lib, part_name, fn):
+def assimilate_stl(lib, part_name, fn, copy_only=False):
     base = os.path.split(fn)[1]
     std_fn = f'{lib.stl_dir}/{base}'
     if os.path.exists(std_fn):
@@ -64,7 +64,10 @@ def assimilate_stl(lib, part_name, fn):
         dims = maxs - mins
         mid = (maxs + mins) / 2.
         print(np.amax(thing.mesh.vectors, axis=0))
-        thing.mesh.vectors = (thing.mesh.vectors - mid) / dims + [0, 0, .5]
+        if copy_only:
+            pass
+        else:
+            thing.mesh.vectors = (thing.mesh.vectors - mid) / dims + [0, 0, .5]
         thing.mesh.save(new_fn)
     return os.path.split(new_fn)[1]
 #assimilate_stl(lib, 'junk', 'rattleCAD_road_20150823.stl');here
@@ -226,7 +229,10 @@ class Library:
             self.initialize_db()
             copied_part_name = '2020 Corner Two Way'
             example = Main.get_part(copied_part_name)
-            example.saveas(self, 'Example Part')            
+            example.saveas(self, 'Example Part')
+            shutil.copyfile(os.path.join(Main.wireframe_dir, 'Cube.npy'),
+                            os.path.join(self.wireframe_dir, 'Cube.npy'))
+
         else:
             self.db = sqlite3.connect(self.db_filename)
         
@@ -576,7 +582,7 @@ def PartDialog(parent, select_cb, lib=None):
         if os.path.isdir(full_name):
             if os.path.isfile(os.path.join(f'{full_name}/Parts.db')):
                 name = os.path.split(full_name)[1]
-                if name != 'Main':
+                if name != 'MainXXX':
                     _lib = Library(name)
                     libmenu.add_command(label=name, command=curry(relist, (_lib,)))
     def create_new_library():
@@ -875,7 +881,7 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
         out = True
         for i, v in enumerate(validates):
             if not v():
-                print("Failed {i}th validator")
+                print(f"Failed {i}th validator")
                 out = False
         return out
     
@@ -905,12 +911,10 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
         if values[2] == os.path.abspath(values[2]):
             stl_fn = values[2]
             values[2] = os.path.split(values[2])[1]
+            copy_only = False
         else:
             stl_fn = os.path.join(os.path.join(lib.stl_dir, values[2]))
-        print('lib_name::', lib_name)
-        print("commit_new_part()::values[0]", values[0])
-        print("commit_new_part()::stl_fn", stl_fn)
-        print("commit_new_part()::values[2]", values[2])
+            copy_only = True
         to_lib = Library(lib_name)
         prev_records = part_table.select(to_lib.db, where=f'Name="{values[0]}"')
         if prev_records:
@@ -921,7 +925,7 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
                 return
         ### import stl file into library
         print('commit_new_part()::', to_lib.name, values[0], values[2])
-        values[2] = assimilate_stl(to_lib, values[2], stl_fn)
+        values[2] = assimilate_stl(to_lib, values[0], stl_fn, copy_only=copy_only)
 
         to_lib.insert([values])
 
