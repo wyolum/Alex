@@ -209,6 +209,22 @@ class Interface:
                     return True
         return False
 
+
+db_connections = {}
+def connect(db_fn):
+    if db_fn not in db_connections:
+        db = sqlite3.connect(db_fn)
+        db_connections[db_fn] = db
+    return db_connections[db_fn]
+    
+
+class ProxyDB:
+    def __init__(self, fn):
+        connect(fn)
+        self.fn = fn
+    def execute(self, sql):
+        return connect(self.fn).execute(sql)
+    
 class Library:
     def __init__(self, library_name):
         self.name = library_name
@@ -225,7 +241,7 @@ class Library:
             os.mkdir(self.thumbnail_dir)
             os.mkdir(self.stl_dir)
         if not os.path.exists(self.db_filename):
-            self.db = sqlite3.connect(self.db_filename)
+            self.db = ProxyDB(self.db_filename)
             self.initialize_db()
             copied_part_name = '2020 Corner Two Way'
             example = Main.get_part(copied_part_name)
@@ -234,7 +250,7 @@ class Library:
                             os.path.join(self.wireframe_dir, 'Cube.npy'))
 
         else:
-            self.db = sqlite3.connect(self.db_filename)
+            self.db = ProxyDB(self.db_filename)
         
     def delete_part(self, name):
         part_table.delete(self.db, where=f'Name="{name}"')

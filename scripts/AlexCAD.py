@@ -902,8 +902,8 @@ def alex_save():
             title = "Select file",
             filetypes = (("Extruded AL","*.xcad"),
                          ("all files","*.*")))
-        if alex_filename.endswith('.xcad.xcad'):
-            alex_filename = alexfilename[:,-5]
+        if filename.endswith('.xcad.xcad'):
+            filename = filename[:-5]
         alex_filename.append(filename)
     else:
         filename = alex_filename[0]
@@ -917,6 +917,7 @@ def alex_save():
         alex_set_titlebar()
 
 def alex_save_as():
+    root.update()
     filename = filedialog.asksaveasfilename(
                                             title = "Select file",
                                             filetypes = (("Extruded AL","*.xcad"),
@@ -926,6 +927,7 @@ def alex_save_as():
             alex_filename.pop()
         alex_filename.append(filename)
         alex_save()
+    root.update()
         
 def alex_bom():
     lines = scene.tobom()

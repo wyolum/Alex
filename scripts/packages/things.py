@@ -229,7 +229,7 @@ class Group(Thing):
             out.append('  ' + util.indent(thing.toscad(), 2))
         out.append('}')
         return '\n'.join(out)
-    
+
     def tobom(self):
         lines = []
         for thing in self.things:
