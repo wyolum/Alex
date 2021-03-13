@@ -782,7 +782,7 @@ def ask_stl_filename(lib, label, entry):
         else:
             entry.confi(bg="red")
             
-def ask_wireframe(label, option, var):
+def ask_wireframe(lib, label, option, var):
     filename = filedialog.askopenfilename(title = f"Select {label}",
                                           filetypes = (("Mesh", "*.stl"),
                                                        ("all files","*.*")))
@@ -792,7 +792,7 @@ def ask_wireframe(label, option, var):
             if name.lower().endswith('.stl'):
                 name = name[:-4]
             wf = wireframes.from_stl(filename)
-            wireframes.add_wf(name, wf)
+            wireframes.add_wf(lib, name, wf)
             option.config(bg=bgcolor)
             option['menu'].add_command(label=name)
             var.set(name)
@@ -1000,7 +1000,7 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
     validate = curry(validators[row], (lib, 'Wireframe', wire_var, wire_opt, commit_button, wire_view))
     validates.append(validate)
     wire_opt.bind('<FocusOut>', validate)
-    browse_button = tk.Button(part_frame, text="New", command=curry(ask_wireframe, ('Wireframe', wire_opt, wire_var)))
+    browse_button = tk.Button(part_frame, text="New", command=curry(ask_wireframe, (lib, 'Wireframe', wire_opt, wire_var)))
     browse_button.grid(row=row+1, column=3, sticky='w')
     wire_var.trace('w', validate)
     validate()

@@ -149,32 +149,30 @@ def from_stl_to_bounding_box(stl_fn):
     pos[2] = mn[2]
     return (wf - pos) / dim
 
-def remove_wf(name):
+def remove_wf_old(name):
     if name in __wireframes:
         del __wireframes[name]
-def rename_wf(old, new):
+def rename_wf(lib, old, new):
     if new != old:
-        add_wf(new, get(old), force=True)
+        add_wf(lib, new, get(lib, old), force=True)
         remove_wf(old)
-def add_wf(name, wf, force=False):
-    names = list(__wireframes.keys())
-    if name.lower() in names and not force:
-        raise ValueErrror(f'{name} already exists in wireframes')
-    else:
-        __wireframes[name] = wf
-        np.save(f'{npy_dir}/{name}.npy', wf)
-def getlist():
+def add_wf(lib, name, wf, force=False):
+    npy = os.path.join(lib.wireframe_dir, name.title() + '.npy')
+    print('wireframes.add_wf()::npy', npy)
+    np.save(npy, wf)
+    
+def getlist_old():
     out = list(__wireframes.keys())
     out.sort()
     return out
 
-__wireframes = read_npy()
-def get(name):
+#__wireframes = read_npy()
+def get_old(lib, name):
     npy = f'{npy_dir}/{name}.npy'
     if name not in __wireframes:
         if os.path.exists(npy):
             wf = np.load(npy)
-            add_wf(name, wf)
+            add_wf(lib, name, wf)
         else:
             raise ValueError(f"Wireframe '{name}' not found")
     out = __wireframes[name]
