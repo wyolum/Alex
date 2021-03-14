@@ -70,6 +70,7 @@ def assimilate_stl(lib, part_name, fn, copy_only=False):
             thing.mesh.vectors = (thing.mesh.vectors - mid) / dims + [0, 0, .5]
         thing.mesh.save(new_fn)
     return os.path.split(new_fn)[1]
+
 #assimilate_stl(lib, 'junk', 'rattleCAD_road_20150823.stl');here
     
 db = sqlite3.connect(db_fn)
@@ -250,11 +251,17 @@ class Library:
         if not os.path.exists(self.db_filename):
             self.db = ProxyDB(self.db_filename)
             self.initialize_db()
-            copied_part_name = '2020 Corner Two Way'
+            copied_part_name = '2020 Corner Two Way Silver'
             example = Main.get_part(copied_part_name)
             example.saveas(self, 'Example Part')
             shutil.copyfile(os.path.join(Main.wireframe_dir, 'Cube.npy'),
                             os.path.join(self.wireframe_dir, 'Cube.npy'))
+            shutil.copyfile(os.path.join(Main.wireframe_dir, 'Cylinder.npy'),
+                            os.path.join(self.wireframe_dir, 'Cylinder.npy'))
+            shutil.copyfile(os.path.join(Main.wireframe_dir, 'Cone.npy'),
+                            os.path.join(self.wireframe_dir, 'Cone.npy'))
+            shutil.copyfile(os.path.join(Main.wireframe_dir, 'Prism.npy'),
+                            os.path.join(self.wireframe_dir, 'Prism.npy'))
 
         else:
             self.db = ProxyDB(self.db_filename)
@@ -277,8 +284,10 @@ class Library:
         records = part_table.select(self.db, where=f'Name="{part_name}"')
         if len(records) == 1:
             out = Part(self, records[0])
-        else:
+        elif len(records) > 1:
             raise ValueError(f"More than one part named {part_name}.")
+        else:
+            raise ValueError(f"No part named {part_name}.")
         return out
     
     def get_wireframe_names(self):
@@ -843,7 +852,7 @@ def get_library_names():
                     ### looks like a lib dir
                     names.append(name)
     return names
-    
+
 def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
     tl = tk.Toplevel(parent)
     
@@ -1084,10 +1093,29 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
     color_button.grid(row=row+1, column=3, sticky='w')
     row += 1
 
+
+    def pull_dims_from_stl(stl_var):
+        stl_fn = stl_var.get()
+        if len(os.path.split(stl_fn)[0]) < 2:
+            stl_fn = os.path.join(lib.stl_dir, stl_fn)
+        else:
+            pass
+        thing = things.STL(stl_fn)
+        pts = thing.mesh.vectors.reshape((-1, 3))
+        maxs = np.max(pts, axis=0)
+        mins = np.min(pts, axis=0)
+        dims = maxs - mins
+        dim1_var.set(np.round(dims[0]))
+        dim2_var.set(np.round(dims[1]))
+        length_var.set(np.round(dims[2]))
+        
+    dim_frame = tk.Frame(part_frame)
+    dim_button = tk.Button(dim_frame, text="Pull Dims from STL", command=util.curry(pull_dims_from_stl, (stl_var,)))
+    dim_button.grid(row=0, column=2)
     dim1_var = tk.StringVar()
     variables.append(dim1_var)
-    tk.Label(part_frame, text="Dim X").grid(row=row+1, column=1, sticky='e')
-    dim1_entry = tk.Entry(part_frame, textvariable=dim1_var)
+    tk.Label(dim_frame, text="Dim X").grid(row=row+1, column=1, sticky='e')
+    dim1_entry = tk.Entry(dim_frame, textvariable=dim1_var)
     dim1_entry.grid(row=row+1, column=2)
     validate = curry(validators[row], ('Dim X', dim1_var, dim1_entry, commit_button))
     validates.append(validate)
@@ -1096,8 +1124,8 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
     
     dim2_var = tk.StringVar()
     variables.append(dim2_var)
-    tk.Label(part_frame, text="Dim Y").grid(row=row+1, column=1, sticky='e')
-    dim2_entry = tk.Entry(part_frame, textvariable=dim2_var)
+    tk.Label(dim_frame, text="Dim Y").grid(row=row+1, column=1, sticky='e')
+    dim2_entry = tk.Entry(dim_frame, textvariable=dim2_var)
     dim2_entry.grid(row=row+1, column=2)
     validate = curry(validators[row], ('Dim Y', dim2_var, dim2_entry, commit_button))
     validates.append(validate)
@@ -1106,14 +1134,15 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
 
     length_var = tk.StringVar()
     variables.append(length_var)
-    tk.Label(part_frame, text="Dim Z").grid(row=row+1, column=1, sticky='e')
-    length_entry = tk.Entry(part_frame, textvariable=length_var)
+    tk.Label(dim_frame, text="Dim Z").grid(row=row+1, column=1, sticky='e')
+    length_entry = tk.Entry(dim_frame, textvariable=length_var)
     length_entry.grid(row=row+1, column=2)
     validate = curry(validators[row], ('Dim Z', length_var, length_entry, commit_button))
     validates.append(validate)
     length_entry.bind('<FocusOut>', validate)
     length_var.set("NA")
     row += 1
+    dim_frame.grid(row=row, column=1, pady=10, sticky='e', columnspan=2)
     
     interface_names = list(interface_table.keys())
     interface_vars = [tk.StringVar() for i in range(6)]

@@ -7,6 +7,11 @@ def numbers_only(var, entry):
         new_text = ''.join([c for c in text if c in '0123456789.+-'])
         var.set(new_text)
     return out
+
+def change_color(label, color):
+    print('change_color()::', color)
+    label.config(fg=color)
+
 class KeyboardTracker:
     '''
     Track when shift is press or released.

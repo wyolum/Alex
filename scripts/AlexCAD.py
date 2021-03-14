@@ -1028,6 +1028,12 @@ def alex_bom():
                 label.config(fg='blue')
                 url = cell
                 label.bind('<Button-1>', util.curry(webbrowser.open_new, (url,)))
+                # label.bind('<Enter>', util.curry(util.change_color, (label,'black')))
+                # label.bind('<Leave>', util.curry(util.change_color, (label,'#521b92')))
+            if column == 1 and row > 0:
+                #label.config(fg='#9437ff')
+                label.config(fg='#521b92')
+                
     frame.grid(row=1, column=1)
     out = '\n'.join(out)
     if alex_filename:
@@ -1104,7 +1110,7 @@ def stl_import_dialog():
     
 def alex_import():
     filetypes = (("Extruded AL","*.xcad"),
-                 ("Mesh", "*.stl"),
+                 # ("Mesh", "*.stl"),
                  ("all files","*.*"))
     if not STL_SUPPORTED:
         filetypes = (("Extruded AL","*.xcad"),
@@ -1194,7 +1200,7 @@ filemenu = tk.Menu(menubar, tearoff=0)
 filemenu.add_command(label="New", command=alex_new)
 filemenu.add_command(label="Open", command=alex_open_dialog)
 filemenu.add_command(label="Import", command=alex_import)
-if STL_SUPPORTED:
+if False and STL_SUPPORTED:
     filemenu.add_command(label="Import STL", command=stl_import_dialog)
 filemenu.add_command(label="Save", command=alex_save)
 filemenu.add_command(label="Save As", command=alex_save_as)
