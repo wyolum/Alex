@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from numpy import linalg as la
 import pylab as pl
@@ -6,7 +7,7 @@ from stl import mesh
 import sys
 if '.' not in sys.path:
     sys.path.append('.')
-from packages.constants import stl_dir
+from packages.constants import stl_dir, alex_dir
 DEG = np.pi / 180
 
 na = np.newaxis
@@ -173,7 +174,11 @@ class Path:
             out = False
         return out
 
-def perimeter_edges(edges):
+def perimeter_edges(edges, max_time_sec=10, start_sec=None):
+    if start_sec is None:
+        start_sec = time.time()
+    if time.time() - start_sec > max_time_sec:
+        raise ValueError(f'Perimiter is too complex.  Exceeded {max_time_sec} second allocation.')
     left = np.inf
     for e in edges:
         for p in e:
@@ -193,6 +198,7 @@ def perimeter_edges(edges):
                     upness = best.dir[1]
     path = Path([best])
 
+    iter = 0
     while len(path) < len(edges) and not path.closed():
         ### find all points that share end of path
         options = []
@@ -235,7 +241,7 @@ def perimeter_edges(edges):
     if keep:
         tri_2d = []
         edges = [edges[i] for i in keep]
-        island = perimeter_edges(edges)
+        island = perimeter_edges(edges, max_time_sec=max_time_sec, start_sec=start_sec)
         path.extend(island)
     return path
 
@@ -250,7 +256,8 @@ def perimeter(triangles_2d):
             edges.append(-edges[-1])
             #edges[-1].plot()
     ### find left most point
-    return perimeter_edges(edges)
+    out = perimeter_edges(edges)
+    return out
 
 def get_face(vectors, d, eps=eps):
     vals = vectors @ d
@@ -296,7 +303,8 @@ def from_stl(stl_fn):
     return _wf
 
 if __name__ == '__main__':
-    wf = from_stl(f'{stl_dir}/alex11.stl')
+    wf = from_stl(f'{alex_dir}/part_libraries/Main/STL/2020 Alex.stl')
+    #wf = from_stl(f'{alex_dir}/part_libraries/Justin/STL/CylinderLamp.stl')
     pl.close('all')
     pl.figure(); pl.gca(projection='3d')
     pl.plot(wf[:,0],

@@ -826,11 +826,14 @@ def ask_wireframe(lib, label, option, var):
             name = os.path.split(filename)[1].title()
             if name.lower().endswith('.stl'):
                 name = name[:-4]
-            wf = wireframes.from_stl(filename)
-            wireframes.add_wf(lib, name, wf)
-            option.config(bg=bgcolor)
-            option['menu'].add_command(label=name)
-            var.set(name)
+            try:
+                wf = wireframes.from_stl(filename)
+                wireframes.add_wf(lib, name, wf)
+                option.config(bg=bgcolor)
+                option['menu'].add_command(label=name)
+                var.set(name)
+            except ValueError as e:
+                messagebox.showerror(title='STL to Wireframe', message=str(e))
         else:
             option.confi(bg="red")
             
