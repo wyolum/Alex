@@ -9,7 +9,7 @@ except ImportError:
 import sys
 if '.' not in sys.path:
     sys.path.append('.')
-from packages.constants import mm, DEG, alex_dir
+from packages.constants import mm, DEG, alex_dir, alex_scad
 from packages import util
 from packages import wireframes
 from packages import quaternion
@@ -374,13 +374,12 @@ class Scene(Group):### singleton
         self.render(self.view)
 
     def export(self):
-        with open("Alex_test.scad", 'w') as f:
+        with open(alex_scad, 'w') as f:
             for thing in self:
                 if thing not in self.selected:
                     f.write(thing.toscad())
             for thing in self.selected:
                 f.write("#" + thing.toscad())
 
-            f.close()
         if self.export_cb is not None:
             self.export_cb()

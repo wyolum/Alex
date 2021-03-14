@@ -1122,14 +1122,14 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
     for i in range(6):
         interface_var = tk.StringVar()
         label = f"Interface_{i+1:02d}"
-        tk.Label(part_frame, text=label).grid(row=row+1, column=1, sticky='e')
+        #tk.Label(part_frame, text=label).grid(row=row+1, column=1, sticky='e')
         
         interface_vars[i].set('NA')
         interface_opt_menu = tk.OptionMenu(part_frame, interface_vars[i], *interface_names)        
-        interface_opt_menu.grid(row=row+1, column=2, stick='w')
-        validate = curry(validators[row], (label, interface_var, interface_opt_menu, commit_button))
-        validates.append(validate)
-        interface_opt_menu.bind('<FocusOut>', validate)
+        #interface_opt_menu.grid(row=row+1, column=2, stick='w')
+        #validate = curry(validators[row], (label, interface_var, interface_opt_menu, commit_button))
+        #validates.append(validate)
+        #interface_opt_menu.bind('<FocusOut>', validate)
         row += 1
 
     def validate_new_part():
