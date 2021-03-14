@@ -315,14 +315,14 @@ def CornerThreeWay(d1):
 
 @util.undoable
 def createCornerTwoWay():
-    d1 = sidebar.dim1_var.get()
+    d1 = float(sidebar.dim1_var.get())
     part = CornerTwoWay(d1)
     unselect_all()
     scene.append(part, select=True)
     
 @util.undoable
 def createCornerThreeWay():
-    d1 = sidebar.dim1_var.get()
+    d1 = float(sidebar.dim1_var.get())
     part = CornerThreeWay(d1)
     unselect_all()
     scene.append(part, select=True)
@@ -340,7 +340,11 @@ def new_part_dialog():
     parts_db.new_part_dialog(root)
     
 def Alex(length, d1, d2):
-    return parts_db.Part(parts_db.Main, f"{d1:.0f}{d2:.0f} Alex", length)
+    if d1 == 30:
+        metal = 'HFSL6'
+    else:
+        metal = 'HFS5'
+    return parts_db.Part(parts_db.Main, f"{d1:.0f}{d2:.0f} {metal}", length)
 
 @util.undoable
 def createAlex(*args):

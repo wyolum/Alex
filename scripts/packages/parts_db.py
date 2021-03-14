@@ -64,7 +64,6 @@ def assimilate_stl(lib, part_name, fn, copy_only=False):
         mins = np.min(pts, axis=0)
         dims = maxs - mins
         mid = (maxs + mins) / 2.
-        print(np.amax(thing.mesh.vectors, axis=0))
         if copy_only:
             pass
         else:
@@ -299,23 +298,23 @@ class Library:
         part_table.insert(self.db, values)
 
     def make_thumbnail(self, part):
-        print('make_thumbnail()::')
-        print('    ', part.name)
-        print('    ', part.toscad())
+        #print('make_thumbnail()::')
+        #print('    ', part.name)
+        #print('    ', part.toscad())
         f = open(alex_scad, 'w')
         f.write(part.toscad())
         f.close()
         name = ''.join(part.name.split())
         png = f'{part.lib.thumbnail_dir}/{name}.png'
-        print('    ', png)
+        #print('    ', png)
         os.system(f"{openscad_path} {alex_scad} --imgsize=512,512 -o {png}")
 
     def make_thumbnails(self):
         import os
         part_records = part_table.select(self.db)
-        print('make_thumbnails()::')
+        #print('make_thumbnails()::')
         for part_record in part_records:
-            print('    ', part_record.Name)
+            #print('    ', part_record.Name)
             part = Part(part_record.Name)
             make_thumbnail(part)
     #make_thumbnails();here
@@ -324,7 +323,7 @@ Main = Library('Main')
 
 class Part(things.Thing):
     def price_function(self, x):
-        return interp1d(self.lengths, self.prices, x)
+        return interp1d(self.lengths, self.prices, float(x))
         
     def __init__(self, lib, name_or_record, length=1):
         self.lib = lib
@@ -356,16 +355,17 @@ class Part(things.Thing):
                 self.lengths = []
                 self.prices = []
                 #self.price_function = lambda x: interp1d(self.lengths, self.prices, x)
-            self.dim1 = record.Dim1
-            self.dim2 = record.Dim2
+            self.dim1 = float(record.Dim1)
+            self.dim2 = float(record.Dim2)
             if record.Length == 'NA':
-                self.length = length
+                self.length = float(length)
             else:
-                self.length = record.Length
+                self.length = float(record.Length)
             try:
                 wf = self.lib.get_wireframe(record.Wireframe)
             except KeyError:
                 wf = self.lib.get_wireframe.get('Cube')
+            #print('wf, self.dim1, self.dim2, self.length', wf, self.dim1, self.dim2, self.length)
             self.wireframe = wf * [self.dim1, self.dim2, self.length]
             self.stl_fn = os.path.join(lib.stl_dir, record.STL_filename)
             self.color = record.Color
@@ -416,7 +416,9 @@ class Part(things.Thing):
         return values
     
     def __rescale_wireframe(self):
-        self.wireframe = self.lib.get_wireframe(self.record.Wireframe) * [self.dim1, self.dim2, self.length]
+        self.wireframe = self.lib.get_wireframe(self.record.Wireframe) * [float(self.dim1),
+                                                                          float(self.dim2),
+                                                                          float(self.length)]
         
     def set_length(self, length):
         if self.record.Length == 'NA':
@@ -891,9 +893,9 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
                   validate_price,
                   validate_url,
                   validate_color,
+                  validate_dim,
+                  validate_dim,
                   validate_length,
-                  validate_dim,
-                  validate_dim,
                   validate_interface,
                   validate_interface,
                   validate_interface,
@@ -927,10 +929,11 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
                   stl_var.get(),    # 2 STL 
                   price_var.get(),  # 3 
                   url_var.get(),    # 4 
-                  color_var.get(),  # 5 
-                  length_var.get(), # 6 
+                  color_var.get(),  # 5
+                  length_var.get(), # 6
                   dim1_var.get(),   # 7 
-                  dim2_var.get()] + [var.get() for var in interface_vars]
+                  dim2_var.get(),   # 8
+        ] + [var.get() for var in interface_vars]
         lib_name = lib_var.get()
         if values[2] == os.path.abspath(values[2]):
             stl_fn = values[2]
