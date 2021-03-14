@@ -1,6 +1,12 @@
 import numpy as np
 from numpy import sin, cos, pi
 
+def numbers_only(var, entry):
+    def out(*args, **kw):
+        text = var.get()
+        new_text = ''.join([c for c in text if c in '0123456789.+-'])
+        var.set(new_text)
+    return out
 class KeyboardTracker:
     '''
     Track when shift is press or released.

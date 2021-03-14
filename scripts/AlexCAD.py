@@ -15,6 +15,7 @@ scene is a group that has a view (or grouped views) and a "selected" subgroup
 ###
 # TODO
 # -- add tool tips
+# -- add example of difference between wireframe and stl (Corner Three Way)
 '''
 
 try:
@@ -29,6 +30,8 @@ numpy-stl required for stl imports
     ''')
     raise
 
+import webbrowser
+import os.path
 import sys
 import pickle
 import argparse
@@ -45,7 +48,7 @@ from numpy import sin, cos, sqrt
 
 from packages import quaternion
 from packages import interpolate
-from packages.constants import mm, inch, DEG, units, bgcolor
+from packages.constants import mm, inch, DEG, units, bgcolor, alex_scad
 from packages import parts_db
 from packages import util
 from packages import wireframes
@@ -70,7 +73,8 @@ def NumericalEntry(parent, label, onchange, from_=-1e6, to=1e6, values=None, inc
                    var_factory=tk.DoubleVar):
     frame = tk.Frame(parent)
     var = var_factory()
-    var.trace("w", onchange)
+    if onchange != noop:
+        var.trace("w", onchange)
     if var_factory == tk.BooleanVar:
         entry = tk.Checkbutton(frame, text='', variable=var)
     else:
@@ -341,12 +345,12 @@ def createAlex(*args):
     unselect_all()
     
     try:
-        length = max([0, sidebar.length_var.get()])
+        length = max([0, float(sidebar.length_var.get())])
     except tk.TclError:
         length = 100
         sidebar.length_var.set(length)
-    d1 = np.max([20, sidebar.dim1_var.get()])
-    d2 = np.max([20, sidebar.dim2_var.get()])
+    d1 = np.max([20, float(sidebar.dim1_var.get())])
+    d2 = np.max([20, float(sidebar.dim2_var.get())])
 
     #x = sidebar.x_var.get()
     #y = sidebar.y_var.get()
@@ -475,19 +479,26 @@ def TranslatePanel(parent):
     frame = tk.Frame(parent)
     @util.undoable
     def translate():
-        x = x_var.get()
-        y = y_var.get()
-        z = z_var.get()
+        x = float(x_var.get())
+        y = float(y_var.get())
+        z = float(z_var.get())
         selected.translate([x, y, z])
         selected.render(views, selected=True)
     
-    x_frame, x_entry, x_var = NumericalEntry(frame, 'x:', noop, increment=1, var_factory=tk.IntVar)
-    y_frame, y_entry, y_var = NumericalEntry(frame, 'y:', noop, increment=1, var_factory=tk.IntVar)
-    z_frame, z_entry, z_var = NumericalEntry(frame, 'z:', noop, increment=1, var_factory=tk.IntVar)
+    x_frame, x_entry, x_var = NumericalEntry(frame, 'x:', noop, increment=1, var_factory=tk.StringVar)
+    y_frame, y_entry, y_var = NumericalEntry(frame, 'y:', noop, increment=1, var_factory=tk.StringVar)
+    z_frame, z_entry, z_var = NumericalEntry(frame, 'z:', noop, increment=1, var_factory=tk.StringVar)
+    x_var.set(0)
+    y_var.set(0)
+    z_var.set(0)
+    x_var.trace('w', util.numbers_only(x_var, x_entry))
+    y_var.trace('w', util.numbers_only(y_var, y_entry))
+    z_var.trace('w', util.numbers_only(z_var, z_entry))
     x_frame.grid(row=1, column=1)
     y_frame.grid(row=2, column=1)
     z_frame.grid(row=3, column=1)
     translate_button = tk.Button(frame, text="Translate!", command=translate).grid(row=4, column=1)
+
     return frame
 
 def AlignmentPanel(parent):
@@ -537,7 +548,7 @@ def AlignmentPanel(parent):
     tk.Label(frame, text='y').grid(row=1, column=2)
     tk.Label(frame, text='z').grid(row=1, column=3)
     return frame
-    
+
 class SideBar:
     def __init__(self, parent):
         self.parent = parent
@@ -553,20 +564,25 @@ class SideBar:
 
         self.length_frame, self.length_entry, self.length_var = NumericalEntry(self.frame,
                                                                                'L:',
-                                                                               self.length_change,
-                                                                               var_factory=tk.IntVar)
+                                                                                noop,
+                                                                                var_factory=tk.StringVar)
+        self.length_var.trace('w', util.numbers_only(self.length_var, self.length_entry))
+        self.length_entry.bind('<FocusIn>', self.length_enter)
+        self.length_entry.bind('<FocusOut>', self.length_exit)
         self.length_frame.grid(row=2, column=1)
         self.dim1_frame, self.dim1_entry, self.dim1_var = NumericalEntry(self.frame,
                                                                          'D1:',
-                                                                         self.dim1_change,
+                                                                         noop,
                                                                          values=(20, 30, 40),
-                                                                         var_factory=tk.IntVar)
+                                                                         var_factory=tk.StringVar)
+        self.dim1_var.trace('w', util.numbers_only(self.dim1_var, self.dim1_entry))
         self.dim1_frame.grid(row=3, column=1)
         self.dim2_frame, self.dim2_entry, self.dim2_var = NumericalEntry(self.frame,
                                                                          'D2:',
-                                                                         self.dim2_change,
+                                                                         noop,
                                                                          values=(20, 30, 40, 60, 80),
-                                                                         var_factory=tk.IntVar)
+                                                                         var_factory=tk.StringVar)
+        self.dim2_var.trace('w', util.numbers_only(self.dim2_var, self.dim2_entry))
         self.dim2_frame.grid(row=4, column=1)
 
         self.length_var.set(100)
@@ -618,7 +634,15 @@ class SideBar:
         self.translate_panel.grid(row=17, column=1, pady=5)
         self.ap = AlignmentPanel(self.frame)
         self.ap.grid(row=18, column=1, pady=50)
-        
+
+        def activate(*args):
+            self.active = True
+        def disactivate(*args):
+            self.active = False
+            
+        self.frame.bind('<Enter>', activate)
+        self.frame.bind('<Leave>', disactivate)
+
 
     def step_change(self, id, text, mode):
         try:
@@ -633,11 +657,15 @@ class SideBar:
             pass
         except AttributeError:
             pass
-        
-    def length_change(self, id, text, mode):
+    def length_enter(self, event):
+        lengths = [thing.length for thing in scene.selected if not thing.iscontainer()]
+        if len(lengths) and  max(lengths) - min(lengths) < .01:
+            self.length_var.set(lengths[0])
+            
+    def length_exit(self, event):
         try:
             if hasattr(self, 'length_var'):
-                length = self.length_var.get()
+                length = float(self.length_var.get())
                 self.length_entry.config(bg=bgcolor)
                 for thing in selected:
                     thing.set_length(length)
@@ -848,7 +876,7 @@ def cube_dialog(*args):
     d1_frame, d1_entry, d1_var = NumericalEntry(frame,
                                                 'D1:',
                                                 noop,
-                                                increment=10)                                                
+                                                increment=10)
     d1_frame.grid(row=4, column=1)
     d2_frame, d2_entry, d2_var = NumericalEntry(frame,
                                                 'D2:',
@@ -915,7 +943,7 @@ def alex_save():
         with open(filename, 'wb') as f:
             pickle.dump(group.things, f)
         alex_set_titlebar()
-
+    root.update()
 def alex_save_as():
     root.update()
     filename = filedialog.asksaveasfilename(
@@ -928,20 +956,73 @@ def alex_save_as():
         alex_filename.append(filename)
         alex_save()
     root.update()
-        
+
+def hilight_parts(desc, grp=None):
+    if grp is None:
+        grp = scene
+    scad = []
+    for thing in grp:
+        if thing.iscontainer():
+            group = thing
+            scad.extend(hilight_parts(desc, group))
+        else:
+            line = thing.tobom()[0].split(',')
+            _desc = f'{line[0]},{line[1]},{line[2]},{line[3]}'
+            if _desc == desc:
+                scad.append('#' + thing.toscad())
+            else:
+                scad.append(thing.toscad())
+    if grp == scene:
+        with open(alex_scad, 'w') as f:
+            f.write('\n'.join(scad))
+    return scad
+
+def lolight_parts(desc, grp=None):
+    pass
+    
 def alex_bom():
     lines = scene.tobom()
     out = []
     counts = []
+    total_costs = []
+    descs = []
     for line in lines:
         if line in out:
             i = out.index(line)
             counts[i] += 1
+            total_costs[i] += float(line.split(',')[4][1:])
         else:
             out.append(line)
             counts.append(1)
-    out = [f'{c},{l}' for c, l in zip(counts, out)]
-    out = ['QTY,DESC,DIM'] + out
+            descs.append(line.split(',')[0])
+            total_costs.append(float(line.split(',')[4][1:]))
+    formatted_out = []
+    sum_total = 0
+    for count, total, l in zip(counts, total_costs, out):
+        l = l.split(',')
+        formatted_out.append(f'{count},{l[0]},{l[1]},{l[2]},{l[3]},{l[4]},${total:.2f},{l[5]}')
+        sum_total += total
+    order = np.argsort(descs)
+    formatted_out = [formatted_out[i] for i in order]
+    formatted_out.append(f',,,,,Total:,${sum_total:.2f},')
+    # out = [f'{c},{l}' for c, l in zip(counts, out)]
+    
+    out = ['QTY,DESC,dim x,dim y,dim z,Unit Cost, Total Cost,URL'] + formatted_out
+    tl = tk.Toplevel(root)
+    frame = tk.Frame(tl)
+    for row, l in enumerate(out):
+        line = l.split(',')
+        desc = f'{line[1]},{line[2]},{line[3]},{line[4]}'
+        for column, cell in enumerate(line):
+            label = tk.Label(frame, text=cell)
+            label.bind('<Button-1>', util.curry(hilight_parts, (desc,)))
+            # label.bind('<Leave>', util.curry(lolight_parts, (desc,)))
+            label.grid(row=row, column=column, sticky='w')
+            if cell.startswith('http'):
+                label.config(fg='blue')
+                url = cell
+                label.bind('<Button-1>', util.curry(webbrowser.open_new, (url,)))
+    frame.grid(row=1, column=1)
     out = '\n'.join(out)
     if alex_filename:
         base = alex_filename[0]
@@ -1046,14 +1127,17 @@ def alex_open(filename):
     while len(alex_filename) > 0:
         alex_filename.pop() ### ditch old filename
     alex_filename.append(filename)
-    f = open(filename, 'rb')
-    things = pickle.load(f)
-    f.close()
+    if os.path.exists(filename):
+        with open(filename, 'rb') as f:
+            things = pickle.load(f)
     
-    alex_clear_all()
-    for thing in things:
-        scene.append(thing)
-        thing.render(views)
+        alex_clear_all()
+        for thing in things:
+            scene.append(thing)
+            thing.render(views)
+    else:
+        alex_clear_all()
+        
     alex_set_titlebar()
     
 def alex_open_dialog():

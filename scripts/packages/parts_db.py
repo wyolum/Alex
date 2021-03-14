@@ -222,8 +222,15 @@ class ProxyDB:
     def __init__(self, fn):
         connect(fn)
         self.fn = fn
+    def executemany(self, *args, **kw):
+        return connect(self.fn).executemany(*args, **kw)
+    
     def execute(self, sql):
         return connect(self.fn).execute(sql)
+
+    def commit(self, *args, **kw):
+        return connect(self.fn).commit(*args, **kw)
+    
     
 class Library:
     def __init__(self, library_name):
@@ -1071,37 +1078,37 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
     color_button.grid(row=row+1, column=3, sticky='w')
     row += 1
 
-    length_var = tk.StringVar()
-    variables.append(length_var)
-    tk.Label(part_frame, text="Length").grid(row=row+1, column=1, sticky='e')
-    length_entry = tk.Entry(part_frame, textvariable=length_var)
-    length_entry.grid(row=row+1, column=2)
-    validate = curry(validators[row], ('Length', length_var, length_entry, commit_button))
-    validates.append(validate)
-    length_entry.bind('<FocusOut>', validate)
-    length_var.set("NA")
-    row += 1
-    
     dim1_var = tk.StringVar()
     variables.append(dim1_var)
-    tk.Label(part_frame, text="Dim1").grid(row=row+1, column=1, sticky='e')
+    tk.Label(part_frame, text="Dim X").grid(row=row+1, column=1, sticky='e')
     dim1_entry = tk.Entry(part_frame, textvariable=dim1_var)
     dim1_entry.grid(row=row+1, column=2)
-    validate = curry(validators[row], ('Dim1', dim1_var, dim1_entry, commit_button))
+    validate = curry(validators[row], ('Dim X', dim1_var, dim1_entry, commit_button))
     validates.append(validate)
     dim1_entry.bind('<FocusOut>', validate)
     row += 1
     
     dim2_var = tk.StringVar()
     variables.append(dim2_var)
-    tk.Label(part_frame, text="Dim2").grid(row=row+1, column=1, sticky='e')
+    tk.Label(part_frame, text="Dim Y").grid(row=row+1, column=1, sticky='e')
     dim2_entry = tk.Entry(part_frame, textvariable=dim2_var)
     dim2_entry.grid(row=row+1, column=2)
-    validate = curry(validators[row], ('Dim2', dim2_var, dim2_entry, commit_button))
+    validate = curry(validators[row], ('Dim Y', dim2_var, dim2_entry, commit_button))
     validates.append(validate)
     dim2_entry.bind('<FocusOut>', validate)
     row += 1
 
+    length_var = tk.StringVar()
+    variables.append(length_var)
+    tk.Label(part_frame, text="Dim Z").grid(row=row+1, column=1, sticky='e')
+    length_entry = tk.Entry(part_frame, textvariable=length_var)
+    length_entry.grid(row=row+1, column=2)
+    validate = curry(validators[row], ('Dim Z', length_var, length_entry, commit_button))
+    validates.append(validate)
+    length_entry.bind('<FocusOut>', validate)
+    length_var.set("NA")
+    row += 1
+    
     interface_names = list(interface_table.keys())
     interface_vars = [tk.StringVar() for i in range(6)]
     variables.extend(interface_vars)

@@ -250,11 +250,11 @@ class IsoView:
                     self.scene.selected.append(thing)
                     thing.render(self.scene.view, selected=True)
         self.scene.export()
-        if len(self.scene.selected) > 0:
-            self.x_var.set(self.scene.selected.pos[0])
-            self.y_var.set(self.scene.selected.pos[1])
-            self.z_var.set(self.scene.selected.pos[2])
-        
+        #if len(self.scene.selected) > 0:
+        #    lengths = [thing.length for thing in self.scene.selected if not thing.iscontainer()]
+        #    if np.max(lengths) - np.min(lengths) < 1e-2:
+        #        pass ## TOOD? print('set length var tp length')
+        #    
     def draw_axes(self):
         if self.axes_on:
             id = self.can.create_oval(self.offset[0] - 2, self.offset[1] - 2,
