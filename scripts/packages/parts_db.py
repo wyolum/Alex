@@ -19,6 +19,7 @@ import sys
 if '.' not in sys.path:
     sys.path.append('.')
 from packages import util
+from packages import constants
 from packages.util import curry
 from packages import things
 from packages import wireframes
@@ -989,6 +990,8 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
 
     row = 0
     lib_names = [n for n in get_library_names() if n != 'Main']
+    if constants.edit_main:
+        lib_names.insert(0, 'Main')
     lib_var = tk.StringVar()
     if lib == Main:
         lib_var.set("User")

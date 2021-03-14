@@ -48,6 +48,7 @@ from numpy import sin, cos, sqrt
 
 from packages import quaternion
 from packages import interpolate
+from packages import constants
 from packages.constants import mm, inch, DEG, units, bgcolor, alex_scad
 from packages import parts_db
 from packages import util
@@ -61,6 +62,7 @@ parser.add_argument('filename', nargs='?', default=None, type=str)
 parser.add_argument('-W', '--width', default=None, type=int)
 parser.add_argument('-H', '--height', default=None, type=int)
 parser.add_argument('-Z', '--zoom_buttons', nargs='?', default=False, type=util.str2bool)
+parser.add_argument('-M', '--edit_main', nargs='?', default=False, type=util.str2bool)
 args = parser.parse_args()
 
 ### Global singletons
@@ -1286,6 +1288,9 @@ ttk.Separator(root, orient=tk.VERTICAL).grid(row=3, column=2, columnspan=10, sti
 
 if args.filename is not None:
     alex_open(args.filename)
+
+constants.edit_main = args.edit_main
+
 
 
 if False:
