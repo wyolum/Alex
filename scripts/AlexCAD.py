@@ -1204,7 +1204,7 @@ if False and STL_SUPPORTED:
     filemenu.add_command(label="Import STL", command=stl_import_dialog)
 filemenu.add_command(label="Save", command=alex_save)
 filemenu.add_command(label="Save As", command=alex_save_as)
-filemenu.add_command(label="Generate BoM", command=alex_bom)
+filemenu.add_command(label="The BoM!", command=alex_bom)
 filemenu.add_separator()
 filemenu.add_command(label="Exit", command=root.quit)
 menubar.add_cascade(label="File", menu=filemenu)
