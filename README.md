@@ -2,6 +2,7 @@
 Aluminium Extrusion specific CAD program for Python3
 ```
 > pip install numpy
+> pip install numpy-stl
 > git clone git@github.com:wyolum/Alex.git
 > cd Alex/scripts
 > touch Alex_test.scad ## or wait for AlexCAD to generate this automatically
@@ -26,11 +27,11 @@ Aluminium Extrusion specific CAD program for Python3
 - Extensible parts library
 - Intuative zoom
 - Intuative alignment
+- Interactive BoM (The BoM!)
+- Third party parts
 
 #TODO
-- Incorporate pricing CSV to easily change prices
-- add more parts
-- Get interfaces working
+- Add too tips.
 
 # Development Videos
 ## Introduction 
