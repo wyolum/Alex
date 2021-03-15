@@ -10,8 +10,7 @@ Aluminium Extrusion specific CAD program for Python3
 >                           ### in the OpenScad menu select Design->Automatically Reload and Preview
 > python AlexCAD.py
 ```
-
-[![Quick Demo](https://img.youtube.com/vi/mkjgiLznFwk/0.jpg)](https://www.youtube.com/watch?v=mkjgiLznFwk)
+![GlamShot](https://github.com/wyolum/Alex/blob/main/images/Screen%20Shot%202021-03-15%20at%204.36.06%20PM.png?raw=true)
 
 ## Shortcuts
 * ctrl-n -- New Aluminum Extrusion
@@ -40,6 +39,8 @@ Aluminium Extrusion specific CAD program for Python3
 [![Quick Demo](https://img.youtube.com/vi/UnlkdmXvXzY/0.jpg)](https://www.youtube.com/watch?v=UnlkdmXvXzY)
 ## New Part Demo
 [![New Part Demo](https://img.youtube.com/vi/-pqmj2yvioE/0.jpg)](https://youtu.be/-pqmj2yvioE)
+## Original Demo
+![Quick Demo](https://img.youtube.com/vi/mkjgiLznFwk/0.jpg)](https://www.youtube.com/watch?v=mkjgiLznFwk)
 
 
 # Thanks to
