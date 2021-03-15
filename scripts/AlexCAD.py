@@ -49,7 +49,7 @@ from numpy import sin, cos, sqrt
 from packages import quaternion
 from packages import interpolate
 from packages import constants
-from packages.constants import mm, inch, DEG, units, bgcolor, alex_scad
+from packages.constants import mm, inch, DEG, units, bgcolor, alex_scad, openscad_path
 from packages import parts_db
 from packages import util
 from packages import wireframes
