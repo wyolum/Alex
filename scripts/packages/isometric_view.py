@@ -1,6 +1,6 @@
 import numpy as np
 import tkinter as tk
-
+from tkinter import messagebox
 from packages import util
 from packages.constants import bgcolor, hlcolor
 
@@ -45,6 +45,7 @@ class IsoView:
         self.can.bind('<ButtonPress-1>', self.onpress)
         self.can.bind('<ButtonRelease-1>', self.onrelease)
         self.can.bind('<Motion>', self.ondrag)
+        self.can.bind('<ButtonPress-2>', self.detail_part)
         self.tags = {}
         self.dragging = False
         self.drag_initialized = False
@@ -255,6 +256,18 @@ class IsoView:
         #    if np.max(lengths) - np.min(lengths) < 1e-2:
         #        pass ## TOOD? print('set length var tp length')
         #    
+    def detail_part(self, event):
+        print('Isometric View:: option menu!', event)
+        clicked = self.can.find_closest(event.x, event.y)
+        if len(clicked) > 0:
+            closest = clicked[0]
+            if closest in self.tags: ### something was clicked
+                clicked = self.tags[closest]
+                bom = clicked.tobom()[0].split(',')
+                msg = (f'{bom[0]}\n{float(bom[1]):.0f}mm x {float(bom[2]):.0f}mm x {float(bom[3]):.0f}mm\n' +
+                       f'{bom[4]}\n{bom[5]}')
+                
+                messagebox.showinfo("Details", msg)
     def draw_axes(self):
         if self.axes_on:
             id = self.can.create_oval(self.offset[0] - 2, self.offset[1] - 2,

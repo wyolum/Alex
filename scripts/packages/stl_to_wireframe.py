@@ -187,6 +187,7 @@ def perimeter_edges(edges, max_time_sec=10, start_sec=None):
 
     ### find all points with this left
     upness = -np.inf
+    best = Edge([0, 0], [1, 0])
     for e in edges:
         if np.min(np.abs(e.data[:,0] - left)) < eps:
             if np.abs(e.dir[1]) > upness:
@@ -305,6 +306,7 @@ def from_stl(stl_fn):
 if __name__ == '__main__':
     wf = from_stl(f'{alex_dir}/part_libraries/Main/STL/2020 Alex.stl')
     #wf = from_stl(f'{alex_dir}/part_libraries/Justin/STL/CylinderLamp.stl')
+    #wf = from_stl('/Users/justin/Desktop/trilobe_nut_knob-qtr_inch.stl')
     pl.close('all')
     pl.figure(); pl.gca(projection='3d')
     pl.plot(wf[:,0],
