@@ -40,7 +40,7 @@ Aluminium Extrusion specific CAD program for Python3
 ## New Part Demo
 [![New Part Demo](https://img.youtube.com/vi/-pqmj2yvioE/0.jpg)](https://youtu.be/-pqmj2yvioE)
 ## Original Demo
-![Quick Demo](https://img.youtube.com/vi/mkjgiLznFwk/0.jpg)](https://www.youtube.com/watch?v=mkjgiLznFwk)
+[![Quick Demo](https://img.youtube.com/vi/mkjgiLznFwk/0.jpg)](https://www.youtube.com/watch?v=mkjgiLznFwk)
 
 
 # Thanks to
