@@ -49,7 +49,7 @@ from numpy import sin, cos, sqrt
 from packages import quaternion
 from packages import interpolate
 from packages import constants
-from packages.constants import mm, inch, DEG, units, bgcolor, alex_scad, openscad_path
+from packages.constants import mm, inch, DEG, units, bgcolor, alex_scad, openscad_path, fine_rotation_angle
 from packages import parts_db
 from packages import util
 from packages import wireframes
@@ -231,7 +231,7 @@ def rotate_roll():
     if len(selected) > 0:
         util.register_undo()
     if control_key.pressed():
-        rt_angles = .5
+        rt_angles = fine_rotation_angle
     else:
         rt_angles = 1
     selected.rotate(roll=rt_angles)
@@ -241,7 +241,7 @@ def rotate_pitch():
     if len(selected) > 0:
         util.register_undo()
     if control_key.pressed():
-        rt_angles = .5
+        rt_angles = fine_rotation_angle
     else:
         rt_angles = 1
     selected.rotate(pitch=rt_angles)
@@ -251,7 +251,7 @@ def rotate_yaw():
     if len(selected) > 0:
         util.register_undo()
     if control_key.pressed():
-        rt_angles = .5
+        rt_angles = fine_rotation_angle
     else:
         rt_angles = 1
     selected.rotate(yaw=rt_angles)
