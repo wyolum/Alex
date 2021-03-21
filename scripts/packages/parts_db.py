@@ -380,7 +380,7 @@ class Part(things.Thing):
             self.color = record.Color
             self.url = record.URL
             self.record = record
-            
+
             self.interfaces = []
             for i in range(1, 7):
                 k = f'Interface_{i:02d}'
@@ -388,6 +388,7 @@ class Part(things.Thing):
                 if name != 'NA':
                     interface = lookup_interface(name)
                     self.interfaces.append(interface)
+        
     def saveas(self, tolib, name):
         wireframe = self.record.Wireframe
         values = self.get_db_values()
@@ -468,7 +469,8 @@ class Part(things.Thing):
         angle, vec = self.get_orientation_angle_and_vec()
         out.append(f'translate([{pos[0]}, {pos[1]}, {pos[2]}])')
         out.append(f'  rotate(a={angle / DEG:.0f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
-        out.append(f'  color("{self.color}")scale([{self.dim1}, {self.dim2}, {self.length}])import("{self.stl_fn}");')
+        out.append(f'  color("{self.color}")')
+        out.append(f'    scale([{self.dim1}, {self.dim2}, {self.length}])import("{self.stl_fn}");')
 
         #T = np.zeros((4, 4))
         #T[:3,:3] = self.orient @ np.diag([self.dim1, self.dim2, self.length])

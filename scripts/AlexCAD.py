@@ -505,6 +505,9 @@ def TranslatePanel(parent):
     z_frame.grid(row=3, column=1)
     translate_button = tk.Button(frame, text="Translate!", command=translate).grid(row=4, column=1)
 
+    frame.x_entry = x_entry
+    frame.y_entry = y_entry
+    frame.z_entry = z_entry
     return frame
 
 def AlignmentPanel(parent):
@@ -579,7 +582,7 @@ class SideBar:
         self.dim1_frame, self.dim1_entry, self.dim1_var = NumericalEntry(self.frame,
                                                                          'D1:',
                                                                          noop,
-                                                                         values=(20, 30, 40),
+                                                                         values=(20, 30),
                                                                          var_factory=tk.StringVar)
         self.dim1_var.trace('w', util.numbers_only(self.dim1_var, self.dim1_entry))
         self.dim1_frame.grid(row=3, column=1)
@@ -590,7 +593,7 @@ class SideBar:
                                                                          var_factory=tk.StringVar)
         self.dim2_var.trace('w', util.numbers_only(self.dim2_var, self.dim2_entry))
         self.dim2_frame.grid(row=4, column=1)
-
+        
         self.length_var.set(100)
         self.dim1_var.set(20)
         self.dim2_var.set(20)
@@ -640,11 +643,20 @@ class SideBar:
         self.translate_panel.grid(row=17, column=1, pady=5)
         self.ap = AlignmentPanel(self.frame)
         self.ap.grid(row=18, column=1, pady=50)
-
+        self.entries = [self.dim1_entry, self.dim2_entry, self.length_entry,
+                        self.step_entry,
+                        self.translate_panel.x_entry,
+                        self.translate_panel.y_entry,
+                        self.translate_panel.z_entry,
+        ]
         def activate(*args):
             self.active = True
+            for entry in self.entries:
+                entry.config(state='normal')
         def disactivate(*args):
             self.active = False
+            for entry in self.entries:
+                entry.config(state='disabled')
             
         self.frame.bind('<Enter>', activate)
         self.frame.bind('<Leave>', disactivate)
@@ -679,6 +691,7 @@ class SideBar:
                 if 'scene' in globals():
                     export()
                 self.last_length = length
+
         except tk.TclError as e:
             if str(e) == 'expected floating-point number but got ""':
                 pass
@@ -759,6 +772,9 @@ class SideBar:
             raise
             self.z_entry.config(bg='red')
 
+def shelfs_dialog(*args):
+    pass
+    
 def cube_dialog(*args):
     def on_cancel(*args):
         tl.destroy()
@@ -950,6 +966,7 @@ def alex_save():
             pickle.dump(group.things, f)
         alex_set_titlebar()
     root.update()
+    
 def alex_save_as():
     root.update()
     filename = filedialog.asksaveasfilename(

@@ -106,7 +106,7 @@ class IsoView:
                                      fill=color,
                                      width=width, alpha=.3)
         
-    def create_path(self, thing, path, color, width):
+    def create_path(self, thing, path, color, width, *can_args, **can_kw):
         path = path @ self.B * self.get_scale() + self.offset
         breaks = np.where(np.isnan(path[:,0]))[0]
         breaks = np.hstack([breaks, len(path) ])
@@ -121,13 +121,14 @@ class IsoView:
             id = self.can.create_line(*args,
                                       tags=(tag,),
                                       fill=color,
-                                      width=width)
+                                      width=width,
+                                      *can_args, **can_kw)
             self.tags[id] = thing
             start = stop + 1
         return
             
-    def create_line(self, thing, start, stop, color, width):
-        return self.create_path(thing, [start, stop], color, width)
+    def create_line(self, thing, start, stop, color, width, *can_args, **can_kw):
+        return self.create_path(thing, [start, stop], color, width, *can_args, **can_kw)
 
     def erase(self, thing):
         self.can.delete(str(thing))

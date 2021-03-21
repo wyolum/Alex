@@ -23,7 +23,7 @@ class Thing:
         self.pos = np.array([0, 0, 0])
         self.orient = np.eye(3)
         self.interfaces = []
-        
+
     def get_boundingbox(self):
         '''
         return min and max for each axis
