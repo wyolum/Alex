@@ -775,6 +775,51 @@ class SideBar:
 def shelfs_dialog(*args):
     pass
     
+def compression_strut(*args):
+    def on_cancel(*args):
+        tl.destroy()
+    def on_submit(*args):
+        length = l_var.get()
+        d1 = d1_var.get()
+
+        group = things.Group()
+        group.append(Alex(length, d1, d1))
+
+        strut_name = f"{d1:.0f}{d1:.0f} 45 Degree End"
+        strut1 = parts_db.Part(parts_db.Main, strut_name)
+        strut1.rotate(roll=1)
+        strut1.translate([0, d1/2, -d1/2])
+        group.append(strut1)
+        strut2 = strut1.dup()
+        strut2.rotate(pitch=2, yaw=2)
+        group.append(strut2)
+        strut2.translate([0, -d1, length + d1])
+        group.rotate(pitch=3.5)
+        unselect_all()
+        scene.append(group, select=True)
+
+        on_cancel()
+
+    tl = tk.Toplevel(root)
+    frame = tk.Frame(tl)
+    l_frame, l_entry, l_var = NumericalEntry(frame,
+                                             'L:',
+                                             noop)
+    l_frame.grid(row=1, column=1)
+    d1_frame, d1_entry, d1_var = NumericalEntry(frame,
+                                                'X DIM:',
+                                                noop,
+                                                increment=10)
+    d1_frame.grid(row=4, column=1)
+    l_var.set(200);
+    d1_var.set(20);
+    frame.grid(row=1, column=1)
+
+    button_f = tk.Frame(frame)
+    button_f.grid(row=7, column=1)
+    tk.Button(button_f, text="Ok", command=on_submit).grid(row=1, column=1)
+    tk.Button(button_f, text="Cancel", command=on_cancel).grid(row=1, column=2)
+        
 def cube_dialog(*args):
     def on_cancel(*args):
         tl.destroy()
@@ -1238,6 +1283,7 @@ menubar.add_cascade(label="Part", menu=partmenu)
 
 wizardmenu = tk.Menu(menubar, tearoff=0)
 wizardmenu.add_command(label="Cube", command=cube_dialog)
+wizardmenu.add_command(label="Compression Strut", command=compression_strut)
 menubar.add_cascade(label="Wizard", menu=wizardmenu)
 
 helpmenu = tk.Menu(menubar, tearoff=0)
@@ -1317,8 +1363,6 @@ if args.filename is not None:
     alex_open(args.filename)
 
 constants.edit_main = args.edit_main
-
-
 
 if False:
     root.bind('<Escape>', cancel)

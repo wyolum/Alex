@@ -147,7 +147,7 @@ def from_stl_to_bounding_box(stl_fn):
     dim = mx - mn
     pos = (mx + mn) / 2
     pos[2] = mn[2]
-    return (wf - pos) / dim
+    return (wf - pos)
 
 def remove_wf_old(name):
     if name in __wireframes:

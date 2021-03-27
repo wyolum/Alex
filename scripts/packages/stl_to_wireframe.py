@@ -227,10 +227,11 @@ def perimeter_edges(edges, max_time_sec=10, start_sec=None):
             path.plot(color='g', arrow=True)
             pl.axis('equal')
             pl.axis('off')
+            pl.show()
             #print(options)
             #print(most_ccw, best)
             #print()
-            pl.savefig(f'/Users/justin/code/Alex/images/path/{len(path):04d}.png')
+            #pl.savefig(f'/Users/justin/code/Alex/images/path/{len(path):04d}.png')
             # pl.show()
     ### thow away all edges that are not contained in perimeter.
     keep = []
@@ -256,6 +257,7 @@ def perimeter(triangles_2d):
             #edges[-1].plot()
             edges.append(-edges[-1])
             #edges[-1].plot()
+            print(edges[-1])
     ### find left most point
     out = perimeter_edges(edges)
     return out
@@ -284,18 +286,19 @@ def from_stl(stl_fn):
     pos = (mx + mn) / 2
     pos[2] = mn[2]
     vectors = (vectors - pos) / dim
-
+    
     ds = np.vstack([np.eye(3),
                     -np.eye(3)])
     wf = []
     nn = 0
     for d in ds:
         idx, p2, mx, b2 = get_face(vectors, d, eps=eps)
-        path = perimeter(p2)
-        xy = path.get_xy()
-        p3 = (b2 @ xy.T).T + d * mx
-        wf.append(p3)
-        nn += len(p3)
+        if len(p2) > 0:
+            path = perimeter(p2)
+            xy = path.get_xy()
+            p3 = (b2 @ xy.T).T + d * mx
+            wf.append(p3)
+            nn += len(p3)
     _wf = np.empty((nn + len(wf) - 1, 3)) * np.nan
     ii = 0
     for w in wf:
@@ -304,14 +307,30 @@ def from_stl(stl_fn):
     return _wf
 
 if __name__ == '__main__':
-    wf = from_stl(f'{alex_dir}/part_libraries/Main/STL/2020 Alex.stl')
+    #wf = from_stl(f'{alex_dir}/part_libraries/Main/STL/2020 Alex.stl')
     #wf = from_stl(f'{alex_dir}/part_libraries/Justin/STL/CylinderLamp.stl')
     #wf = from_stl('/Users/justin/Desktop/trilobe_nut_knob-qtr_inch.stl')
+    stl = ('/Users/justin/code/Alex/scripts/packages/scad/45_deg_end_wf.stl')
+    wf = from_stl(stl)
+    vectors =  mesh.Mesh.from_file(stl).vectors
+    
     pl.close('all')
-    pl.figure(); pl.gca(projection='3d')
-    pl.plot(wf[:,0],
-            wf[:,1],
-            wf[:,2], 'b-')
+    fig = pl.figure(figsize=(6, 12))
+    ax = [fig.add_subplot(2, 1, 1, projection='3d'),
+          fig.add_subplot(2, 1, 2, projection='3d')]
+    ax[0].plot(wf[:,0],
+               wf[:,1],
+               wf[:,2], 'b-')
+    print(wf)
+    for vector in vectors:
+        xyz = np.vstack([vector.reshape((3, 3)),
+                         vector[:3]])
+        ax[1].plot(xyz[:,0],
+                   xyz[:,1],
+                   xyz[:,2], 'r-')
+        ax[0].plot(xyz[:,0],
+                   xyz[:,1],
+                   xyz[:,2], 'r-', alpha=.3)
     #np.save('wireframes/Plate-T.npy', wf)
     pl.show()
     here

@@ -410,7 +410,7 @@ class Part(things.Thing):
             result = piecewise_table.select(self.lib.db, where=f"PartName='{self.name}'")
             if len(result) == 0:
                 raise ValueError('Expected example part to be complete!')
-            values = [(r.Name, r.Length, r.Price) for r in records]
+            values = [(r.PartName, r.Length, r.Price) for r in result]
             piecewise_table.insert(tolib.db, values)
         
     def get_db_values(self):
@@ -858,6 +858,55 @@ def get_library_names():
                     names.append(name)
     return names
 
+def insert_part(lib, to_lib_name, values, price_list=None):
+    to_lib = Library(to_lib_name)
+    name       = values[0]
+    wireframe  = values[1]
+    stl_fn     = values[2]
+    price      = values[3]
+    url        = values[4]
+    color      = values[5]
+    length     = values[6]
+    dim1       = values[7]
+    dim2       = values[8]
+    interfaces = values[9:]
+
+    print('stl_fn::', stl_fn)
+    if values[2] == os.path.abspath(values[2]): ### ingest from outside of db system
+        stl_fn = values[2]
+        values[2] = os.path.split(values[2])[1]
+        copy_only = False
+    else: ### already part of a library (local path)
+        stl_fn = os.path.join(os.path.join(lib.stl_dir, values[2]))
+        copy_only = True 
+   
+    prev_records = part_table.select(to_lib.db, where=f'Name="{values[0]}"')
+    if prev_records:
+        result = messagebox.askquestion("Overwrite", f"Overwrite {values[0]}", icon='warning')
+        if result == 'yes':
+            part_table.delete(to_lib.db, where=f'Name="{values[0]}"')
+        else:      
+            return
+    ### import stl file into library
+    print('commit_new_part()::', to_lib.name, values[0], values[2])
+    values[2] = assimilate_stl(to_lib, values[0], stl_fn, copy_only=copy_only)
+
+    to_lib.insert([values])
+
+    ### import wireframe to library
+    npy = os.path.join(to_lib.wireframe_dir, values[1] + '.npy')
+    if not os.path.exists(npy):
+        shutil.copyfile(os.path.join(lib.wireframe_dir, values[1] + '.npy'),
+                        npy)
+
+    if price == '{piecewise}':
+        prices = [(name, l, p) for l, p in price_list]
+        piecewise_table.delete(to_lib.db, where=f'PartName="{name}"')
+        piecewise_table.insert(to_lib.db, prices)
+
+    part = Part(to_lib, name)
+    to_lib.make_thumbnail(part)
+    
 def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
     tl = tk.Toplevel(parent)
     
@@ -948,46 +997,15 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
                   dim1_var.get(),   # 7 
                   dim2_var.get(),   # 8
         ] + [var.get() for var in interface_vars]
-        lib_name = lib_var.get()
-        if values[2] == os.path.abspath(values[2]):
-            stl_fn = values[2]
-            values[2] = os.path.split(values[2])[1]
-            copy_only = False
-        else:
-            stl_fn = os.path.join(os.path.join(lib.stl_dir, values[2]))
-            copy_only = True
-        to_lib = Library(lib_name)
-        prev_records = part_table.select(to_lib.db, where=f'Name="{values[0]}"')
-        if prev_records:
-            result = messagebox.askquestion("Overwrite", f"Overwrite {values[0]}", icon='warning')
-            if result == 'yes':
-                part_table.delete(to_lib.db, where=f'Name="{values[0]}"')
-            else:      
-                return
-        ### import stl file into library
-        print('commit_new_part()::', to_lib.name, values[0], values[2])
-        values[2] = assimilate_stl(to_lib, values[0], stl_fn, copy_only=copy_only)
-
-        to_lib.insert([values])
-
-        ### import wireframe to library
-        npy = os.path.join(to_lib.wireframe_dir, values[1] + '.npy')
-        if not os.path.exists(npy):
-            shutil.copyfile(os.path.join(lib.wireframe_dir, values[1] + '.npy'),
-                            npy)
-            
+        
+        to_lib_name = lib_var.get()
         if price_var.get() == '{piecewise}':
             price_list = cm.get_table(len_vars, cost_vars)
-            name = name_var.get()
-            prices = [(name, l, p) for l, p in price_list]
-
-            piecewise_table.delete(to_lib.db, where=f'PartName="{name}"')
-            piecewise_table.insert(to_lib.db, prices)
-            
-        part = Part(to_lib, name_var.get())
-        to_lib.make_thumbnail(part)
+        else:
+            price_list = None
+        insert_part(lib, to_lib_name, values, price_list)
         close_new_part_dialog()
-        
+
     commit_button = tk.Button(part_frame, text="Commit", command=commit_new_part)
     commit_button.grid(row=31, column=2, sticky='e')
     commit_button.config(state='disabled')
@@ -1007,6 +1025,7 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
 
     row = 0
     lib_names = [n for n in get_library_names() if n != 'Main']
+    print('constants.edit_main', constants.edit_main)
     if constants.edit_main:
         lib_names.insert(0, 'Main')
     lib_var = tk.StringVar()
