@@ -292,6 +292,7 @@ def zoom_fit_selected(ignored=None):
 
         # print(offset_new_top, top.offset, delta_xy)
         views.slew(top.B @ delta_xy + front.B @ [0, delta_z])
+
 def flip_z_selected(ignored=None):
     selected.mirror([0, 0, 1])
     selected.render(views, selected=True)
@@ -494,16 +495,29 @@ def TranslatePanel(parent):
     x_frame, x_entry, x_var = NumericalEntry(frame, 'x:', noop, increment=1, var_factory=tk.StringVar)
     y_frame, y_entry, y_var = NumericalEntry(frame, 'y:', noop, increment=1, var_factory=tk.StringVar)
     z_frame, z_entry, z_var = NumericalEntry(frame, 'z:', noop, increment=1, var_factory=tk.StringVar)
+
+    roll_frame, roll_entry, roll_var = NumericalEntry(frame, 'roll:', noop, increment=1, var_factory=tk.StringVar)
+    pitch_frame, pitch_entry, pitch_var = NumericalEntry(frame, 'pitch:', noop, increment=1, var_factory=tk.StringVar)
+    yaw_frame, yaw_entry, yaw_var = NumericalEntry(frame, 'yaw:', noop, increment=1, var_factory=tk.StringVar)
     x_var.set(0)
     y_var.set(0)
     z_var.set(0)
+    roll_var.set(0)
+    pitch_var.set(0)
+    yaw_var.set(0)
     x_var.trace('w', util.numbers_only(x_var, x_entry))
     y_var.trace('w', util.numbers_only(y_var, y_entry))
     z_var.trace('w', util.numbers_only(z_var, z_entry))
+    roll_var.trace('w', util.numbers_only(roll_var, roll_entry))
+    pitch_var.trace('w', util.numbers_only(pitch_var, pitch_entry))
+    yaw_var.trace('w', util.numbers_only(yaw_var, yaw_entry))
     x_frame.grid(row=1, column=1)
     y_frame.grid(row=2, column=1)
     z_frame.grid(row=3, column=1)
-    translate_button = tk.Button(frame, text="Translate!", command=translate).grid(row=4, column=1)
+    roll_frame.grid(row=4, column=1)
+    pitch_frame.grid(row=5, column=1)
+    yaw_frame.grid(row=6, column=1)
+    translate_button = tk.Button(frame, text="Transform!", command=translate).grid(row=7, column=1)
 
     frame.x_entry = x_entry
     frame.y_entry = y_entry
@@ -1213,6 +1227,12 @@ def alex_open(filename):
         alex_clear_all()
         
     alex_set_titlebar()
+    select_all()
+    def complete():
+        zoom_fit_selected()
+        unselect_all()
+        export()
+    root.after(100,complete) ### let page complete drawing
     
 def alex_open_dialog():
     filename = filedialog.askopenfilename(
