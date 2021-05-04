@@ -25,7 +25,7 @@ from packages import things
 from packages import wireframes
 from packages import database
 from packages.database import String, Integer, Float, Table, Column
-from packages.constants import DEG, alex_scad, bgcolor, openscad_path, part_libraries_dir
+from packages.constants import DEG, alex_dir, alex_scad, bgcolor, openscad_path, part_libraries_dir
 from packages.interpolate import interp1d
 from packages.mylistbox import listbox
 from packages import piecewise_linear_cost_model as cm
@@ -470,7 +470,11 @@ class Part(things.Thing):
         out.append(f'translate([{pos[0]}, {pos[1]}, {pos[2]}])')
         out.append(f'  rotate(a={angle / DEG:.0f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
         out.append(f'  color("{self.color}")')
-        out.append(f'    scale([{self.dim1}, {self.dim2}, {self.length}])import("{self.stl_fn}");')
+
+        stl_fn = os.path.join('..', os.path.relpath(self.stl_fn, alex_dir))
+                              
+        # out.append(f'    scale([{self.dim1}, {self.dim2}, {self.length}])import("{self.stl_fn}");')
+        out.append(f'    scale([{self.dim1}, {self.dim2}, {self.length}])import("{stl_fn}");')
 
         #T = np.zeros((4, 4))
         #T[:3,:3] = self.orient @ np.diag([self.dim1, self.dim2, self.length])
