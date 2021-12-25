@@ -75,7 +75,28 @@ def indent(s, n):
     indent = ' ' * n
     return ('\n%s' % indent).join(s.splitlines())
 
+def find_closest_in_group(pt_2d, group, projection_2d):
+    '''
+    find closest point in group (projected to 2d) to pt_2d
+    '''
+    print("find_closest_in_group", pt_2d, group)
+
+    mind = 1e6
+    minp = None
+    for item in group:
+        wf = projection_2d(item.get_wireframe())
+        
+        for p0, p1 in zip(wf[:-1], wf[1:]):
+            pt, d = closest_pt_on_segment(p0, p1, pt_2d)
+            if d < mind:
+                mind = d
+                minp = pt
+        return minp, mind
+    
 def closest_pt_on_segment(p0, p1, p):
+    '''
+    all points in 2D
+    '''
     p0 = np.array(p0)
     p1 = np.array(p1)
     p = np.array(p)
@@ -184,7 +205,50 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
     
+
+def unselect_all():
+    from packages import things
+    scene = things.TheScene
+    for part in scene.selected.ungroup():
+        part.render(scene.view, selected=False)
+            
+def select(part):
+    from packages import things
+    scene = things.TheScene
+    scene.selected.append(part)
+    part.render(scene.view, selected=True)
     
+def zoom_fit_selected(ignored=None):
+    from packages import things
+    scene = things.TheScene
+    #views = iv.Views([top, side, front, iso])
+    views = scene.view
+    top, side, front, iso = views
+
+    verts = scene.selected.get_verts()
+    if len(verts) > 0:
+        window_dims = np.array([top.can.winfo_width(),
+                                top.can.winfo_height(),
+                                front.can.winfo_height()])
+        
+        wfxy = top.project_2d(verts)
+        wfz = front.project_2d(verts)[:,1]
+        wfxyz = np.column_stack([wfxy, wfz])
+        
+        d = np.max(wfxyz, axis=0) - np.min(wfxyz, axis=0)
+        D = .75 * np.min(window_dims / d)
+        views.set_scale(D * top.scale)
+        
+        m3 = (np.max(verts, axis=0) + np.min(verts, axis=0)) / 2
+        c2_top = window_dims[:2] / 2
+        c2_front = window_dims[1::2] / 2
+        offset_new_top = c2_top - m3 @ top.B * top.scale
+        offset_new_front = c2_front - m3 @ front.B * front.scale
+        delta_xy = offset_new_top - top.offset
+        delta_z = (offset_new_front - front.offset)[1]
+
+        # print(offset_new_top, top.offset, delta_xy)
+        views.slew(top.B @ delta_xy + front.B @ [0, delta_z])
 def clear_all():
     from packages import things
     things.TheScene.selected.ungroup()

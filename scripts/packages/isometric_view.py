@@ -2,7 +2,8 @@ import numpy as np
 import tkinter as tk
 from tkinter import messagebox
 from packages import util
-from packages.constants import bgcolor, hlcolor
+from packages import things
+from packages.constants import bgcolor, hlcolor, option_press
 
 class Rectangle:
     def __init__(self, c1, c2):
@@ -45,7 +46,6 @@ class IsoView:
         self.can.bind('<ButtonPress-1>', self.onpress)
         self.can.bind('<ButtonRelease-1>', self.onrelease)
         self.can.bind('<Motion>', self.ondrag)
-        self.can.bind('<ButtonPress-2>', self.detail_part)
         self.tags = {}
         self.dragging = False
         self.drag_initialized = False
@@ -62,6 +62,11 @@ class IsoView:
         self.control_key = control_key
 
         self.draw_axes()
+        ### set up popup menu
+        self.can.bind(option_press, self.do_popup)
+                
+    def hey(self, word):
+        print('hey', word)
 
     def highlight_part(self, part, color):
         wf = part.get_wireframe()
@@ -257,18 +262,49 @@ class IsoView:
         #    if np.max(lengths) - np.min(lengths) < 1e-2:
         #        pass ## TOOD? print('set length var tp length')
         #    
-    def detail_part(self, event):
-        print('Isometric View:: option menu!', event)
+    def do_popup(self,event):
+        self.popup_event = event
+        popup_menu = tk.Menu(self.can,
+                             tearoff = 0)
+        if len(self.scene.selected) == 1 and not self.scene.selected[0].iscontainer():
+            popup_menu.add_command(label="Details",
+                                   command=self.detail_part)
+        if self.scene.view.workshop_part is not None:
+            popup_menu.add_command(label="Return",
+                                   command=self.scene.view.workshop_stop)
+        elif len(self.scene.selected) == 1 and not self.scene.selected[0].iscontainer():
+            popup_menu.add_command(label="Workshop",
+                                   command=self.scene.view.workshop_start)
+        popup_menu.add_separator()
+        popup_menu.add_command(label="Place holder", # 
+                               command = lambda:self.hey("Place holder"))
+        try:
+            popup_menu.tk_popup(event.x_root,
+                                     event.y_root)
+        finally:
+            popup_menu.grab_release()
+    def detail_part(self, event=None):
+        event = self.popup_event
         clicked = self.can.find_closest(event.x, event.y)
+        clicked_2d = np.array([event.x, event.y])
+
+        print('clicked_2d', clicked_2d)
+        projection_2d = lambda p3d: p3d @ self.B * self.get_scale() + self.offset
+        pt, d = util.find_closest_in_group(clicked_2d, self.scene.selected, projection_2d)
+        print("here!!", pt, d)
+
         if len(clicked) > 0:
             closest = clicked[0]
             if closest in self.tags: ### something was clicked
+                print("closest:", closest)
                 clicked = self.tags[closest]
-                bom = clicked.tobom()[0].split(',')
-                msg = (f'{bom[0]}\n{float(bom[1]):.0f}mm x {float(bom[2]):.0f}mm x {float(bom[3]):.0f}mm\n' +
-                       f'{bom[4]}\n{bom[5]}')
+                print("clicked", clicked)
+                if hasattr(clicked, 'tobom'):
+                   bom = clicked.tobom()[0].split(',')
+                   msg = (f'{bom[0]}\n{float(bom[1]):.0f}mm x {float(bom[2]):.0f}mm x {float(bom[3]):.0f}mm\n' +
+                          f'{bom[4]}\n{bom[5]}')
                 
-                messagebox.showinfo("Details", msg)
+                   messagebox.showinfo("Details", msg)
     def draw_axes(self):
         if self.axes_on:
             id = self.can.create_oval(self.offset[0] - 2, self.offset[1] - 2,
@@ -314,6 +350,7 @@ class Views:
     def __init__(self, views):
         self.views = views
         self.tag_dict = {}
+        self.workshop_part = None
         
     def __getitem__(self, idx):
         return self.views[idx]
@@ -348,7 +385,44 @@ class Views:
         self.apply('toggle_axes', *args, **kw)
     def highlight_part(self, *args, **kw):
         self.apply('highlight_part', *args, **kw)
+    def redraw(self):
+        for view in self.views:
+            view.redraw()
+            
+    def workshop_start(self):
+        part = self.scene.selected[0]
+        part_pos = part.pos
+        orig_group = things.Group()
+        for i in range(len(self.scene)):
+            thing = self.scene[i]
+            if thing != part:
+                orig_group.append(self.scene[i])
+        self.scene.delete_all()
+        part.translate(-part.pos)
+        util.zoom_fit_selected()
+        self.workshop_part = part
+        self.orig_group = orig_group
+        self.workshop_part_pos = part_pos
+        for v in self.views:
+            v.can.configure(bg='burlywood')
+            
+    def workshop_stop(self):
+        ### modify part
+        part = self.workshop_part
+        self.workshop_part = None
         
+        self.scene.append(part)
+        
+        ### reopen project w/ modified part.
+        part.translate(self.workshop_part_pos)
+        for orig in self.orig_group:
+            self.scene.append(orig)
+        util.zoom_fit_selected()
+        self.scene.view.redraw()
+        print("Workshop stop!")
+        for v in self.views:
+            v.can.configure(bg=bgcolor)
+
 def from_theta_phi(theta, phi, can, offset, step_var, x_var, y_var, z_var,
                    scale, shift_key=None, control_key=None, bgcolor=bgcolor):
     pov = -np.array([np.sin(phi),

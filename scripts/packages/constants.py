@@ -23,6 +23,8 @@ part_libraries_dir = os.path.join(alex_dir, 'part_libraries')
 openscad_path = spawn.find_executable('openscad')
 if openscad_path is None:
     if sys.platform == 'darwin':
+        option_press = '<ButtonPress-2>'
+
         for root, dirs, files in os.walk('/Applications/OpenSCAD.app', topdown = False):
             for file in files:
                 if file.lower() == "openscad":
@@ -30,6 +32,9 @@ if openscad_path is None:
                     break
         else:
             openscad_path = '/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD'
+    else:
+        option_press = '<ButtonPress-3>'
+        
 # print('openscad_path', openscad_path)
 bgcolor = "white"
 hlcolor = '#0432ff' ## Blueberry

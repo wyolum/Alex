@@ -24,6 +24,11 @@ class Thing:
         self.orient = np.eye(3)
         self.interfaces = []
 
+    def get_verts(self):
+        return np.atleast_2d([0, 0, 0])
+    
+    def cost(self):
+        return 0
     def get_boundingbox(self):
         '''
         return min and max for each axis
@@ -83,6 +88,32 @@ class Thing:
         vec = q.vector ## pyquaternion
         return angle, vec
 
+class Script(Thing):
+    def __init__(self, filename):
+        Thing.__init__(self)
+        self.filename = filename
+        self.ctime = 0
+
+    def read(self):
+        ctime = os.stat(self.filename).st_ctime
+        if ctime > self.ctime:
+            with open(self.filename) as f:
+                self.text = f.read()
+            self.ctime = ctime
+        return self.text
+    
+    def dup(self):
+        return self
+    
+    def get_wireframe(self):
+        return self.get_verts()
+    
+    def render(self, view, selected=False ):
+        pass
+
+    def toscad(self,selected=False):
+        return self.read()
+    
 class Group(Thing):
     def __init__(self, things=None):
         Thing.__init__(self)
@@ -100,6 +131,12 @@ class Group(Thing):
 
     def __getitem__(self, idx):
         return self.things[idx]
+
+    def __delitem__(self, idx):
+        print('Group.__delitem__')
+        print(len(self))
+        del self.things[idx]
+        print(len(self))
 
     def __str__(self):
         out = ['Group([']
@@ -149,7 +186,14 @@ class Group(Thing):
                         [x[0], x[1], n[2]],
                         [x[0], n[1], n[2]]])
         return out
-    
+
+    def get_dims(self):
+        if len(self.things) == 0:
+            out = np.zeros(3)
+        else:
+            wf = self.get_wireframe()
+            out = np.max(wf, axis=0) - np.min(wf, axis=0)
+        return out
     def contains(self, thing):
         out = thing in self.things
         if not out:
@@ -298,7 +342,7 @@ class STL(Thing):
         out = []
         angle, vec = self.get_orientation_angle_and_vec()
         out.append(f'translate([{pos[0]}, {pos[1]}, {pos[2]}])')
-        out.append(f'  rotate(a={angle / DEG:.0f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
+        out.append(f'  rotate(a={angle / DEG:.2f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
         out.append(f'  color([0, 1, 0])translate([{-off[0]}, {-off[1]}, {-off[2]}])import("{self.filename}");')
         return ''.join(out)
 
@@ -339,7 +383,7 @@ class Scene(Group):### singleton
         self.view.set_scene(self) ### allow view to access Scene
         self.export_cb = export_cb
         TheScene = self ### reference to Scene singlton
-        
+    
     def delete_all(self):
         for thing in self:
             self.view.erase(thing)

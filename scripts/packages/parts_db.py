@@ -339,7 +339,7 @@ class Part(things.Thing):
         if type(name_or_record) == type(''):
             name = name_or_record
             records = part_table.select(lib.db, where=f'Name="{name}"')
-            assert len(records) == 1
+            assert len(records) == 1, f'{name} not found in {self.lib.name}'
             record = records[0]
             assert record
         else:
@@ -468,7 +468,7 @@ class Part(things.Thing):
         out = []
         angle, vec = self.get_orientation_angle_and_vec()
         out.append(f'translate([{pos[0]}, {pos[1]}, {pos[2]}])')
-        out.append(f'  rotate(a={angle / DEG:.0f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
+        out.append(f'  rotate(a={angle / DEG:.2f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])')
         out.append(f'  color("{self.color}")')
 
         stl_fn = os.path.join('..', os.path.relpath(self.stl_fn, alex_dir))
@@ -1029,7 +1029,7 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
 
     row = 0
     lib_names = [n for n in get_library_names() if n != 'Main']
-    print('constants.edit_main', constants.edit_main)
+    # print('constants.edit_main', constants.edit_main)
     if constants.edit_main:
         lib_names.insert(0, 'Main')
     lib_var = tk.StringVar()

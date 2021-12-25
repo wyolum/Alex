@@ -30,6 +30,7 @@ numpy-stl required for stl imports
     ''')
     raise
 
+import subprocess
 import webbrowser
 import os.path
 import sys
@@ -52,6 +53,7 @@ from packages import constants
 from packages.constants import mm, inch, DEG, units, bgcolor, alex_scad, openscad_path, fine_rotation_angle
 from packages import parts_db
 from packages import util
+from packages.util import zoom_fit_selected, select, unselect_all
 from packages import wireframes
 from packages import things
 from packages import isometric_view as iv
@@ -267,7 +269,7 @@ def zoom_in_lots():
 def zoom_out_lots():
     zoom_out(amt=.8)
 
-def zoom_fit_selected(ignored=None):
+def not_zoom_fit_selected(ignored=None):
     verts = scene.selected.get_verts()
     if len(verts) > 0:
         window_dims = np.array([top.can.winfo_width(),
@@ -296,15 +298,6 @@ def zoom_fit_selected(ignored=None):
 def flip_z_selected(ignored=None):
     selected.mirror([0, 0, 1])
     selected.render(views, selected=True)
-def select(part):
-    scene.selected.append(part)
-    part.render(scene.view, selected=True)
-def unselect_all():
-    if 'scene' in globals():
-        for part in scene.selected.ungroup():
-            part.render(scene.view, selected=False)
-    
-
 
 def CornerTwoWay(d1):
     name = f"{d1:.0f}{d1:.0f} Corner Two Way Silver"
@@ -365,7 +358,6 @@ def createAlex(*args):
     part = Alex(length, d1, d2)
     #part.translate([x, y, z])
     scene.append(part, select=True)
-    print(part.pos)
     
 def noop(*args, **kw):
     pass
@@ -489,7 +481,13 @@ def TranslatePanel(parent):
         x = float(x_var.get())
         y = float(y_var.get())
         z = float(z_var.get())
+        roll  = float(roll_var.get()) / 90.
+        pitch = float(pitch_var.get()) / 90.
+        yaw   = float(yaw_var.get()) / 90.
         selected.translate([x, y, z])
+        selected.rotate(roll=roll)
+        selected.rotate(pitch=pitch)
+        selected.rotate(yaw=yaw)
         selected.render(views, selected=True)
     
     x_frame, x_entry, x_var = NumericalEntry(frame, 'x:', noop, increment=1, var_factory=tk.StringVar)
@@ -596,7 +594,7 @@ class SideBar:
         self.dim1_frame, self.dim1_entry, self.dim1_var = NumericalEntry(self.frame,
                                                                          'D1:',
                                                                          noop,
-                                                                         values=(20, 30),
+                                                                         values=(20, 30, 40),
                                                                          var_factory=tk.StringVar)
         self.dim1_var.trace('w', util.numbers_only(self.dim1_var, self.dim1_entry))
         self.dim1_frame.grid(row=3, column=1)
@@ -1121,6 +1119,10 @@ def alex_bom():
         
 def alex_clear_all():
     util.clear_all()
+
+def launch_openscad():
+    subprocess.Popen([openscad_path, alex_scad])
+    print('openscad')
     
 def alex_new():
     while len(alex_filename) > 0:
@@ -1137,7 +1139,9 @@ def alex_set_titlebar():
     cost = scene.cost()
     selected_cost = selected.cost()
     #print(cost, selected_cost)
-    root.winfo_toplevel().title(f"Alex {fn} ${cost:.2f} (${selected_cost:.2f})")
+    dims = selected.get_dims()
+    
+    root.winfo_toplevel().title(f"Alex {fn} ${cost:.2f} (${selected_cost:.2f}) [{dims[0]:.0f}, {dims[1]:.0f}, {dims[2]:.0f}]")
 
 def stl_import_dialog():
     def ask_filename():
@@ -1185,7 +1189,8 @@ def stl_import_dialog():
     frame.grid(row=1, column=1)
     
 def alex_import():
-    filetypes = (("Extruded AL","*.xcad"),
+    filetypes = (("eXtruded AL","*.xcad"),
+                 ("OpenScad","*.scad"),
                  # ("Mesh", "*.stl"),
                  ("all files","*.*"))
     if not STL_SUPPORTED:
@@ -1210,6 +1215,9 @@ def alex_import():
         util.register_undo()
         scene.append(things.STL(filename))
         export()
+    if filename.endswith(".scad"):
+        #scad = open(filename).read()
+        scene.append(things.Script(filename))
 
 def alex_open(filename):
     while len(alex_filename) > 0:
@@ -1279,6 +1287,7 @@ control_key = util.ControlTracker(key_tracker)
 menubar = tk.Menu(root)
 # create a pulldown menu, and add it to the menu bar
 filemenu = tk.Menu(menubar, tearoff=0)
+filemenu.add_command(label="Launch OpenScad", command=launch_openscad)
 filemenu.add_command(label="New", command=alex_new)
 filemenu.add_command(label="Open", command=alex_open_dialog)
 filemenu.add_command(label="Import", command=alex_import)
@@ -1370,7 +1379,6 @@ front = iv.IsoView(frontcan, ihat , -khat, [CANVAS_W/2, CANVAS_H - 50], step_var
 iso = iv.from_theta_phi(theta, phi, isocan, [CANVAS_W/2, CANVAS_H - 50], step_var, sidebar.x_var, sidebar.y_var, sidebar.z_var,
                         shift_key=shift_key, control_key=control_key, scale=scale)
 views = iv.Views([top, side, front, iso])
-
 
 scene = things.Scene(views, selected, export_cb=export_cb)
 
