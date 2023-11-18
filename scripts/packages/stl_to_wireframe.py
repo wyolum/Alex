@@ -257,7 +257,7 @@ def perimeter(triangles_2d):
             #edges[-1].plot()
             edges.append(-edges[-1])
             #edges[-1].plot()
-            print(edges[-1])
+            #print(edges[-1])
     ### find left most point
     out = perimeter_edges(edges)
     return out

@@ -132,7 +132,8 @@ __wireframes = {'Cube': cube,
                 'Prism': prism,
                 'Cone': cone,
                 'Cylinder': cylinder}
-
+def get(name):
+    return __wireframes[name]
 def read_npy():
     out = {}
     for fn in glob.glob(f'{npy_dir}/*.npy'):

@@ -1,5 +1,6 @@
 import os.path
 import numpy as np
+from numpy import cos, sin, pi
 try:
     from stl import mesh
     STL_SUPPORTED = True
@@ -29,6 +30,7 @@ class Thing:
     
     def cost(self):
         return 0
+    
     def get_boundingbox(self):
         '''
         return min and max for each axis
@@ -88,6 +90,131 @@ class Thing:
         vec = q.vector ## pyquaternion
         return angle, vec
 
+class Cube(Thing):
+    '''
+    Thing for use in Difference() to cut an object
+    '''
+    def __init__(self, dims):
+        Thing.__init__(self)
+        self.dims = np.array(dims)
+        self.wireframe = wireframes.get('Cube') * self.dims
+        self.bottom = [-dims[0]/2, -dims[1]/2, 0], np.column_stack([[dims[0], 0, 0],[0, dims[1], 0]])
+        self.south = [-dims[0]/2, -dims[1]/2, 0], np.column_stack([[dims[0], 0, 0],[0, 0, dims[2]]])
+        self.west = [-dims[0]/2, -dims[1]/2, 0], np.column_stack([[0, dims[1], 0],[0, 0, dims[2]]])
+        self.east = [dims[0]/2, dims[1]/2, 0], np.column_stack([[0, -dims[1], 0],[0, 0, dims[2]]])
+        self.north = [dims[0]/2, dims[1]/2, 0], np.column_stack([[-dims[0], 0, 0],[0, 0, dims[2]]])
+        self.top = [-dims[0]/2, -dims[1]/2, dims[2]], np.column_stack([[dims[0], 0, 0],[0, dims[1], 0]])
+        self.sides = [self.bottom, self.south, self.west, self.east, self.north, self.top]
+        if False:
+            import pylab as pl
+            pl.figure();pl.gca(projection='3d')
+            from mpl_toolkits.mplot3d import Axes3D
+            for side in self.sides:
+                l0 = [0, 0, 0]
+                l1 = [1, 1, 1]
+                p0 = side[0]
+                B = side[1]
+                print(util.intersect_line_plane(l0, l1, p0, B, plot=True))
+            pl.show()
+    def get_sides(self):
+        out = []
+        for p, B in self.sides:
+            p = self.pos + self.orient @ p
+            B = self.orient @ B
+            out.append((p, B))
+        return out
+    
+    def render(self, view, selected):
+        view.erase(self)
+        if selected:
+            color = self.select_color
+            width = max([.5, np.min([view.get_scale(), 1.5])])
+        else:
+            color = self.normal_color
+            width = max([.5, np.min([view.get_scale(), 0.75])])
+        wireframe = self.get_wireframe()
+        view.create_path(self, wireframe, color, width)
+        return
+    
+    def toscad(self):
+        angle, vec = self.get_orientation_angle_and_vec()
+        out = [f'translate([{self.pos[0]},{self.pos[1]}, {self.pos[2]}])',
+               f'  rotate(a={angle / DEG:.2f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])',
+               f'  translate([{-self.dims[0]/2}, {-self.dims[1]/2}, 0])',
+               f'  cube([{self.dims[0]}, {self.dims[1]}, {self.dims[2]}]);']
+        out = '\n'.join(out)
+        return out
+    
+    def get_wireframe(self):
+        return self.pos + (self.orient @ self.wireframe.T).T
+    
+    def dup(self):
+        out = Cube(self.dims.copy())
+        out.orient = self.orient.copy()
+        out.translate(self.pos)
+        return out
+    
+class Cylinder(Thing):
+    def __init__(self, diameter, height):
+        '''
+        Represent a drilled hole in a part initally at [0, 0, 0] but moves with part
+        '''
+        Thing.__init__(self)
+        self.diameter = diameter
+        self.height = height
+        self.radius = diameter / 2.
+        fn = 20
+        theta = np.linspace(0, 2 * pi , fn)
+        base = np.column_stack([cos(theta), sin(theta), np.zeros(fn)]) * self.radius
+        top = base + np.array([0, 0, self.height])
+        front = [[-self.radius, 0, 0],
+                 [ self.radius, 0, 0],
+                 [ self.radius, 0, height],
+                 [-self.radius, 0, height],
+                 [-self.radius, 0, 0]]
+        side = [[0,-self.radius, 0],
+                [0, self.radius, 0],
+                [0, self.radius, height],
+                [0,-self.radius, height],
+                [0,-self.radius, 0]]
+        gap = [[np.nan, np.nan, np.nan]]
+        self.wireframe = np.vstack([base, gap, top, gap, front, gap, side])
+        self.normal_color = 'grey'
+        self.select_color = 'grey'
+        
+    def render(self, view, selected):
+        view.erase(self)
+        if selected:
+            color = self.select_color
+            width = max([.5, np.min([view.get_scale(), 1.5])])
+        else:
+            color = self.normal_color
+            width = max([.5, np.min([view.get_scale(), 0.75])])
+        wireframe = self.get_wireframe()
+        view.create_path(self, wireframe, color, width)
+        return ### interfaces are too slow to render on every render :-(
+    
+    def toscad(self):
+        if self.height == np.inf:
+            height = 10000
+        else:
+            height = self.height
+        angle, vec = self.get_orientation_angle_and_vec()
+        out = [f'translate([{self.pos[0]},{self.pos[1]}, {self.pos[2]}])',
+               f'  rotate(a={angle / DEG:.2f}, v=[{vec[0]:.4f}, {vec[1]:4f}, {vec[2]:4f}])',
+               f'  cylinder(d={self.diameter}, h={height});']
+        out = '\n'.join(out)
+        return out
+    
+    def get_wireframe(self):
+        return self.pos + (self.orient @ self.wireframe.T).T
+
+    def dup(self):
+        cyc = Cylinder(self.diameter, self.height)
+        cyc.orient = self.orient.copy()
+        cyc.translate(self.pos)
+        return cyc
+    
 class Script(Thing):
     def __init__(self, filename):
         Thing.__init__(self)
@@ -133,10 +260,7 @@ class Group(Thing):
         return self.things[idx]
 
     def __delitem__(self, idx):
-        print('Group.__delitem__')
-        print(len(self))
         del self.things[idx]
-        print(len(self))
 
     def __str__(self):
         out = ['Group([']
@@ -166,12 +290,12 @@ class Group(Thing):
         for thing in self.things:
             wf = thing.get_wireframe()
             wfs.append(wf)
-            n += len(wf)
+            n += len(wf) + 1
         out = np.zeros((n, 3)) * np.nan
         i = 0
         for wf in wfs:
             out[i:i+len(wf)] = wf
-            i += len(wf)
+            i += len(wf) + 1
         non_nan = np.logical_not(np.isnan(np.sum(out, axis=1)))
         x = np.max(out[non_nan], axis=0)
         n = np.min(out[non_nan], axis=0)
@@ -210,6 +334,10 @@ class Group(Thing):
             self.things.append(thing)
         thing.group = self
 
+    def pop(self):
+        thing = self.things.pop()
+        return thing
+    
     def remove(self, thing):
         if thing in self.things:
             idx = self.things.index(thing)
@@ -259,7 +387,7 @@ class Group(Thing):
         return center
     
     def render(self, view, selected=False):
-        for thing in self:
+        for thing in self[::-1]:
             thing.render(view, selected=selected)
             
         center = self.get_center()
@@ -293,6 +421,62 @@ def Group__test__():
     assert s not in g
 # Group__test__()
 
+class Difference(Group):
+    def __init__(self, things=None):
+        if things is None:
+            things = []
+        Group.__init__(self)
+        self.append(things[0])
+        for thing in things[1:]:
+            thing.select_color = 'grey'
+            thing.normal_color = 'grey'
+            self.append(thing)
+    def __str__(self):
+        out = ['Difference([']
+        for thing in self:
+            out.append('   ' + str(thing) + ',')
+        out.append('])')
+        return '\n'.join(out)
+
+    def append(self, thing):
+        if len(self.things) > 0:
+            thing.select_color = 'grey'
+            thing.normal_color = 'grey'
+        Group.append(self, thing)
+        # wf = self.get_wireframe()
+        if False: ## update wireframe?
+            if isinstance(thing, Cube):
+                wf = self.get_wireframe()
+                for l0, l1 in zip(wf[:-1], wf[1:]):
+                    for p0, B in thing.get_sides():
+                        p, abt = util.intersect_line_plane(l0, l1, p0, B)
+                        a, b, t = abt
+                        if (0 <= a <= 1 and
+                            0 <= b <= 1 and
+                            0 <= t <= 1):
+                            views.create_point(p, self, p, 'blue', 2)
+    def translate(self, *args, **kw):
+        Group.translate(self, *args, **kw)
+        
+    def toscad(self):
+        out = ['difference(){']
+        for thing in self:
+            out.append('  ' + util.indent(thing.toscad(), 2))
+        out.append('}')
+        return '\n'.join(out)
+
+    def dup(self):
+        out = Difference(self.things)
+        return out
+
+    def ungroup(self):
+        out = self.things
+        self.things = out[:1]
+        return out[:1]
+    def get_wireframe(self):
+        #wf = Group.get_wireframe(self)
+        #return wf
+        return self.things[0].get_wireframe()
 class STL(Thing):
     normal_color = 'lightgrey'
     select_color = 'salmon'

@@ -103,6 +103,10 @@ class IsoView:
     def project_2d(self, path):
         return path @ self.B * self.get_scale() + self.offset
     
+    def create_point(self, thing, p3, color, size, *can_args, **can_kw):
+        print('create_point', p3)
+        self.create_line(thing, p3 + [1, 0, 0], p3 - [1, 0, 0], color, size, *can_args, **can_kw)
+        
     def create_polygon(self, thing, path, color, width):
         tag = str(thing)
         path = self.project_2d(path)
@@ -112,6 +116,7 @@ class IsoView:
                                      width=width, alpha=.3)
         
     def create_path(self, thing, path, color, width, *can_args, **can_kw):
+        d = [x for x in dir(self.can) if x.startswith('create')]
         path = path @ self.B * self.get_scale() + self.offset
         breaks = np.where(np.isnan(path[:,0]))[0]
         breaks = np.hstack([breaks, len(path) ])

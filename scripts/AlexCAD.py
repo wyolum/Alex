@@ -45,7 +45,7 @@ import tkinter.ttk as ttk
 from PIL import ImageTk, Image
 
 import numpy as np
-from numpy import sin, cos, sqrt
+from numpy import sin, cos, sqrt, pi
 
 from packages import quaternion
 from packages import interpolate
@@ -332,13 +332,155 @@ parts_db_dialog.last_lib = None
 
 def new_part_dialog():
     parts_db.new_part_dialog(root)
+
+def save_part_dialog():
+    part = scene
+
+    def do_save():
+        print(lib_var.get())
+        print(name_var.get())
+        on_cancel()
+        
+    def on_cancel(*args):
+        tl.destroy()
+
+    tl = tk.Toplevel(root)
+    frame = tk.Frame(tl)
+    entry_f = tk.Frame(frame)
+    entry_f.grid(row=1, column=1, columnspan=2)
+    tk.Label(entry_f, text="Part Name:").grid(row=1, column=1)
+    name_var = tk.StringVar()
+    name_entry = tk.Entry(entry_f, textvariable=name_var)
+    name_entry.grid(row=1, column=2)
+
+    lib_names = [n for n in parts_db.get_library_names() if n != 'Main']
+    if constants.edit_main:
+        lib_names.insert(0, 'Main')
+    lib_var = tk.StringVar()
+    lib_var.set("User")
+    tk.Label(entry_f, text="Save to library:").grid(row=2, column=1, sticky='e')
+    lib_opt = tk.OptionMenu(entry_f, lib_var, *lib_names)
+    lib_opt.grid(row=2, column=2, sticky='w')
     
-def Alex(length, d1, d2):
+    
+    save_button = tk.Button(frame, text="Save Part", command=do_save)
+    save_button.grid(row=2, column=1, columnspan=2)
+
+    
+    entry_f.grid()
+    frame.grid()
+
+    ### prompt for:
+    ###     library
+    ###     name
+    
+def Alex(length, d1, d2, miter_top, miter_bottom):
     if d1 == 30:
         metal = 'HFSL6'
     else:
         metal = 'HFS5'
-    return parts_db.Part(parts_db.Main, f"{d1:.0f}{d2:.0f} {metal}", length)
+    if d2 < d1:
+        #raise ValueError(f'{d2} = d2 > d1 = {d1}')
+        rot = True
+        part = parts_db.Part(parts_db.Main, f"{d2:.0f}{d1:.0f} {metal}", length)
+        part.rotate(yaw=1)
+        if miter_top or miter_bottom:
+            diff = things.Group([part])
+            wf = part.get_wireframe()
+            if miter_bottom:
+                dims = [d1 * np.sqrt(2), d2, d1 * np.sqrt(2) /2]
+                cut = things.Cube(dims)
+                cut.rotate(pitch=1/2.)
+                cut.translate([dims[0]/4 * sqrt(2), 0, 0])
+                diff.append(cut)
+
+                new_pt1 = np.array([d1/2, d2/2, d1])
+                d = np.linalg.norm(wf - new_pt1, axis=1)
+                m = np.min(d)
+                loc1 = np.logical_and(d == m, np.abs(wf[:,2]) < 1e-8)
+
+                new_pt2 = np.array([d1/2, -d2/2, d1])
+                d = np.linalg.norm(wf - new_pt2, axis=1)
+                m = np.min(d)
+
+                loc2 = np.logical_and(d == m, np.abs(wf[:,2]) < 1e-8)
+
+                wf[loc1] = new_pt1
+                wf[loc2] = new_pt2
+
+            if miter_top:
+                dims = [d1 * np.sqrt(2), d2, d1 * np.sqrt(2) /2]
+                cut = things.Cube(dims)
+                cut.rotate(pitch=-1/2.)
+                cut.rotate(yaw=1)
+                cut.translate([0, 0, length - dims[2] * np.sqrt(2)/2])
+                diff.append(cut)
+
+
+                new_pt1 = np.array([d1/2, d2/2, length - d1])
+                d = np.linalg.norm(wf - new_pt1, axis=1)
+                m = np.min(d)
+                loc1 = np.logical_and(d == m, np.abs(wf[:,2] - length) < 1e-8)
+
+                new_pt2 = np.array([d1/2, -d2/2, length - d1])
+                d = np.linalg.norm(wf - new_pt2, axis=1)
+                m = np.min(d)
+
+                loc2 = np.logical_and(d == m, np.abs(wf[:,2] - length) < 1e-8)
+                wf[loc1] = new_pt1
+                wf[loc2] = new_pt2
+            part.wireframe = wf
+            part = diff
+    else:
+        part = parts_db.Part(parts_db.Main, f"{d1:.0f}{d2:.0f} {metal}", length)
+        if miter_top or miter_bottom:
+            diff = things.Difference([part])
+            wf = part.get_wireframe()
+            if miter_bottom:
+                dims = [d1 * np.sqrt(2), d2, d1 * np.sqrt(2) /2]
+                cut = things.Cube(dims)
+                cut.rotate(pitch=1/2.)
+                cut.translate([dims[0]/4 * sqrt(2), 0, 0])
+                diff.append(cut)
+
+                new_pt1 = np.array([d1/2, d2/2, d1])
+                d = np.linalg.norm(wf - new_pt1, axis=1)
+                m = np.min(d)
+                loc1 = np.logical_and(d == m, np.abs(wf[:,2]) < 1e-8)
+
+                new_pt2 = np.array([d1/2, -d2/2, d1])
+                d = np.linalg.norm(wf - new_pt2, axis=1)
+                m = np.min(d)
+
+                loc2 = np.logical_and(d == m, np.abs(wf[:,2]) < 1e-8)
+
+                wf[loc1] = new_pt1
+                wf[loc2] = new_pt2
+
+
+            if miter_top:
+                dims = [d1 * np.sqrt(2), d2, d1 * np.sqrt(2) /2]
+                cut = things.Cube(dims)
+                cut.rotate(pitch=-1/2.)
+                cut.translate([0, 0, length - dims[2] * np.sqrt(2)/2])
+                diff.append(cut)
+
+
+                new_pt1 = np.array([d1/2, d2/2, length - d1])
+                d = np.linalg.norm(wf - new_pt1, axis=1)
+                m = np.min(d)
+                loc1 = np.logical_and(d == m, np.abs(wf[:,2] - length) < 1e-8)
+
+                new_pt2 = np.array([d1/2, -d2/2, length - d1])
+                d = np.linalg.norm(wf - new_pt2, axis=1)
+                m = np.min(d)
+
+                loc2 = np.logical_and(d == m, np.abs(wf[:,2] - length) < 1e-8)
+                wf[loc1] = new_pt1
+                wf[loc2] = new_pt2
+            part.wireframe = wf
+            part = diff
+    return part
 
 @util.undoable
 def createAlex(*args):
@@ -351,14 +493,140 @@ def createAlex(*args):
         sidebar.length_var.set(length)
     d1 = np.max([20, float(sidebar.dim1_var.get())])
     d2 = np.max([20, float(sidebar.dim2_var.get())])
-
+    miter_top = sidebar.miter_top_var.get()
+    miter_bottom = sidebar.miter_bottom_var.get()
+    
     #x = sidebar.x_var.get()
     #y = sidebar.y_var.get()
     #z = sidebar.z_var.get()
-    part = Alex(length, d1, d2)
+    part = Alex(length, d1, d2, miter_top, miter_bottom)
+
     #part.translate([x, y, z])
     scene.append(part, select=True)
     
+def drill_dialog():
+    if len(scene.selected) == 1:
+        def do_drill():
+            top.erase("drillbit")
+            front.erase("drillbit")
+            side.erase("drillbit")
+            if len(scene.selected) == 1:
+                diameter = float(diameter_entry.get())
+                part = scene.selected.pop()
+                tt = max(part.get_wireframe()[:,2])
+                bb = max([min(part.get_wireframe()[:,2]), 0])
+                height = tt - bb
+                scene.remove(part)
+                
+                hole = things.Cylinder(diameter, height=height)
+                hole.translate([0, 0, bb])
+
+                if isinstance(part, things.Difference):
+                    part.append(hole)
+                    new_part = part
+                else:
+                    new_part = things.Difference([part, hole])
+
+                scene.append(new_part)
+                scene.selected.append(new_part)
+
+                selected.render(views, selected=True)
+                
+            on_cancel()
+
+        def on_cancel(*args):
+            top.erase("drillbit")
+            front.erase("drillbit")
+            side.erase("drillbit")
+            tl.destroy()
+
+        def on_diam_change(*args):
+            part = scene.selected
+            h = max(part.get_wireframe()[:,2])
+            try:
+                d = diameter_var.get()
+            except ValueError:
+                d = 0
+            except NameError:
+                d = 0
+            except tk.TclError:
+                d = 0
+            r = d / 2
+            fn = 20
+            theta = np.linspace(0, 2 * pi, fn)
+            circle = np.column_stack([cos(theta), sin(theta), np.zeros(fn)]) * r
+            front_rect = np.array([[-r, 0, 0],
+                                   [ r, 0, 0],
+                                   [ r, 0, h],
+                                   [-r, 0, h],
+                                   [-r, 0, 0]])
+            side_rect = np.array([[0, -r, 0],
+                                  [0,  r, 0],
+                                  [0,  r, h],
+                                  [0, -r, h],
+                                  [0, -r, 0]])
+            top.erase("drillbit")
+            top.create_path("drillbit", circle, 'black', 1) 
+            front.erase("drillbit")
+            front.create_path("drillbit", front_rect, 'black', 1) 
+            side.erase("drillbit")
+            side.create_path("drillbit", side_rect, 'black', 1) 
+            
+        tl = tk.Toplevel(root)
+        frame = tk.Frame(tl)
+
+
+        #entry_f = tk.Frame(frame)
+        #entry_f.grid(row=1, column=1, columnspan=2)
+        #tk.Label(entry_f, text="drill diamter [mm]").grid(row=1, column=1)
+        #diameter_var = tk.StringVar()
+        #diameter_entry = tk.Entry(entry_f, textvariable=diameter_var)
+        #diameter_var.trace('w', util.numbers_only(diameter_var, diameter_entry, on_diam_change))
+        #diameter_entry.grid(row=1, column=2)
+
+        entry_f, diameter_entry, diameter_var  = NumericalEntry(frame, 'Diameter [mm]',
+                                                                 on_diam_change,
+                                                                 from_=0,
+                                                                 to=30,
+                                                                 increment=0.5)
+        diameter_var.set(10)
+        entry_f.grid(row=1, column=1, columnspan=2)
+        go_button = tk.Button(frame, text="Drill!", command=do_drill)
+        go_button.grid(row=2, column=1, columnspan=2)
+        entry_f.grid()
+        frame.grid()
+        ### select diameter
+        
+    else:
+        print("popup: select one part to drill")
+        
+def do_saw():
+    if len(scene.selected) == 1:
+        part = scene.selected.pop()
+        scene.remove(part)
+
+        wf = part.get_wireframe()
+        top = np.max(wf[:,2])
+        bottom = np.min(wf[:,2])
+        back = np.max(wf[:,1])
+        front = np.min(wf[:,1])
+        right = np.max(wf[:,0])
+        dims = [right + 1, back - front + 1, top - bottom + 1]
+        cube = things.Cube(dims)
+        cube.translate([0, front, bottom])
+
+        if isinstance(part, things.Difference):
+            part.append(cube)
+            new_part = part
+        else:
+            new_part = things.Difference([part, cube])
+        scene.append(new_part)
+        scene.selected.append(new_part)
+        
+        selected.render(views, selected=True)
+
+        
+                
 def noop(*args, **kw):
     pass
 
@@ -594,7 +862,7 @@ class SideBar:
         self.dim1_frame, self.dim1_entry, self.dim1_var = NumericalEntry(self.frame,
                                                                          'D1:',
                                                                          noop,
-                                                                         values=(20, 30, 40),
+                                                                         values=(20, 30, 40, 60, 80),
                                                                          var_factory=tk.StringVar)
         self.dim1_var.trace('w', util.numbers_only(self.dim1_var, self.dim1_entry))
         self.dim1_frame.grid(row=3, column=1)
@@ -606,9 +874,19 @@ class SideBar:
         self.dim2_var.trace('w', util.numbers_only(self.dim2_var, self.dim2_entry))
         self.dim2_frame.grid(row=4, column=1)
         
-        self.length_var.set(100)
+        self.length_var.set(400)
         self.dim1_var.set(20)
         self.dim2_var.set(20)
+
+        miter_f = tk.Frame(self.frame)
+        tk.Label(miter_f, text='Mitered Ends:').grid(row=1, column=1, columnspan=2)
+        
+        self.miter_top_var = tk.BooleanVar()
+        self.miter_bottom_var = tk.BooleanVar()
+        
+        tk.Checkbutton(miter_f, var=self.miter_top_var).grid(row=2, column=1)
+        tk.Checkbutton(miter_f, var=self.miter_bottom_var).grid(row=2, column=2)
+        miter_f.grid(row=5, column=1, columnspan=2)
 
         self.x_frame, self.x_entry, self.x_var = NumericalEntry(self.frame,
                                                                 'x:',
@@ -1122,7 +1400,6 @@ def alex_clear_all():
 
 def launch_openscad():
     subprocess.Popen([openscad_path, alex_scad])
-    print('openscad')
     
 def alex_new():
     while len(alex_filename) > 0:
@@ -1306,8 +1583,13 @@ partmenu.add_command(label='2-Way Corner', command=createCornerTwoWay)
 partmenu.add_command(label='3-Way Corner', command=createCornerThreeWay)
 partmenu.add_separator()
 partmenu.add_command(label='Part Library', command=parts_db_dialog)
-# partmenu.add_command(label='Add New Part', command=new_part_dialog)
+partmenu.add_command(label='Save Part', command=save_part_dialog)
 menubar.add_cascade(label="Part", menu=partmenu)
+
+toolmenu = tk.Menu(menubar, tearoff=0)
+toolmenu.add_command(label='Drill', command=drill_dialog)
+toolmenu.add_command(label='Saw', command=do_saw)
+menubar.add_cascade(label="Tool", menu=toolmenu)
 
 
 wizardmenu = tk.Menu(menubar, tearoff=0)

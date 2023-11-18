@@ -1,15 +1,73 @@
 import numpy as np
 from numpy import sin, cos, pi
 
-def numbers_only(var, entry):
+def intersect_line_plane(l0, l1, p0, B, plot=False):
+    '''
+    line defined by points l0 and l1
+    plane defined by point p0 and 3x2 basis B
+    '''
+    l0 = np.array(l0)
+    l1 = np.array(l1)
+    p0 = np.array(p0)
+    B = np.array(B, float)
+
+    d = l1 - l0
+    M = np.column_stack([B, -d])
+    try:
+        alpha_beta_t = np.linalg.inv(M) @ (l0 - p0)
+        alpha, beta, t = alpha_beta_t
+        out = l0 + t * d
+        if plot:
+            import pylab as pl
+            pl.plot([0], [0], [0], 'k+')
+            pl.plot([l0[0], l1[0]], [l0[1], l1[1]], [l0[2], l1[2]], 'bo')
+            pl.plot([l0[0], l1[0]], [l0[1], l1[1]], [l0[2], l1[2]], 'b-')
+            pl.plot([p0[0]], [p0[1]], [p0[2]], 'ro')
+            pl.plot([p0[0], p0[0] + B[0,0], p0[0] + B[0,0] + B[0, 1], p0[0] + B[0, 1], p0[0]],
+                    [p0[1], p0[1] + B[1,0], p0[1] + B[1,0] + B[1, 1], p0[1] + B[1, 1], p0[1]],
+                    [p0[2], p0[2] + B[2,0], p0[2] + B[2,0] + B[2, 1], p0[2] + B[2, 1], p0[2]],
+                    'r-')
+            pl.plot([out[0]], [out[1]], [out[2]], 'go')
+            pl.title(f'{alpha:.2f}, {beta:.2f}, {t:.2f}')
+
+    except np.linalg.LinAlgError:
+        out = np.ones(3) * np.nan
+        alpha_beta_t = [np.nan, np.nan, np.nan]
+    return out, alpha_beta_t
+
+def _intersect_line_plane__test__():
+    theta = pi/8
+    z_equal_one = intersect_line_plane([1, -1, 0], [-1, -1, -1], [0, 0, 1], [[cos(theta), sin(theta)],
+                                                                             [-sin(theta), cos(theta)],
+                                                                             [0, 0]])[0]
+    assert np.abs(z_equal_one[2] - 1) < 1e-9
+
+    no_soln = intersect_line_plane([1, -1, 0], [-1, -1, 0], [0, 0, 1], [[cos(theta), sin(theta)],
+                                                                        [-sin(theta), cos(theta)],
+                                                                        [0, 0]])[0]
+    assert np.all(np.isnan(no_soln))
+
+    theta = 3 * pi/4
+    B = np.array([[cos(theta), sin(theta)],
+                  [.2, -.1],
+                  [-sin(theta), cos(theta)]]) * 2.
+    import pylab as pl
+    pl.figure();pl.gca(projection='3d')
+    from mpl_toolkits.mplot3d import Axes3D
+    soln = intersect_line_plane([.5, .15, -1], [.15, -.55, 1], [0, 0, 1], B, plot=True)
+    pl.show()
+#_intersect_line_plane__test__();here
+    
+def numbers_only(var, entry, callback=None):
     def out(*args, **kw):
         text = var.get()
         new_text = ''.join([c for c in text if c in '0123456789.+-'])
         var.set(new_text)
+        if callback is not None:
+            callback(var, entry)
     return out
 
 def change_color(label, color):
-    print('change_color()::', color)
     label.config(fg=color)
 
 class KeyboardTracker:
