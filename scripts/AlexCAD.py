@@ -1235,9 +1235,11 @@ root.config(menu=menubar)
 window_w = args.width
 window_h = args.height
 if window_w is None:
-    window_w = root.winfo_screenwidth()
+    # Limit to single monitor width to avoid dual monitor issues
+    window_w = min(root.winfo_screenwidth(), 1920)
 if window_h is None:
-    window_h = root.winfo_screenheight()
+    # Limit to single monitor height to avoid dual monitor issues
+    window_h = min(root.winfo_screenheight(), 1080)
     
 CANVAS_W = (window_w - 100) / 3
 CANVAS_H = (window_h - 75) / 2

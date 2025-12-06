@@ -1,7 +1,7 @@
 import glob
 import sys
 import os
-from distutils import spawn
+import shutil
 
 mm = 1
 inch = 25.4
@@ -19,7 +19,7 @@ scripts_dir = os.path.split(package_dir)[0]
 alex_dir = os.path.split(scripts_dir)[0]
 part_libraries_dir = os.path.join(alex_dir, 'part_libraries')
 
-openscad_path = spawn.find_executable('openscad')
+openscad_path = shutil.which('openscad')
 if openscad_path is None:
     if sys.platform == 'darwin':
         for root, dirs, files in os.walk('/Applications/OpenSCAD.app', topdown = False):
