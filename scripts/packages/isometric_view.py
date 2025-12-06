@@ -1,6 +1,8 @@
 import numpy as np
 import tkinter as tk
 from tkinter import messagebox
+from typing import Optional, List
+import numpy.typing as npt
 from packages import util
 from packages.constants import bgcolor, hlcolor
 
@@ -28,8 +30,21 @@ def noop(*args, **kw):
     pass
 
 class IsoView:
-    def __init__(self, can, ihat, jhat, offset, step_var, x_var, y_var, z_var,
-                 shift_key=None, control_key=None, scale=1, bgcolor=bgcolor):
+    def __init__(
+        self, 
+        can: tk.Canvas, 
+        ihat: npt.NDArray, 
+        jhat: npt.NDArray, 
+        offset: List[float], 
+        step_var, 
+        x_var, 
+        y_var, 
+        z_var,
+        shift_key=None, 
+        control_key=None, 
+        scale: float = 1, 
+        bgcolor: str = bgcolor
+    ):
         self.can = can
         self.can.config(bg=bgcolor)
         self.ihat = np.array(ihat)
@@ -63,32 +78,33 @@ class IsoView:
 
         # Bind resize handler for dynamic panel resizing
         self.can.bind('\u003cConfigure\u003e', self.on_resize)
-        self.resize_pending = False
+        self._resize_after_id = None
 
         self.draw_axes()
 
     def on_resize(self, event):
         """Handle canvas resize events to keep view centered"""
-        # Avoid redundant redraws during resize
-        if self.resize_pending:
-            return
-        self.resize_pending = True
+        # Cancel any pending resize operation
+        if self._resize_after_id is not None:
+            self.can.after_cancel(self._resize_after_id)
         
+        # Schedule new resize with debouncing
+        self._resize_after_id = self.can.after(
+            50,  # 50ms debounce
+            lambda: self._do_resize(event.width, event.height)
+        )
+    
+    def _do_resize(self, width, height):
+        """Actually perform the resize operation"""
         # Update offset to new canvas center
-        new_width = event.width
-        new_height = event.height
-        self.offset = np.array([new_width / 2.0, new_height / 2.0])
+        self.offset = np.array([width / 2.0, height / 2.0])
         
         # Redraw all content if scene is loaded
         if hasattr(self, 'scene'):
-            self.can.after(50, self._complete_resize)
-        else:
-            self.resize_pending = False
-    
-    def _complete_resize(self):
-        """Complete the resize operation after a short delay"""
-        self.redraw()
-        self.resize_pending = False
+            self.redraw()
+        
+        # Clear the after ID
+        self._resize_after_id = None
 
     def highlight_part(self, part, color):
         wf = part.get_wireframe()
