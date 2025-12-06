@@ -1249,91 +1249,20 @@ CANVAS_H = (window_h - 75) / 2
 
 sidebar = SideBar(root)
 
-# Load rotation button images
-rt_angle_image = ImageTk.PhotoImage(Image.open('../resources/rt_angle.png')) 
-rt_angle_yaw_image = ImageTk.PhotoImage(Image.open('../resources/rt_angle_yaw.png'))
-rt_angle_pitch_image = ImageTk.PhotoImage(Image.open('../resources/rt_angle_pitch.png'))
-rt_angle_roll_image = ImageTk.PhotoImage(Image.open('../resources/rt_angle_roll.png'))
-
-# Create PanedWindow structure for resizable panels
-# Main horizontal split (left/right)
-main_paned = tk.PanedWindow(root, orient=tk.HORIZONTAL, sashwidth=5, bg=bgcolor)
-main_paned.grid(row=1, column=3, rowspan=10, columnspan=3, sticky="nsew")
-
-# Configure root grid to expand
-root.grid_rowconfigure(1, weight=1)
-root.grid_columnconfigure(3, weight=1)
-
-# Left vertical split (Top and Front views)
-left_paned = tk.PanedWindow(main_paned, orient=tk.VERTICAL, sashwidth=5, bg=bgcolor)
-
-# Right vertical split (Iso and Side views)  
-right_paned = tk.PanedWindow(main_paned, orient=tk.VERTICAL, sashwidth=5, bg=bgcolor)
-
-# Create frames for each view with buttons
-top_frame = tk.Frame(left_paned, bg=bgcolor)
-front_frame = tk.Frame(left_paned, bg=bgcolor)
-iso_frame = tk.Frame(right_paned, bg=bgcolor)
-side_frame = tk.Frame(right_paned, bg=bgcolor)
-
-# Create canvases with default sizes (will resize dynamically)
-DEFAULT_W = 500
-DEFAULT_H = 400
-
-topcan = tk.Canvas(top_frame, width=DEFAULT_W, height=DEFAULT_H, bg=bgcolor)
-topcan.pack(fill=tk.BOTH, expand=True)
-tk.Button(top_frame, text="Top", image=rt_angle_yaw_image, compound=tk.RIGHT, 
-          command=rotate_yaw, bg=bgcolor).place(x=5, y=5)
-
-frontcan = tk.Canvas(front_frame, width=DEFAULT_W, height=DEFAULT_H, bg=bgcolor)
-frontcan.pack(fill=tk.BOTH, expand=True)
-tk.Button(front_frame, text="Front", image=rt_angle_pitch_image, compound=tk.RIGHT,
-          command=rotate_pitch, bg=bgcolor).place(x=5, y=5)
-
-isocan = tk.Canvas(iso_frame, width=DEFAULT_W, height=DEFAULT_H, bg=bgcolor)
-isocan.pack(fill=tk.BOTH, expand=True)
-iso_button = tk.Button(iso_frame, text="Iso", bg=bgcolor)
-iso_button.place(x=5, y=5)
-
-sidecan = tk.Canvas(side_frame, width=DEFAULT_W, height=DEFAULT_H, bg=bgcolor)
-sidecan.pack(fill=tk.BOTH, expand=True)
-tk.Button(side_frame, text="Side", image=rt_angle_roll_image, compound=tk.RIGHT,
-          command=rotate_roll, bg=bgcolor).place(x=5, y=5)
-
-# Add frames to paned windows
-left_paned.add(top_frame, stretch="always")
-left_paned.add(front_frame, stretch="always")
-right_paned.add(iso_frame, stretch="always")
-right_paned.add(side_frame, stretch="always")
-
-# Add left and right panes to main paned window
-main_paned.add(left_paned, stretch="always")
-main_paned.add(right_paned, stretch="always")
-
-# Add separators between sidebar and views
-ttk.Separator(root, orient=tk.VERTICAL).grid(column=2, row=0, rowspan=10, sticky='ns')
-
-scale = 1.
-theta = 240 * DEG
-phi =  35 * DEG
-
-ihat, jhat, khat = np.eye(3)
-
-step_var = sidebar.step_var
-
-# Create IsoView objects with initial center points (will be updated by resize handler)
-top = iv.IsoView(topcan, ihat , -jhat , [DEFAULT_W/2, DEFAULT_H/2], step_var, sidebar.x_var, sidebar.y_var, sidebar.z_var,
-                 shift_key=shift_key, control_key=control_key, scale=scale)
-side = iv.IsoView(sidecan, jhat , -khat , [DEFAULT_W/2, DEFAULT_H/2], step_var, sidebar.x_var, sidebar.y_var, sidebar.z_var,
-                  shift_key=shift_key, control_key=control_key, scale=scale)
-front = iv.IsoView(frontcan, ihat , -khat, [DEFAULT_W/2, DEFAULT_H/2], step_var, sidebar.x_var, sidebar.y_var, sidebar.z_var,
-                   shift_key=shift_key, control_key=control_key, scale=scale)
-iso = iv.from_theta_phi(theta, phi, isocan, [DEFAULT_W/2, DEFAULT_H/2], step_var, sidebar.x_var, sidebar.y_var, sidebar.z_var,
-                        shift_key=shift_key, control_key=control_key, scale=scale)
-views = iv.Views([top, side, front, iso])
-
+# Create view layout using the new modular approach
+from packages import view_layout
+views, rt_angle_images = view_layout.create_view_layout(
+    root,
+    sidebar,
+    rotate_yaw,
+    rotate_pitch,
+    rotate_roll,
+    shift_key,
+    control_key
+)
 
 scene = things.Scene(views, selected, export_cb=export_cb)
+
 
 
 
