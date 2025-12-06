@@ -61,7 +61,34 @@ class IsoView:
         self.shift_key = shift_key
         self.control_key = control_key
 
+        # Bind resize handler for dynamic panel resizing
+        self.can.bind('\u003cConfigure\u003e', self.on_resize)
+        self.resize_pending = False
+
         self.draw_axes()
+
+    def on_resize(self, event):
+        """Handle canvas resize events to keep view centered"""
+        # Avoid redundant redraws during resize
+        if self.resize_pending:
+            return
+        self.resize_pending = True
+        
+        # Update offset to new canvas center
+        new_width = event.width
+        new_height = event.height
+        self.offset = np.array([new_width / 2.0, new_height / 2.0])
+        
+        # Redraw all content if scene is loaded
+        if hasattr(self, 'scene'):
+            self.can.after(50, self._complete_resize)
+        else:
+            self.resize_pending = False
+    
+    def _complete_resize(self):
+        """Complete the resize operation after a short delay"""
+        self.redraw()
+        self.resize_pending = False
 
     def highlight_part(self, part, color):
         wf = part.get_wireframe()
