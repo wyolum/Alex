@@ -1,0 +1,504 @@
+{
+    "library_name": "Main",
+    "library_version": "1.0",
+    "export_date": "2025-12-06",
+    "description": "Alex CAD Parts Library - Aluminum extrusion profiles and connectors",
+    "parts": [
+        {
+            "name": "2020 Corner Three Way Silver",
+            "wireframe": "Cube",
+            "stl_filename": "2020 Corner Three Way.stl",
+            "price": 1.2,
+            "url": "https://amzn.to/3tceYVC",
+            "color": "#d5d5d5",
+            "length": 5,
+            "dimensions": {
+                "dim1": 20,
+                "dim2": 20
+            },
+            "interfaces": [
+                "2020-X",
+                "2020+Z",
+                "2020+Y"
+            ]
+        },
+        {
+            "name": "2020 Corner Three Way Black",
+            "wireframe": "Cube",
+            "stl_filename": "2020 Corner Three Way.stl",
+            "price": 2.0,
+            "url": "https://amzn.to/3tjOEsR",
+            "color": "#5e5e5e",
+            "length": 5,
+            "dimensions": {
+                "dim1": 20,
+                "dim2": 20
+            },
+            "interfaces": [
+                "2020-X",
+                "2020+Z",
+                "2020+Y"
+            ]
+        },
+        {
+            "name": "2020 Corner Two Way Silver",
+            "wireframe": "Cornertwoway",
+            "stl_filename": "CornerTwoWay.stl",
+            "price": 1.12,
+            "url": "https://amzn.to/3vjVnVr",
+            "color": "#d5d5d5",
+            "length": 20,
+            "dimensions": {
+                "dim1": 20,
+                "dim2": 20
+            },
+            "interfaces": [
+                "2020+X",
+                "2020-Z"
+            ]
+        },
+        {
+            "name": "2020 Plate Corner Black",
+            "wireframe": "Plate-Corner",
+            "stl_filename": "2020 Plate Corner Black.stl",
+            "price": 2.6,
+            "url": "https://amzn.to/3eAfMjg",
+            "color": "#5e5e5e",
+            "length": 4,
+            "dimensions": {
+                "dim1": 60,
+                "dim2": 60
+            },
+            "interfaces": []
+        },
+        {
+            "name": "2020 Plate T Black",
+            "wireframe": "Plate-T",
+            "stl_filename": "2020 Plate T Black.stl",
+            "price": 2.5,
+            "url": "https://amzn.to/30Dj6Sf",
+            "color": "#5e5e5e",
+            "length": 4,
+            "dimensions": {
+                "dim1": 60,
+                "dim2": 60
+            },
+            "interfaces": []
+        },
+        {
+            "name": "2020 Plate T Silver",
+            "wireframe": "Plate-T",
+            "stl_filename": "2020 Plate T Silver.stl",
+            "price": 2.4,
+            "url": "https://amzn.to/3lcOtwH",
+            "color": "#d5d5d5",
+            "length": 4,
+            "dimensions": {
+                "dim1": 60,
+                "dim2": 60
+            },
+            "interfaces": []
+        },
+        {
+            "name": "3030 Corner Three Way Silver",
+            "wireframe": "Cube",
+            "stl_filename": "3030 Corner Three Way Silver.stl",
+            "price": 3.5,
+            "url": "https://amzn.to/3vin691",
+            "color": "#d5d5d5",
+            "length": 6,
+            "dimensions": {
+                "dim1": 30,
+                "dim2": 30
+            },
+            "interfaces": [
+                "3030-X",
+                "3030+Z",
+                "3030+Y"
+            ]
+        },
+        {
+            "name": "3030 Corner Two Way Black",
+            "wireframe": "Prism",
+            "stl_filename": "CornerTwoWay.stl",
+            "price": 1.6,
+            "url": "https://amzn.to/38zT07j",
+            "color": "#5e5e5e",
+            "length": 30,
+            "dimensions": {
+                "dim1": 30,
+                "dim2": 30
+            },
+            "interfaces": [
+                "3030+X",
+                "3030+Z"
+            ]
+        },
+        {
+            "name": "2030 HFS5",
+            "wireframe": "Cube",
+            "stl_filename": "2030 Alex.stl",
+            "price": "piecewise",
+            "url": "https://bit.ly/3kxT1gF",
+            "color": "#2F4F4F",
+            "length": null,
+            "dimensions": {
+                "dim1": 20,
+                "dim2": 30
+            },
+            "interfaces": [],
+            "piecewise_pricing": [
+                {
+                    "length_mm": 50,
+                    "price": 5.0
+                },
+                {
+                    "length_mm": 300,
+                    "price": 5.0
+                },
+                {
+                    "length_mm": 1800,
+                    "price": 50.0
+                }
+            ]
+        },
+        {
+            "name": "2020 HFS5",
+            "wireframe": "Cube",
+            "stl_filename": "2020 Alex.stl",
+            "price": "piecewise",
+            "url": "https://bit.ly/37WDoKL",
+            "color": "silver",
+            "length": null,
+            "dimensions": {
+                "dim1": 20,
+                "dim2": 20
+            },
+            "interfaces": [],
+            "piecewise_pricing": [
+                {
+                    "length_mm": 50,
+                    "price": 3.18
+                },
+                {
+                    "length_mm": 299,
+                    "price": 3.18
+                },
+                {
+                    "length_mm": 300,
+                    "price": 1.98
+                },
+                {
+                    "length_mm": 4000,
+                    "price": 26.4
+                }
+            ]
+        },
+        {
+            "name": "2040 HFS5",
+            "wireframe": "Cube",
+            "stl_filename": "2040 Alex.stl",
+            "price": "piecewise",
+            "url": "https://bit.ly/3ssMSFk",
+            "color": "silver",
+            "length": null,
+            "dimensions": {
+                "dim1": 20,
+                "dim2": 40
+            },
+            "interfaces": [],
+            "piecewise_pricing": [
+                {
+                    "length_mm": 50,
+                    "price": 3.0
+                },
+                {
+                    "length_mm": 299,
+                    "price": 3.0
+                },
+                {
+                    "length_mm": 300,
+                    "price": 3.75
+                },
+                {
+                    "length_mm": 1800,
+                    "price": 22.5
+                }
+            ]
+        },
+        {
+            "name": "2060 HFS5",
+            "wireframe": "Cube",
+            "stl_filename": "2060 Alex.stl",
+            "price": "piecewise",
+            "url": "https://bit.ly/2Pa017J",
+            "color": "silver",
+            "length": null,
+            "dimensions": {
+                "dim1": 20,
+                "dim2": 60
+            },
+            "interfaces": [],
+            "piecewise_pricing": [
+                {
+                    "length_mm": 50,
+                    "price": 3.85
+                },
+                {
+                    "length_mm": 299,
+                    "price": 3.85
+                },
+                {
+                    "length_mm": 300,
+                    "price": 4.26
+                },
+                {
+                    "length_mm": 1800,
+                    "price": 25.56
+                }
+            ]
+        },
+        {
+            "name": "3030 HFSL6",
+            "wireframe": "Cube",
+            "stl_filename": "3030 Alex.stl",
+            "price": "piecewise",
+            "url": "https://bit.ly/3rSGV4M",
+            "color": "#2F4F4F",
+            "length": null,
+            "dimensions": {
+                "dim1": 30,
+                "dim2": 30
+            },
+            "interfaces": [],
+            "piecewise_pricing": [
+                {
+                    "length_mm": 50,
+                    "price": 2.31
+                },
+                {
+                    "length_mm": 299,
+                    "price": 2.31
+                },
+                {
+                    "length_mm": 300,
+                    "price": 2.91
+                },
+                {
+                    "length_mm": 4000,
+                    "price": 38.8
+                }
+            ]
+        },
+        {
+            "name": "2080 HFS5",
+            "wireframe": "Cube",
+            "stl_filename": "2080 Alex.stl",
+            "price": "piecewise",
+            "url": "https://bit.ly/3cv6zG3",
+            "color": "silver",
+            "length": null,
+            "dimensions": {
+                "dim1": 20,
+                "dim2": 80
+            },
+            "interfaces": [],
+            "piecewise_pricing": [
+                {
+                    "length_mm": 100,
+                    "price": 5.61
+                },
+                {
+                    "length_mm": 299,
+                    "price": 5.61
+                },
+                {
+                    "length_mm": 300,
+                    "price": 6.9
+                },
+                {
+                    "length_mm": 4000,
+                    "price": 92.0
+                }
+            ]
+        },
+        {
+            "name": "2020 Alex",
+            "wireframe": "Cube",
+            "stl_filename": "2020 Alex.stl",
+            "price": "piecewise",
+            "url": "https://bit.ly/37WDoKL",
+            "color": "silver",
+            "length": null,
+            "dimensions": {
+                "dim1": 20,
+                "dim2": 20
+            },
+            "interfaces": [],
+            "piecewise_pricing": [
+                {
+                    "length_mm": 50,
+                    "price": 3.18
+                },
+                {
+                    "length_mm": 299,
+                    "price": 3.18
+                },
+                {
+                    "length_mm": 300,
+                    "price": 1.98
+                },
+                {
+                    "length_mm": 4000,
+                    "price": 26.4
+                }
+            ]
+        }
+    ],
+    "interface_definitions": {
+        "2020-X": {
+            "hotspot": [
+                -15,
+                0,
+                15
+            ],
+            "direction": [
+                -1,
+                0,
+                0
+            ]
+        },
+        "2020+X": {
+            "hotspot": [
+                15,
+                0,
+                15
+            ],
+            "direction": [
+                1,
+                0,
+                0
+            ]
+        },
+        "2020-Y": {
+            "hotspot": [
+                0,
+                -15,
+                15
+            ],
+            "direction": [
+                0,
+                -1,
+                0
+            ]
+        },
+        "2020+Y": {
+            "hotspot": [
+                0,
+                15,
+                15
+            ],
+            "direction": [
+                0,
+                1,
+                0
+            ]
+        },
+        "2020-Z": {
+            "hotspot": [
+                0,
+                0,
+                0
+            ],
+            "direction": [
+                0,
+                0,
+                -1
+            ]
+        },
+        "2020+Z": {
+            "hotspot": [
+                15,
+                15,
+                6
+            ],
+            "direction": [
+                0,
+                0,
+                1
+            ]
+        },
+        "3030-X": {
+            "hotspot": [
+                -15,
+                0,
+                15
+            ],
+            "direction": [
+                -1,
+                0,
+                0
+            ]
+        },
+        "3030+X": {
+            "hotspot": [
+                15,
+                0,
+                15
+            ],
+            "direction": [
+                1,
+                0,
+                0
+            ]
+        },
+        "3030-Y": {
+            "hotspot": [
+                0,
+                -15,
+                15
+            ],
+            "direction": [
+                0,
+                -1,
+                0
+            ]
+        },
+        "3030+Y": {
+            "hotspot": [
+                0,
+                15,
+                15
+            ],
+            "direction": [
+                0,
+                1,
+                0
+            ]
+        },
+        "3030-Z": {
+            "hotspot": [
+                0,
+                0,
+                0
+            ],
+            "direction": [
+                0,
+                0,
+                -1
+            ]
+        },
+        "3030+Z": {
+            "hotspot": [
+                15,
+                15,
+                6
+            ],
+            "direction": [
+                0,
+                0,
+                1
+            ]
+        }
+    }
+}

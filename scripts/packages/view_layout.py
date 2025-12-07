@@ -6,20 +6,26 @@ from tkinter import ttk
 from typing import Tuple, Dict
 from PIL import Image, ImageTk
 import numpy as np
+import os
 
 from packages import isometric_view as iv
 from packages.view_panel import ViewPanel
 from packages.view_config import ViewConfig
 from packages.constants import bgcolor, DEG
 
+# Get the base directory for resources
+script_dir = os.path.dirname(os.path.abspath(__file__))
+base_dir = os.path.dirname(os.path.dirname(script_dir))
+resources_dir = os.path.join(base_dir, 'resources')
+
 
 def load_rotation_images() -> Dict[str, ImageTk.PhotoImage]:
     """Load rotation button images"""
     return {
-        'base': ImageTk.PhotoImage(Image.open('../resources/rt_angle.png')),
-        'yaw': ImageTk.PhotoImage(Image.open('../resources/rt_angle_yaw.png')),
-        'pitch': ImageTk.PhotoImage(Image.open('../resources/rt_angle_pitch.png')),
-        'roll': ImageTk.PhotoImage(Image.open('../resources/rt_angle_roll.png'))
+        'base': ImageTk.PhotoImage(Image.open(os.path.join(resources_dir, 'rt_angle.png'))),
+        'yaw': ImageTk.PhotoImage(Image.open(os.path.join(resources_dir, 'rt_angle_yaw.png'))),
+        'pitch': ImageTk.PhotoImage(Image.open(os.path.join(resources_dir, 'rt_angle_pitch.png'))),
+        'roll': ImageTk.PhotoImage(Image.open(os.path.join(resources_dir, 'rt_angle_roll.png')))
     }
 
 

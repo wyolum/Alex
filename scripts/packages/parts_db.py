@@ -119,7 +119,10 @@ def load_piecewise(csv_fn):
     data = data[1:]
     data = [l for l in data if len(l) == 3]
     piecewise_table.insert(db, data)
-load_piecewise('packages/piecewise.csv')
+
+mydir = os.path.split(os.path.abspath(__file__))[0]
+piecewise_csv_fn = os.path.join(mydir, 'piecewise.csv')
+load_piecewise(piecewise_csv_fn)
 
 mydir = os.path.split(os.path.abspath(__file__))[0]
 csv_fn = os.path.join(mydir, 'parts.csv')

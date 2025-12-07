@@ -56,6 +56,11 @@ from packages import wireframes
 from packages import things
 from packages import isometric_view as iv
 
+# Get the base directory for resources
+script_dir = os.path.dirname(os.path.abspath(__file__))
+base_dir = os.path.dirname(script_dir)
+resources_dir = os.path.join(base_dir, 'resources')
+
 
 parser = argparse.ArgumentParser(description='ALuminum EXtrusion CAD program.')
 parser.add_argument('filename', nargs='?', default=None, type=str)
@@ -512,11 +517,11 @@ def AlignmentPanel(parent):
     frame.bind('<Enter>', highlight_last_selected)
     frame.bind('<Leave>', unhighlight_last_selected)
     
-    x_abut_button = AlignmentButton(frame, '../resources/x_abut.png', x_abut_selected)
-    x_abut_right_button = AlignmentButton(frame, '../resources/x_abut_right.png', x_abut_right_selected)
-    x_center_button = AlignmentButton(frame, '../resources/x_center.png', x_center_selected)
-    x_flush_button = AlignmentButton(frame, '../resources/x_flush.png', x_flush_selected)
-    x_flush_left_button = AlignmentButton(frame, '../resources/x_flush_left.png', x_flush_left_selected)
+    x_abut_button = AlignmentButton(frame, os.path.join(resources_dir, 'x_abut.png'), x_abut_selected)
+    x_abut_right_button = AlignmentButton(frame, os.path.join(resources_dir, 'x_abut_right.png'), x_abut_right_selected)
+    x_center_button = AlignmentButton(frame, os.path.join(resources_dir, 'x_center.png'), x_center_selected)
+    x_flush_button = AlignmentButton(frame, os.path.join(resources_dir, 'x_flush.png'), x_flush_selected)
+    x_flush_left_button = AlignmentButton(frame, os.path.join(resources_dir, 'x_flush_left.png'), x_flush_left_selected)
     x_abut_button.bind('<Motion>', highlight_last_selected)
     
     x_abut_button.grid      (row=6, column=1)
@@ -525,11 +530,11 @@ def AlignmentPanel(parent):
     x_flush_button.grid     (row=3, column=1)
     x_flush_left_button.grid(row=5, column=1)
 
-    y_abut_button = AlignmentButton(frame, '../resources/y_abut.png', y_abut_selected)
-    y_abut_back_button = AlignmentButton(frame, '../resources/y_abut_back.png', y_abut_back_selected)
-    y_center_button = AlignmentButton(frame, '../resources/y_center.png', y_center_selected)
-    y_flush_button = AlignmentButton(frame, '../resources/y_flush.png', y_flush_selected)
-    y_flush_back_button = AlignmentButton(frame, '../resources/y_flush_back.png', y_flush_back_selected)
+    y_abut_button = AlignmentButton(frame, os.path.join(resources_dir, 'y_abut.png'), y_abut_selected)
+    y_abut_back_button = AlignmentButton(frame, os.path.join(resources_dir, 'y_abut_back.png'), y_abut_back_selected)
+    y_center_button = AlignmentButton(frame, os.path.join(resources_dir, 'y_center.png'), y_center_selected)
+    y_flush_button = AlignmentButton(frame, os.path.join(resources_dir, 'y_flush.png'), y_flush_selected)
+    y_flush_back_button = AlignmentButton(frame, os.path.join(resources_dir, 'y_flush_back.png'), y_flush_back_selected)
 
     y_abut_button.grid      (row=6, column=2)
     y_abut_back_button.grid (row=2, column=2)
@@ -537,11 +542,11 @@ def AlignmentPanel(parent):
     y_flush_button.grid     (row=3, column=2)
     y_flush_back_button.grid(row=5, column=2)
 
-    z_abut_button = AlignmentButton(frame, '../resources/z_abut.png', z_abut_selected)
-    z_abut_top_button = AlignmentButton(frame, '../resources/z_abut_top.png', z_abut_top_selected)
-    z_center_button = AlignmentButton(frame, '../resources/z_center.png', z_center_selected)
-    z_flush_button = AlignmentButton(frame, '../resources/z_flush.png', z_flush_selected)
-    z_flush_top_button = AlignmentButton(frame, '../resources/z_flush_top.png', z_flush_top_selected)
+    z_abut_button = AlignmentButton(frame, os.path.join(resources_dir, 'z_abut.png'), z_abut_selected)
+    z_abut_top_button = AlignmentButton(frame, os.path.join(resources_dir, 'z_abut_top.png'), z_abut_top_selected)
+    z_center_button = AlignmentButton(frame, os.path.join(resources_dir, 'z_center.png'), z_center_selected)
+    z_flush_button = AlignmentButton(frame, os.path.join(resources_dir, 'z_flush.png'), z_flush_selected)
+    z_flush_top_button = AlignmentButton(frame, os.path.join(resources_dir, 'z_flush_top.png'), z_flush_top_selected)
 
     z_abut_button.grid     (row=6, column=3)
     z_abut_top_button.grid (row=2, column=3)
@@ -1295,6 +1300,6 @@ if False:
     root.bind('<Control-z>', util.undo)
     root.bind('<Control-y>', util.redo)
 export()
-icon_image = ImageTk.PhotoImage(Image.open('../resources/icon.png'))
+icon_image = ImageTk.PhotoImage(Image.open(os.path.join(resources_dir, 'icon.png')))
 root.iconphoto(False, icon_image)
 root.mainloop()
