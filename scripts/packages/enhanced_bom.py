@@ -34,9 +34,13 @@ class EnhancedBOMDialog:
         """
         self.parent = parent
         self.filename = filename
-        self.bom_items = self._parse_bom_data(bom_data)
+        self.original_bom_items = self._parse_bom_data(bom_data)
+        self.bom_items = self.original_bom_items.copy()  # Working copy for filtering
         self.grouped_view = False  # Track if we're in grouped view
         self.expanded_suppliers = {}  # Track which suppliers are expanded
+        self.sort_column = None  # Track current sort column
+        self.sort_reverse = False  # Track sort direction
+        self.search_var = None  # Search text variable
         
         # Create dialog window
         self.window = tk.Toplevel(parent)
@@ -185,6 +189,43 @@ class EnhancedBOMDialog:
         if has_tooltip:
             tooltip.add_tooltip(self.group_button, "Toggle supplier grouping view (Ctrl+G)")
         
+        # Expand/Collapse All button (only visible in grouped view)
+        self.expand_all_button = tk.Button(
+            button_frame,
+            text="▼ Expand All",
+            command=self._expand_collapse_all,
+            padx=10
+        )
+        # Will be packed when grouped view is active
+        if has_tooltip:
+            tooltip.add_tooltip(self.expand_all_button, "Expand or collapse all supplier groups")
+        
+        # Search box
+        tk.Label(button_frame, text="🔍", font=('Arial', 12)).pack(side='left', padx=(10, 2))
+        self.search_var = tk.StringVar()
+        self.search_var.trace('w', lambda *args: self._apply_filter())
+        search_entry = tk.Entry(
+            button_frame,
+            textvariable=self.search_var,
+            width=20,
+            font=('Arial', 10)
+        )
+        search_entry.pack(side='left', padx=2)
+        if has_tooltip:
+            tooltip.add_tooltip(search_entry, "Search parts by description (Ctrl+F)")
+        
+        # Clear search button
+        clear_btn = tk.Button(
+            button_frame,
+            text="✕",
+            command=lambda: self.search_var.set(''),
+            padx=5,
+            font=('Arial', 9)
+        )
+        clear_btn.pack(side='left', padx=2)
+        if has_tooltip:
+            tooltip.add_tooltip(clear_btn, "Clear search")
+        
         # Help button on the right
         help_btn = tk.Button(
             button_frame,
@@ -234,24 +275,34 @@ class EnhancedBOMDialog:
         table_frame = tk.Frame(self.scrollable_frame)
         table_frame.pack(fill='both', expand=True)
         
-        # Header row
+        # Header row (clickable for sorting)
         headers = ['QTY', 'Description', 'Dimensions', 'Unit Cost', 'Total Cost', 'Supplier']
+        header_keys = ['qty', 'description', 'dimensions', 'unit_cost', 'total_cost', 'supplier']
         header_bg = '#2c3e50'
         header_fg = 'white'
         
-        for col, header in enumerate(headers):
+        for col, (header, key) in enumerate(zip(headers, header_keys)):
+            # Add sort indicator if this is the sorted column
+            header_text = header
+            if self.sort_column == key:
+                header_text += ' ▼' if self.sort_reverse else ' ▲'
+            
             label = tk.Label(
                 table_frame,
-                text=header,
+                text=header_text,
                 bg=header_bg,
                 fg=header_fg,
                 font=('Arial', 10, 'bold'),
                 padx=10,
                 pady=8,
                 relief='raised',
-                borderwidth=1
+                borderwidth=1,
+                cursor='hand2'
             )
             label.grid(row=0, column=col, sticky='ew')
+            
+            # Bind click to sort
+            label.bind('<Button-1>', lambda e, k=key: self._sort_by_column(k))
         
         # Data rows with alternating colors
         row_colors = ['#ecf0f1', '#ffffff']
@@ -364,9 +415,13 @@ class EnhancedBOMDialog:
         
         if self.grouped_view:
             self.group_button.config(text="📋 Show All Items")
+            # Show expand/collapse all button
+            self.expand_all_button.pack(side='left', padx=2, after=self.group_button)
             self._build_grouped_view()
         else:
             self.group_button.config(text="📊 Group by Supplier")
+            # Hide expand/collapse all button
+            self.expand_all_button.pack_forget()
             self._build_bom_table()
     
     def _build_grouped_view(self):
@@ -573,6 +628,85 @@ class EnhancedBOMDialog:
         self.expanded_suppliers[supplier_name] = not self.expanded_suppliers[supplier_name]
         self._build_grouped_view()
     
+    def _expand_collapse_all(self):
+        """Expand or collapse all supplier sections."""
+        # Check if any are collapsed
+        any_collapsed = any(not expanded for expanded in self.expanded_suppliers.values())
+        
+        # If any are collapsed, expand all; otherwise collapse all
+        new_state = any_collapsed
+        
+        for supplier in self.expanded_suppliers:
+            self.expanded_suppliers[supplier] = new_state
+        
+        # Update button text
+        self.expand_all_button.config(text="▼ Expand All" if not new_state else "▲ Collapse All")
+        
+        self._build_grouped_view()
+    
+    def _sort_by_column(self, column_key):
+        """Sort BOM items by the specified column."""
+        # Toggle sort direction if clicking same column
+        if self.sort_column == column_key:
+            self.sort_reverse = not self.sort_reverse
+        else:
+            self.sort_column = column_key
+            self.sort_reverse = False
+        
+        # Sort the items
+        if column_key == 'dimensions':
+            # Special handling for dimensions - sort by total volume
+            def dim_key(item):
+                try:
+                    x = float(item['dim_x']) if item['dim_x'] else 0
+                    y = float(item['dim_y']) if item['dim_y'] else 0
+                    z = float(item['dim_z']) if item['dim_z'] else 0
+                    return x * y * z
+                except (ValueError, TypeError):
+                    return 0
+            self.bom_items.sort(key=dim_key, reverse=self.sort_reverse)
+        else:
+            self.bom_items.sort(key=lambda x: x[column_key], reverse=self.sort_reverse)
+        
+        # Rebuild the table
+        if self.grouped_view:
+            self._build_grouped_view()
+        else:
+            self._build_bom_table()
+    
+    def _apply_filter(self):
+        """Apply search filter to BOM items."""
+        search_text = self.search_var.get().lower().strip()
+        
+        if not search_text:
+            # No filter - show all items
+            self.bom_items = self.original_bom_items.copy()
+        else:
+            # Filter items by description
+            self.bom_items = [
+                item for item in self.original_bom_items
+                if search_text in item['description'].lower() or
+                   search_text in item['supplier'].lower() or
+                   search_text in f"{item['dim_x']}×{item['dim_y']}×{item['dim_z']}".lower()
+            ]
+        
+        # Reapply current sort if any
+        if self.sort_column:
+            self._sort_by_column(self.sort_column)
+        else:
+            # Rebuild the view
+            if self.grouped_view:
+                self._build_grouped_view()
+            else:
+                self._build_bom_table()
+        
+        # Update window title with filtered count
+        total = self._calculate_total()
+        if search_text:
+            self.window.title(f"Bill of Materials - Showing {len(self.bom_items)}/{len(self.original_bom_items)} items - Total: ${total:.2f}")
+        else:
+            self.window.title(f"Bill of Materials - Total: ${total:.2f}")
+    
     def _flash_feedback(self, color='#2ecc71', duration=150):
         """Flash the window background briefly to indicate success."""
         original_bg = self.window.cget('bg')
@@ -698,6 +832,9 @@ class EnhancedBOMDialog:
         # Ctrl+G - Toggle grouping
         self.window.bind('<Control-g>', lambda e: self._toggle_supplier_grouping())
         
+        # Ctrl+F - Focus search box
+        self.window.bind('<Control-f>', lambda e: self.window.focus_set() or e.widget.focus_set() if isinstance(e.widget, tk.Entry) else None)
+        
         # Escape - Close dialog
         self.window.bind('<Escape>', lambda e: self.window.destroy())
         
@@ -711,8 +848,14 @@ class EnhancedBOMDialog:
 Ctrl+C      Copy all items to clipboard
 Ctrl+E      Export to CSV file
 Ctrl+G      Toggle supplier grouping
+Ctrl+F      Focus search box
 Escape      Close this dialog
 F1 or ?     Show this help
+
+Features:
+• Click column headers to sort
+• Use search box to filter parts
+• Click supplier groups to expand/collapse
 
 Tip: Hover over buttons to see tooltips!"""
         

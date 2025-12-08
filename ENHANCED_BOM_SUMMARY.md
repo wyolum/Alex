@@ -132,19 +132,30 @@ Scene → tobom() → CSV lines → alex_enhanced_bom() →
 ✅ **User retention**: Indispensable for real projects  
 ✅ **Potential revenue**: Affiliate links (future)  
 
-## 🚀 Next Steps (Future Enhancements)
+## 🚀 Completed Features (All Phases Done!)
 
-### Phase 2: Supplier Grouping (30 min)
+### ✅ Phase 1: Visual Polish + Actions
+- Professional table styling
+- Interactive URLs with hover effects
+- Copy to clipboard
+- CSV export
+- Status bar
+
+### ✅ Phase 2: Supplier Grouping
 - Collapsible sections per supplier
 - Subtotals per supplier
 - "Copy Supplier List" buttons
 - Visual supplier indicators
+- Expand/Collapse All button
 
-### Phase 3: Sorting & Filtering (30 min)
-- Click column headers to sort
-- Search/filter parts
-- Show/hide suppliers
-- Price range filter
+### ✅ Phase 3: Sorting & Filtering
+- **Click column headers to sort** (ascending/descending)
+- **Search/filter box** with real-time filtering
+- Filter by description, supplier, or dimensions
+- Sort indicators (▲/▼) on column headers
+- Filtered item count in title
+
+## 🎯 Future Enhancements (Optional)
 
 ### Phase 4: Advanced Features (1-2 hours)
 - Price comparison across suppliers
