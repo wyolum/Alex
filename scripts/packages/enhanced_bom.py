@@ -53,10 +53,20 @@ class EnhancedBOMDialog:
         """Parse BOM data from CSV format into structured items."""
         items = []
         
-        for line in bom_lines:
+        print(f"DEBUG: Parsing {len(bom_lines)} BOM lines")
+        
+        for idx, line in enumerate(bom_lines):
             parts = line.split(',')
-            if len(parts) >= 8:
+            print(f"DEBUG: Line {idx}: {len(parts)} parts - {line[:100]}")
+            
+            # Need at least 6 parts (qty, desc, x, y, z, unit_cost)
+            if len(parts) >= 6:
                 try:
+                    # Get URL if available (index 7 or later)
+                    url = ''
+                    if len(parts) > 7:
+                        url = parts[7].strip()
+                    
                     item = {
                         'qty': int(parts[0]) if parts[0].strip() else 0,
                         'description': parts[1].strip(),
@@ -64,14 +74,30 @@ class EnhancedBOMDialog:
                         'dim_y': parts[3].strip(),
                         'dim_z': parts[4].strip(),
                         'unit_cost': float(parts[5].replace('$', '').strip()) if parts[5].strip() else 0.0,
-                        'total_cost': float(parts[6].replace('$', '').strip()) if parts[6].strip() else 0.0,
-                        'url': parts[7].strip() if len(parts) > 7 else '',
-                        'supplier': self._extract_supplier(parts[7].strip() if len(parts) > 7 else '')
+                        'total_cost': float(parts[6].replace('$', '').strip()) if len(parts) > 6 and parts[6].strip() else 0.0,
+                        'url': url,
+                        'supplier': self._extract_supplier(url)
                     }
                     items.append(item)
+                    print(f"DEBUG: Successfully parsed item: {item['description']}")
                 except (ValueError, IndexError) as e:
-                    print(f"Warning: Failed to parse BOM line: {line} - {e}")
+                    print(f"Warning: Failed to parse BOM line {idx}: {line} - {e}")
                     continue
+            else:
+                print(f"DEBUG: Skipping line {idx} - only {len(parts)} parts")
+        
+        print(f"DEBUG: Parsed {len(items)} items total")
+        
+        if len(items) == 0:
+            print("ERROR: No items were parsed from BOM data!")
+            # Show error to user
+            import tkinter.messagebox as messagebox
+            messagebox.showerror(
+                "BOM Parse Error",
+                f"Failed to parse BOM data.\n\n"
+                f"Received {len(bom_lines)} lines but could not parse any items.\n"
+                f"Please check the console for details."
+            )
         
         return items
     
@@ -137,7 +163,7 @@ class EnhancedBOMDialog:
         )
         copy_btn.pack(side='left', padx=2)
         if has_tooltip:
-            tooltip.create_tooltip(copy_btn, "Copy entire BOM to clipboard (Ctrl+C)")
+            tooltip.add_tooltip(copy_btn, "Copy entire BOM to clipboard (Ctrl+C)")
         
         export_btn = tk.Button(
             button_frame,
@@ -147,7 +173,7 @@ class EnhancedBOMDialog:
         )
         export_btn.pack(side='left', padx=2)
         if has_tooltip:
-            tooltip.create_tooltip(export_btn, "Export BOM to CSV file (Ctrl+E)")
+            tooltip.add_tooltip(export_btn, "Export BOM to CSV file (Ctrl+E)")
         
         self.group_button = tk.Button(
             button_frame,
@@ -157,7 +183,7 @@ class EnhancedBOMDialog:
         )
         self.group_button.pack(side='left', padx=2)
         if has_tooltip:
-            tooltip.create_tooltip(self.group_button, "Toggle supplier grouping view (Ctrl+G)")
+            tooltip.add_tooltip(self.group_button, "Toggle supplier grouping view (Ctrl+G)")
         
         # Help button on the right
         help_btn = tk.Button(
@@ -169,7 +195,7 @@ class EnhancedBOMDialog:
         )
         help_btn.pack(side='right', padx=2)
         if has_tooltip:
-            tooltip.create_tooltip(help_btn, "Show keyboard shortcuts (F1)")
+            tooltip.add_tooltip(help_btn, "Show keyboard shortcuts (F1)")
         
         
         # Main content area with scrollbar
@@ -547,6 +573,13 @@ class EnhancedBOMDialog:
         self.expanded_suppliers[supplier_name] = not self.expanded_suppliers[supplier_name]
         self._build_grouped_view()
     
+    def _flash_feedback(self, color='#2ecc71', duration=150):
+        """Flash the window background briefly to indicate success."""
+        original_bg = self.window.cget('bg')
+        self.window.config(bg=color)
+        self.window.update()
+        self.window.after(duration, lambda: self.window.config(bg=original_bg))
+    
     def _copy_supplier_list(self, supplier_name, items):
         """Copy a specific supplier's items to clipboard."""
         csv_lines = [f"{supplier_name} - Parts List"]
@@ -567,7 +600,7 @@ class EnhancedBOMDialog:
         self.window.clipboard_append(csv_text)
         self.window.update()
         
-        messagebox.showinfo("Copied", f"{supplier_name} list copied to clipboard!\n{len(items)} items, ${supplier_total:.2f}")
+        self._flash_feedback()
     
     def _create_status_bar(self):
         """Create bottom status bar with summary."""
@@ -612,7 +645,7 @@ class EnhancedBOMDialog:
         self.window.clipboard_append(csv_text)
         self.window.update()
         
-        messagebox.showinfo("Copied", f"BOM copied to clipboard!\n{len(self.bom_items)} items")
+        self._flash_feedback()
     
     def _export_csv(self):
         """Export BOM to CSV file."""
@@ -668,9 +701,8 @@ class EnhancedBOMDialog:
         # Escape - Close dialog
         self.window.bind('<Escape>', lambda e: self.window.destroy())
         
-        # F1 or ? - Show shortcuts help
+        # F1 - Show shortcuts help
         self.window.bind('<F1>', lambda e: self._show_shortcuts_help())
-        self.window.bind('<?>', lambda e: self._show_shortcuts_help())
     
     def _show_shortcuts_help(self):
         """Show keyboard shortcuts help dialog."""
