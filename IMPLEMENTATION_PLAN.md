@@ -156,7 +156,13 @@ Transform Alex CAD from a desktop CAD tool into a collaborative, cloud-enabled p
 **🎉 SPRINT COMPLETE! 100% DONE! 🎉**
 
 ### 📅 Short-term (3-6 months)
-- ✅ **Enhanced BOM with supplier links** (DONE!)
+- ✅ **Enhanced BOM with supplier links** (COMPLETE!)
+  - ✅ Supplier grouping and subtotals
+  - ✅ Sortable columns (click headers)
+  - ✅ Search/filter functionality
+  - ✅ Expand/collapse all
+  - ✅ Copy to clipboard
+  - ✅ CSV export
 - Three.js 3D viewer integration
 - Design gallery website
 - Link manager with auto-updates
