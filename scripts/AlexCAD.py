@@ -1700,13 +1700,23 @@ def alex_update_3d_viewer(viewer_widget=None):
                         # Get vertices from the mesh
                         vertices = part_mesh.vectors.reshape(-1, 3)
                         
-                        # Apply thing's transformation (position and orientation)
+                        # Apply transformations in the same order as OpenSCAD:
+                        # 1. Scale by [dim1, dim2, length]
+                        # 2. Rotate by orientation matrix
+                        # 3. Translate by position
+                        
+                        # 1. Apply scaling (like OpenSCAD's scale([dim1, dim2, length]))
+                        if hasattr(thing, 'dim1') and hasattr(thing, 'dim2') and hasattr(thing, 'length'):
+                            scale = np.array([thing.dim1, thing.dim2, thing.length])
+                            vertices = vertices * scale
+                            print(f"  Scaling by [{thing.dim1}, {thing.dim2}, {thing.length}]")
+                        
+                        # 2. Apply rotation (like OpenSCAD's rotate)
                         if hasattr(thing, 'orient') and thing.orient is not None:
-                            # Apply rotation
                             vertices = vertices @ thing.orient.T
                         
+                        # 3. Apply translation (like OpenSCAD's translate)
                         if hasattr(thing, 'pos') and thing.pos is not None:
-                            # Apply translation
                             vertices = vertices + np.array(thing.pos)
                         
                         # Add to combined mesh
