@@ -43,9 +43,13 @@ class STLViewer3D(tk.Frame):
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(fill='both', expand=True)
         
-        # Add toolbar
-        toolbar = NavigationToolbar2Tk(self.canvas, self)
-        toolbar.update()
+        # Add toolbar (optional - skip if it causes errors)
+        try:
+            toolbar = NavigationToolbar2Tk(self.canvas, self)
+            toolbar.update()
+        except Exception as e:
+            print(f"Note: Toolbar not available ({e})")
+            # Toolbar is optional - viewer still works without it
         
         # Store current mesh
         self.current_mesh = None
