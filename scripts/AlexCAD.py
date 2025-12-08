@@ -1706,8 +1706,13 @@ def alex_update_3d_viewer(viewer_widget=None):
                     
                     # Process this member as a part
                     if hasattr(member, 'lib') and hasattr(member, 'name'):
-                        stl_filename = member.name + '.stl'
-                        stl_path = os.path.join(member.lib.stl_dir, stl_filename)
+                        # Use the actual STL filename from the part
+                        if hasattr(member, 'stl_fn'):
+                            stl_path = member.stl_fn
+                        else:
+                            stl_filename = member.name + '.stl'
+                            stl_path = os.path.join(member.lib.stl_dir, stl_filename)
+                        
                         print(f"      Looking for STL: {stl_path}")
                         
                         if os.path.exists(stl_path):
@@ -1739,9 +1744,14 @@ def alex_update_3d_viewer(viewer_widget=None):
             
             # Check if thing is a Part (has lib and name attributes)
             if hasattr(thing, 'lib') and hasattr(thing, 'name'):
-                # Get the STL file path from the library
-                stl_filename = thing.name + '.stl'
-                stl_path = os.path.join(thing.lib.stl_dir, stl_filename)
+                # Use the actual STL filename from the part (not constructed from name)
+                # because the name might include color but STL filename doesn't
+                if hasattr(thing, 'stl_fn'):
+                    stl_path = thing.stl_fn
+                else:
+                    # Fallback: construct from name
+                    stl_filename = thing.name + '.stl'
+                    stl_path = os.path.join(thing.lib.stl_dir, stl_filename)
                 
                 print(f"  Looking for STL: {stl_path}")
                 
