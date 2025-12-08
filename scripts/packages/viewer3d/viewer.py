@@ -74,22 +74,10 @@ class Viewer3D:
         if not self.html_path.exists():
             raise FileNotFoundError(f"Viewer HTML not found: {self.html_path}")
     
-    def start(self, blocking=False):
+    def create_window(self):
         """
-        Start the 3D viewer window.
-        
-        Args:
-            blocking: If True, blocks until window is closed
+        Create the webview window (must be called before start).
         """
-        if blocking:
-            self._create_window()
-        else:
-            # Run in separate thread
-            thread = threading.Thread(target=self._create_window, daemon=True)
-            thread.start()
-    
-    def _create_window(self):
-        """Create the webview window."""
         self.window = webview.create_window(
             title=self.title,
             url=str(self.html_path),
@@ -98,7 +86,19 @@ class Viewer3D:
             resizable=True,
             js_api=self.api
         )
-        webview.start()
+        return self.window
+    
+    def start(self, debug=False):
+        """
+        Start the webview (blocking call - must be on main thread).
+        
+        Args:
+            debug: Enable debug mode
+        """
+        if not self.window:
+            raise RuntimeError("Must call create_window() before start()")
+        
+        webview.start(debug=debug)
     
     def load_stl_file(self, filepath):
         """
@@ -214,28 +214,16 @@ def create_viewer(title="AlexCAD 3D Viewer", width=800, height=600):
 
 # Example usage
 if __name__ == "__main__":
-    import time
-    
     # Create viewer
     viewer = create_viewer(width=1024, height=768)
     
-    # Start in non-blocking mode
-    viewer.start(blocking=False)
+    # Create window
+    viewer.create_window()
     
-    # Wait for window to be ready
-    time.sleep(2)
-    
-    # Load an STL file (if you have one)
+    # You can load an STL file before starting
     # viewer.load_stl_file("path/to/your/model.stl")
     
-    # Set view
-    viewer.set_view('iso')
-    
-    # Keep running
-    print("Viewer running. Press Ctrl+C to exit.")
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("Exiting...")
-        viewer.destroy()
+    # Start viewer (blocking - will run until window is closed)
+    print("Starting viewer... Close the window to exit.")
+    viewer.start()
+    print("Viewer closed.")
