@@ -73,76 +73,73 @@ class Viewer3DTk(tk.Frame):
         Args:
             filepath: Path to STL file
         """
-        # Convert to absolute path and file URL
-        filepath = os.path.abspath(filepath)
-        file_url = f"file://{filepath}"
+        # tkinterweb doesn't support JavaScript well enough for Three.js
+        # So we'll show a message and offer to open in external viewer
+        self.current_stl = filepath
         
-        # Execute JavaScript
-        js_code = f"window.viewer.loadSTL('{file_url}')"
+        success_html = f"""
+        <html>
+        <head>
+            <style>
+                body {{
+                    background: #2c3e50;
+                    color: white;
+                    font-family: 'Segoe UI', sans-serif;
+                    padding: 40px;
+                    text-align: center;
+                }}
+                h1 {{ color: #3498db; }}
+                .success {{ color: #2ecc71; font-size: 48px; }}
+                .info {{ background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px; margin: 20px 0; }}
+                .path {{ font-family: monospace; font-size: 12px; color: #95a5a6; }}
+            </style>
+        </head>
+        <body>
+            <div class="success">✓</div>
+            <h1>3D Model Ready!</h1>
+            <div class="info">
+                <p>Your design has been exported to STL format.</p>
+                <p class="path">{filepath}</p>
+            </div>
+            <p>To view in 3D:</p>
+            <ul style="text-align: left; max-width: 500px; margin: 20px auto;">
+                <li>Open the STL file in your favorite 3D viewer (Blender, MeshLab, etc.)</li>
+                <li>Or use an online viewer like viewstl.com</li>
+                <li>The file will be automatically cleaned up after viewing</li>
+            </ul>
+            <p style="margin-top: 40px; color: #95a5a6; font-size: 12px;">
+                Note: Full interactive 3D viewer coming soon!<br>
+                (tkinterweb has limited JavaScript support for Three.js)
+            </p>
+        </body>
+        </html>
+        """
+        
         try:
-            self.html_frame.evaluate_javascript(js_code)
+            self.html_frame.load_html(success_html)
+            print(f"✓ STL file ready: {filepath}")
         except Exception as e:
-            print(f"Error loading STL: {e}")
+            print(f"Error showing success message: {e}")
     
     def load_stl_data(self, stl_data):
-        """
-        Load STL data directly into the viewer.
-        
-        Args:
-            stl_data: Binary STL data
-        """
-        # Encode as base64
-        encoded = base64.b64encode(stl_data).decode('utf-8')
-        
-        # Execute JavaScript
-        js_code = f"""
-        (function() {{
-            const data = atob('{encoded}');
-            const bytes = new Uint8Array(data.length);
-            for (let i = 0; i < data.length; i++) {{
-                bytes[i] = data.charCodeAt(i);
-            }}
-            window.viewer.loadSTLData(bytes.buffer);
-        }})();
-        """
-        try:
-            self.html_frame.evaluate_javascript(js_code)
-        except Exception as e:
-            print(f"Error loading STL data: {e}")
+        """Load STL data - not supported in this version."""
+        print("load_stl_data: Not supported with tkinterweb")
     
     def set_view(self, view_name):
-        """
-        Set camera to a preset view.
-        
-        Args:
-            view_name: One of 'top', 'front', 'side', 'iso'
-        """
-        js_code = f"window.viewer.setView('{view_name}')"
-        try:
-            self.html_frame.evaluate_javascript(js_code)
-        except Exception as e:
-            print(f"Error setting view: {e}")
+        """Set view - not supported in this version."""
+        print(f"set_view({view_name}): Not supported with tkinterweb")
     
     def reset_camera(self):
-        """Reset camera to default position."""
-        try:
-            self.html_frame.evaluate_javascript("window.viewer.resetCamera()")
-        except Exception as e:
-            print(f"Error resetting camera: {e}")
+        """Reset camera - not supported in this version."""
+        print("reset_camera: Not supported with tkinterweb")
     
     def fit_to_view(self):
-        """Fit the model to the view."""
-        try:
-            self.html_frame.evaluate_javascript("window.viewer.fitToView()")
-        except Exception as e:
-            print(f"Error fitting to view: {e}")
+        """Fit to view - not supported in this version."""
+        print("fit_to_view: Not supported with tkinterweb")
     
     def clear(self):
-        """Clear all models from the scene."""
-        try:
-            self.html_frame.evaluate_javascript("window.viewer.clearModels()")
-        except Exception as e:
-            print(f"Error clearing models: {e}")
+        """Clear the viewer."""
+        self._load_viewer()
 
 
 # Convenience function
