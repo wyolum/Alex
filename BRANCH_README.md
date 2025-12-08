@@ -1,6 +1,6 @@
 # Branch: fix/path-issues-and-json-export
 
-This branch contains two main additions to the Alex CAD project:
+This branch contains improvements to the Alex CAD project:
 
 ## 1. JSON Parts Library Export
 
@@ -31,6 +31,49 @@ Fixed hardcoded relative paths to use absolute paths, allowing AlexCAD to run fr
 - `scripts/packages/view_layout.py` - Fixed rotation button image paths
 
 **Benefit**: The application now works regardless of the current working directory.
+
+## 3. Tooltips for Better UX
+
+Added comprehensive tooltips to all buttons and controls:
+
+**New File**: `scripts/packages/tooltip.py` - Tooltip utility module
+
+**Tooltips Added**:
+- Sidebar controls (New Part, Length, Dimensions, Step)
+- Zoom buttons (Zoom In, Zoom Out, Zoom Fit, Mirror Z)
+- All 15 alignment buttons (X, Y, Z axis operations)
+
+**Benefit**: Users can now hover over any button to see what it does.
+
+## 4. Complete Wireframe Files
+
+Added missing wireframe files from the wireframes.npz archive:
+
+**Files Added**:
+- `Cylinder.npy` - Cylinder wireframe
+- `Cone.npy` - Cone wireframe  
+- `T-Plate.npy` - T-Plate wireframe
+- `Corner-Plate.npy` - Corner plate wireframe
+
+**Benefit**: All wireframe shapes are now available for part creation.
+
+## 5. Comprehensive Test Suite
+
+Created 57 unit tests for JSON functionality:
+
+**Test Files**:
+- `tests/test_json_parts_library.py` - 29 tests for JSON structure
+- `tests/test_json_export_import.py` - 28 tests for export/import
+
+**Test Coverage**:
+- JSON structure validation
+- Part data integrity
+- Piecewise pricing
+- Interface definitions
+- Database consistency
+- Export/import operations
+
+**Result**: 57/57 tests passing (100%)
 
 ## Running AlexCAD
 

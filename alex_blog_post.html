@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Alex CAD: 40 Minutes of Incredible Improvements</title>
+</head>
+<body>
+
+<h1>Alex CAD: 40 Minutes of Incredible Improvements</h1>
+
+<p><em>December 6, 2025 - A whirlwind session of security fixes, new features, and code quality improvements</em></p>
+
+<img src="alex_resizable_panels.png" alt="Alex CAD with resizable panels" style="max-width: 100%; height: auto; margin: 20px 0;" />
+
+<h2>🚀 What We Accomplished in 40 Minutes</h2>
+
+<p>In a single focused session this morning (7:36 AM - 8:16 AM), we transformed Alex CAD with security patches, a major new feature, and comprehensive code refactoring. Here's the complete story:</p>
+
+<h2>Phase 1: Security Fixes (11 minutes)</h2>
+
+<h3>Critical Vulnerability Patched</h3>
+<ul>
+    <li><strong>CVE-2025-66418 Fixed</strong>: Updated urllib3 from 1.26.6 → 2.6.0</li>
+    <li>Addressed unbounded decompression chain vulnerability</li>
+    <li>Updated requests library for compatibility (2.26.0 → 2.32.3)</li>
+</ul>
+
+<h3>Dependency Modernization</h3>
+<p>Updated 24 packages from 2021 versions to modern 2024-2025 releases:</p>
+<ul>
+    <li>matplotlib: 3.4.2 → 3.9.4</li>
+    <li>numpy: 1.20.1 → 1.26.4</li>
+    <li>scipy: 1.7.1 → 1.13.1</li>
+    <li>Pillow: 8.1.0 → 11.3.0</li>
+    <li>Plus many more...</li>
+</ul>
+
+<h3>Code Modernization</h3>
+<ul>
+    <li>Replaced deprecated <code>distutils.spawn</code> with <code>shutil.which</code></li>
+    <li>Ensured Python 3.9+ compatibility</li>
+    <li>Created test environment and verified all fixes</li>
+</ul>
+
+<h2>Phase 2: Dual Monitor Fix (10 minutes)</h2>
+
+<p>Fixed a frustrating issue where Alex's window would span across both monitors on dual-monitor setups. The solution was elegant:</p>
+
+<pre><code>window_w = min(root.winfo_screenwidth(), 1920)
+window_h = min(root.winfo_screenheight(), 1080)</code></pre>
+
+<p>Now the window properly fits on a single monitor while remaining responsive to smaller screens.</p>
+
+<h2>Phase 3: Dynamic Panel Resizing (9 minutes)</h2>
+
+<p>This was the game-changer! We completely reimagined the view layout:</p>
+
+<h3>What Changed</h3>
+<ul>
+    <li><strong>Before</strong>: Fixed grid layout with unchangeable panel sizes</li>
+    <li><strong>After</strong>: Fully resizable panels with draggable dividers</li>
+</ul>
+
+<h3>Technical Implementation</h3>
+<ul>
+    <li>Replaced Tkinter grid layout with nested PanedWindow widgets</li>
+    <li>Created 2x2 grid of resizable view panels (Top, Side, Front, Iso)</li>
+    <li>Added resize event handlers to IsoView class</li>
+    <li>Views automatically recenter when panels resize</li>
+    <li>Zoom levels preserved during resize operations</li>
+    <li>Debounced redraws for smooth performance</li>
+</ul>
+
+<h3>User Experience</h3>
+<p>Users can now:</p>
+<ul>
+    <li>Drag the horizontal divider to resize left/right panels</li>
+    <li>Drag vertical dividers to resize top/bottom panels</li>
+    <li>Customize their workspace layout interactively</li>
+    <li>Resize panels without losing their work or zoom level</li>
+</ul>
+
+<h2>Phase 4: Code Quality Refactoring (10 minutes)</h2>
+
+<p>With the feature working, we didn't stop there. We performed a comprehensive refactoring to improve long-term maintainability:</p>
+
+<h3>1. ViewConfig Class</h3>
+<p>Centralized all configuration constants:</p>
+<pre><code>class ViewConfig:
+    DEFAULT_WIDTH = 500
+    DEFAULT_HEIGHT = 400
+    SASH_WIDTH = 5
+    BUTTON_OFFSET_X = 5
+    BUTTON_OFFSET_Y = 5
+    RESIZE_DEBOUNCE_MS = 50
+    ISO_THETA = 240
+    ISO_PHI = 35</code></pre>
+
+<h3>2. ViewPanel Class</h3>
+<p>Eliminated ~40 lines of repetitive code by creating a reusable component for panel creation. Each of the 4 view panels now uses the same clean, consistent code.</p>
+
+<h3>3. view_layout Module</h3>
+<p>Separated layout logic into its own module with three focused functions:</p>
+<ul>
+    <li><code>load_rotation_images()</code> - Image loading</li>
+    <li><code>create_paned_structure()</code> - PanedWindow creation</li>
+    <li><code>create_view_layout()</code> - Complete layout assembly</li>
+</ul>
+<p>This reduced AlexCAD.py by ~90 lines!</p>
+
+<h3>4. Improved Resize Handler</h3>
+<p>Replaced simple flag-based debouncing with a robust <code>after_cancel</code> pattern:</p>
+<pre><code>def on_resize(self, event):
+    if self._resize_after_id is not None:
+        self.can.after_cancel(self._resize_after_id)
+    
+    self._resize_after_id = self.can.after(
+        50,
+        lambda: self._do_resize(event.width, event.height)
+    )</code></pre>
+
+<h3>5. Type Hints</h3>
+<p>Added type hints throughout for better IDE support and error detection:</p>
+<pre><code>def __init__(
+    self, 
+    can: tk.Canvas, 
+    ihat: npt.NDArray, 
+    jhat: npt.NDArray, 
+    offset: List[float],
+    ...
+)</code></pre>
+
+<h2>📊 Impact Metrics</h2>
+
+<h3>Code Quality</h3>
+<ul>
+    <li><strong>Reduced duplication</strong>: ~40 lines eliminated</li>
+    <li><strong>Improved organization</strong>: 3 new focused modules</li>
+    <li><strong>Better maintainability</strong>: Separated concerns</li>
+    <li><strong>Type safety</strong>: Type hints throughout</li>
+    <li><strong>Net reduction</strong>: ~90 lines in main file</li>
+</ul>
+
+<h3>Files Changed</h3>
+<ul>
+    <li>+370 insertions</li>
+    <li>-101 deletions</li>
+    <li>3 new modules created</li>
+    <li>5 files modified</li>
+</ul>
+
+<h3>Git Commits</h3>
+<ul>
+    <li>Security fixes and dependency updates</li>
+    <li>Dynamic panel resizing feature</li>
+    <li>Comprehensive code quality improvements</li>
+    <li>All properly branched, tested, and merged</li>
+</ul>
+
+<h2>🎯 Before & After</h2>
+
+<table style="width: 100%; border-collapse: collapse;">
+    <tr>
+        <th style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2;">Before</th>
+        <th style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2;">After</th>
+    </tr>
+    <tr>
+        <td style="border: 1px solid #ddd; padding: 8px;">Fixed grid layout, no resizing</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">✅ Dynamic resizable panels</td>
+    </tr>
+    <tr>
+        <td style="border: 1px solid #ddd; padding: 8px;">Security vulnerability (urllib3)</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">✅ Patched (urllib3 2.6.0)</td>
+    </tr>
+    <tr>
+        <td style="border: 1px solid #ddd; padding: 8px;">Outdated dependencies (2021)</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">✅ Modern packages (2024-2025)</td>
+    </tr>
+    <tr>
+        <td style="border: 1px solid #ddd; padding: 8px;">Repetitive panel code</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">✅ Clean, modular structure</td>
+    </tr>
+    <tr>
+        <td style="border: 1px solid #ddd; padding: 8px;">Magic numbers scattered</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">✅ Centralized config</td>
+    </tr>
+    <tr>
+        <td style="border: 1px solid #ddd; padding: 8px;">No type hints</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">✅ Full type annotations</td>
+    </tr>
+    <tr>
+        <td style="border: 1px solid #ddd; padding: 8px;">Dual monitor issues</td>
+        <td style="border: 1px solid #ddd; padding: 8px;">✅ Single monitor sizing</td>
+    </tr>
+</table>
+
+<h2>💡 Key Takeaways</h2>
+
+<ol>
+    <li><strong>Security First</strong>: We immediately addressed the critical vulnerability</li>
+    <li><strong>User-Focused</strong>: Implemented the requested dynamic resizing feature</li>
+    <li><strong>Quality Matters</strong>: Didn't stop at "working" - refactored for maintainability</li>
+    <li><strong>Clean Process</strong>: Proper git workflow with feature branches</li>
+    <li><strong>Zero Downtime</strong>: Alex remained functional throughout all changes</li>
+</ol>
+
+<h2>🚀 What's Next</h2>
+
+<p>All improvements are merged to the main branch and ready for production use. The codebase is now:</p>
+<ul>
+    <li>More secure</li>
+    <li>More maintainable</li>
+    <li>More user-friendly</li>
+    <li>Better documented</li>
+    <li>Easier to extend</li>
+</ul>
+
+<h2>Try It Yourself</h2>
+
+<p>Alex CAD is open source! Check out the repository at <a href="https://github.com/wyolum/Alex">github.com/wyolum/Alex</a></p>
+
+<p>The resizable panels feature makes it easier than ever to customize your workspace for aluminum extrusion design projects.</p>
+
+<hr>
+
+<p><em>This incredible 40-minute session demonstrates what's possible when you combine focused effort, modern tools, and a commitment to code quality. From security vulnerability to fully refactored, feature-enhanced application - all in less time than a typical meeting!</em></p>
+
+</body>
+</html>

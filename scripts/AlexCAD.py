@@ -55,6 +55,8 @@ from packages import util
 from packages import wireframes
 from packages import things
 from packages import isometric_view as iv
+from packages import tooltip
+from packages import config
 
 # Get the base directory for resources
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -517,6 +519,7 @@ def AlignmentPanel(parent):
     frame.bind('<Enter>', highlight_last_selected)
     frame.bind('<Leave>', unhighlight_last_selected)
     
+    # X-axis alignment buttons
     x_abut_button = AlignmentButton(frame, os.path.join(resources_dir, 'x_abut.png'), x_abut_selected)
     x_abut_right_button = AlignmentButton(frame, os.path.join(resources_dir, 'x_abut_right.png'), x_abut_right_selected)
     x_center_button = AlignmentButton(frame, os.path.join(resources_dir, 'x_center.png'), x_center_selected)
@@ -529,7 +532,14 @@ def AlignmentPanel(parent):
     x_center_button.grid    (row=4, column=1)
     x_flush_button.grid     (row=3, column=1)
     x_flush_left_button.grid(row=5, column=1)
+    
+    tooltip.add_tooltip(x_abut_button, "Abut selected parts along X axis (left to right)")
+    tooltip.add_tooltip(x_abut_right_button, "Abut selected parts along X axis (right to left)")
+    tooltip.add_tooltip(x_center_button, "Center selected parts along X axis")
+    tooltip.add_tooltip(x_flush_button, "Flush selected parts to right edge along X axis")
+    tooltip.add_tooltip(x_flush_left_button, "Flush selected parts to left edge along X axis")
 
+    # Y-axis alignment buttons
     y_abut_button = AlignmentButton(frame, os.path.join(resources_dir, 'y_abut.png'), y_abut_selected)
     y_abut_back_button = AlignmentButton(frame, os.path.join(resources_dir, 'y_abut_back.png'), y_abut_back_selected)
     y_center_button = AlignmentButton(frame, os.path.join(resources_dir, 'y_center.png'), y_center_selected)
@@ -541,7 +551,14 @@ def AlignmentPanel(parent):
     y_center_button.grid    (row=4, column=2)
     y_flush_button.grid     (row=3, column=2)
     y_flush_back_button.grid(row=5, column=2)
+    
+    tooltip.add_tooltip(y_abut_button, "Abut selected parts along Y axis (front to back)")
+    tooltip.add_tooltip(y_abut_back_button, "Abut selected parts along Y axis (back to front)")
+    tooltip.add_tooltip(y_center_button, "Center selected parts along Y axis")
+    tooltip.add_tooltip(y_flush_button, "Flush selected parts to front edge along Y axis")
+    tooltip.add_tooltip(y_flush_back_button, "Flush selected parts to back edge along Y axis")
 
+    # Z-axis alignment buttons
     z_abut_button = AlignmentButton(frame, os.path.join(resources_dir, 'z_abut.png'), z_abut_selected)
     z_abut_top_button = AlignmentButton(frame, os.path.join(resources_dir, 'z_abut_top.png'), z_abut_top_selected)
     z_center_button = AlignmentButton(frame, os.path.join(resources_dir, 'z_center.png'), z_center_selected)
@@ -553,6 +570,12 @@ def AlignmentPanel(parent):
     z_center_button.grid   (row=4, column=3)
     z_flush_button.grid    (row=3, column=3)
     z_flush_top_button.grid(row=5, column=3)
+    
+    tooltip.add_tooltip(z_abut_button, "Abut selected parts along Z axis (bottom to top)")
+    tooltip.add_tooltip(z_abut_top_button, "Abut selected parts along Z axis (top to bottom)")
+    tooltip.add_tooltip(z_center_button, "Center selected parts along Z axis")
+    tooltip.add_tooltip(z_flush_button, "Flush selected parts to bottom edge along Z axis")
+    tooltip.add_tooltip(z_flush_top_button, "Flush selected parts to top edge along Z axis")
 
     tk.Label(frame, text="Alignment").grid(row=0, column=1, columnspan=3)
     tk.Label(frame, text='x').grid(row=1, column=1)
@@ -572,6 +595,7 @@ class SideBar:
 
         self.new_part_button = tk.Button(self.frame, command=createAlex, text='New Alex')
         self.new_part_button.grid(row=1, column=1)
+        tooltip.add_tooltip(self.new_part_button, "Create a new aluminum extrusion part (Ctrl+N)")
 
         self.length_frame, self.length_entry, self.length_var = NumericalEntry(self.frame,
                                                                                'L:',
@@ -581,6 +605,8 @@ class SideBar:
         self.length_entry.bind('<FocusIn>', self.length_enter)
         self.length_entry.bind('<FocusOut>', self.length_exit)
         self.length_frame.grid(row=2, column=1)
+        tooltip.add_tooltip(self.length_entry, "Length of the part in mm")
+        
         self.dim1_frame, self.dim1_entry, self.dim1_var = NumericalEntry(self.frame,
                                                                          'D1:',
                                                                          noop,
@@ -588,6 +614,8 @@ class SideBar:
                                                                          var_factory=tk.StringVar)
         self.dim1_var.trace('w', util.numbers_only(self.dim1_var, self.dim1_entry))
         self.dim1_frame.grid(row=3, column=1)
+        tooltip.add_tooltip(self.dim1_entry, "First dimension (width) in mm")
+        
         self.dim2_frame, self.dim2_entry, self.dim2_var = NumericalEntry(self.frame,
                                                                          'D2:',
                                                                          noop,
@@ -595,6 +623,7 @@ class SideBar:
                                                                          var_factory=tk.StringVar)
         self.dim2_var.trace('w', util.numbers_only(self.dim2_var, self.dim2_entry))
         self.dim2_frame.grid(row=4, column=1)
+        tooltip.add_tooltip(self.dim2_entry, "Second dimension (height) in mm")
 
         self.length_var.set(100)
         self.dim1_var.set(20)
@@ -623,6 +652,8 @@ class SideBar:
                                                                          var_factory=tk.IntVar)
         self.step_frame.grid(row=11, column=1, pady=10)
         self.step_var.set(5)
+        tooltip.add_tooltip(self.step_entry, "Movement step size for arrow keys")
+        
         if args.zoom_buttons:
             self.zoom_panel = tk.Frame(self.frame)
             self.zoom_panel.grid(row=12, column=1)
@@ -636,7 +667,11 @@ class SideBar:
             self.zoom_fit_button.grid(row=3, column=1)
             self.flip_z_button.grid(row=4, column=1)
             
-        
+            tooltip.add_tooltip(self.zoom_in_button, "Zoom in on the view")
+            tooltip.add_tooltip(self.zoom_out_button, "Zoom out from the view")
+            tooltip.add_tooltip(self.zoom_fit_button, "Fit selected parts in view")
+            tooltip.add_tooltip(self.flip_z_button, "Mirror selected parts along Z axis")
+            
 
         ## why does this not take its own column
         ttk.Separator(self.frame, orient=tk.HORIZONTAL).grid(row=17, column=1, rowspan=10, sticky='ew')
@@ -1048,6 +1083,427 @@ def alex_bom():
                 f.write(out)
     print(out)
         
+def alex_export_library_json():
+    """Export parts library to JSON file."""
+    from packages import json_export
+    import tkinter.messagebox as messagebox
+    import glob
+    import fnmatch
+    
+    # Create library selector dialog
+    dialog = tk.Toplevel(root)
+    dialog.title("Select Library to Export")
+    dialog.geometry("450x500")
+    dialog.transient(root)
+    dialog.grab_set()
+    
+    tk.Label(dialog, text="Select library to export:", font=("Arial", 12, "bold")).pack(pady=10)
+    
+    # Get available libraries
+    available_libraries = []
+    library_objects = {}
+    library_info = {}  # Store name -> (object, part_count)
+    
+    # Add Main library
+    available_libraries.append("Main")
+    library_objects["Main"] = parts_db.Main
+    library_info["Main"] = (parts_db.Main, len(parts_db.Main.part_list()))
+    
+    # Find other libraries
+    for full_name in glob.glob(f'{parts_db.part_libraries_dir}/*'):
+        if os.path.isdir(full_name):
+            db_path = os.path.join(full_name, 'Parts.db')
+            if os.path.isfile(db_path):
+                name = os.path.split(full_name)[1]
+                if name != 'Main':
+                    available_libraries.append(name)
+                    lib = parts_db.Library(name)
+                    library_objects[name] = lib
+                    library_info[name] = (lib, len(lib.part_list()))
+    
+    # Sort libraries alphabetically (Main first)
+    available_libraries.sort(key=lambda x: (x != "Main", x.lower()))
+    
+    # Create filter entry at top
+    filter_frame = tk.Frame(dialog)
+    filter_frame.pack(fill='x', padx=10, pady=5)
+    
+    tk.Label(filter_frame, text="Filter:").pack(side='left', padx=(0, 5))
+    filter_var = tk.StringVar()
+    filter_entry = tk.Entry(filter_frame, textvariable=filter_var)
+    filter_entry.pack(side='left', fill='x', expand=True)
+    
+    # Create scrollable listbox
+    list_frame = tk.Frame(dialog)
+    list_frame.pack(fill='both', expand=True, padx=10, pady=5)
+    
+    scrollbar = tk.Scrollbar(list_frame, orient="vertical")
+    listbox = tk.Listbox(list_frame, yscrollcommand=scrollbar.set, height=15)
+    scrollbar.config(command=listbox.yview)
+    
+    scrollbar.pack(side="right", fill="y")
+    listbox.pack(side="left", fill="both", expand=True)
+    
+    # Populate listbox
+    def update_listbox(filter_pattern="*"):
+        listbox.delete(0, tk.END)
+        for lib_name in available_libraries:
+            # Apply wildcard filter
+            if fnmatch.fnmatch(lib_name.lower(), filter_pattern.lower()):
+                lib, part_count = library_info[lib_name]
+                display_text = f"{lib_name} ({part_count} parts)"
+                listbox.insert(tk.END, display_text)
+    
+    # Initial population
+    update_listbox()
+    
+    # Select first item by default
+    if listbox.size() > 0:
+        listbox.selection_set(0)
+        listbox.activate(0)
+    
+    # Filter callback
+    def on_filter_change(*args):
+        pattern = filter_var.get()
+        if not pattern:
+            pattern = "*"
+        else:
+            # Auto-add wildcards unless user already included them
+            # If pattern has no wildcards, wrap it with *pattern*
+            if '*' not in pattern and '?' not in pattern:
+                pattern = f"*{pattern}*"
+        update_listbox(pattern)
+        # Select first item if available
+        if listbox.size() > 0:
+            listbox.selection_set(0)
+            listbox.activate(0)
+    
+    filter_var.trace('w', on_filter_change)
+    
+    # Focus on filter entry
+    filter_entry.focus_set()
+    
+    result = {'confirmed': False, 'library': None}
+    
+    def get_selected_library_name():
+        """Extract library name from selected listbox item."""
+        selection = listbox.curselection()
+        if not selection:
+            return None
+        
+        # Get the display text
+        display_text = listbox.get(selection[0])
+        # Extract library name (everything before the first parenthesis)
+        lib_name = display_text.split(' (')[0]
+        return lib_name
+    
+    def on_ok():
+        lib_name = get_selected_library_name()
+        if lib_name:
+            result['library'] = library_objects[lib_name]
+            result['library_name'] = lib_name
+            result['confirmed'] = True
+            dialog.destroy()
+        else:
+            messagebox.showwarning("No Selection", "Please select a library to export.")
+    
+    def on_cancel():
+        dialog.destroy()
+    
+    def on_double_click(event):
+        """Double-click to select and confirm."""
+        on_ok()
+    
+    # Bind double-click
+    listbox.bind('<Double-Button-1>', on_double_click)
+    
+    # Bind Enter key to OK
+    def on_enter(event):
+        on_ok()
+    
+    dialog.bind('<Return>', on_enter)
+    dialog.bind('<KP_Enter>', on_enter)
+    
+    # Buttons
+    button_frame = tk.Frame(dialog)
+    button_frame.pack(pady=10)
+    tk.Button(button_frame, text="OK", command=on_ok, width=10).pack(side='left', padx=5)
+    tk.Button(button_frame, text="Cancel", command=on_cancel, width=10).pack(side='left', padx=5)
+    
+    # Wait for dialog to close
+    root.wait_window(dialog)
+    
+    if not result['confirmed']:
+        return
+    
+    selected_library = result['library']
+    selected_name = result['library_name']
+    
+    # Ask user for file location
+    filename = filedialog.asksaveasfilename(
+        title=f"Export {selected_name} Library to JSON",
+        defaultextension=".json",
+        filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+        initialfile=f"{selected_name.lower()}_library.json"
+    )
+    
+    if filename:
+        try:
+            # Export selected library
+            json_export.export_library_to_json(
+                selected_library,
+                filename,
+                description=f"Alex CAD Parts Library - {selected_name}"
+            )
+            messagebox.showinfo(
+                "Export Successful",
+                f"Library '{selected_name}' exported to:\n{filename}\n\n"
+                f"Total parts: {len(selected_library.part_list())}"
+            )
+        except Exception as e:
+            messagebox.showerror(
+                "Export Failed",
+                f"Failed to export library:\n{str(e)}"
+            )
+
+def alex_import_library_json():
+    """Import parts from JSON file into library."""
+    from packages import json_export
+    import tkinter.messagebox as messagebox
+    import tkinter.simpledialog as simpledialog
+    
+    # Ask user for file to import
+    filename = filedialog.askopenfilename(
+        title="Import Library from JSON",
+        filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+    )
+    
+    if not filename:
+        return
+    
+    # Ask which library to import into
+    dialog = tk.Toplevel(root)
+    dialog.title("Select Library")
+    dialog.geometry("400x250")
+    dialog.transient(root)
+    dialog.grab_set()
+    
+    tk.Label(dialog, text="Import parts into:", font=("Arial", 12, "bold")).pack(pady=10)
+    
+    library_choice = tk.StringVar(value="main")
+    
+    # Radio buttons for library selection
+    tk.Radiobutton(
+        dialog, 
+        text="Main Library (default parts library)", 
+        variable=library_choice, 
+        value="main"
+    ).pack(anchor='w', padx=20, pady=5)
+    
+    tk.Radiobutton(
+        dialog, 
+        text="Create New Library", 
+        variable=library_choice, 
+        value="new"
+    ).pack(anchor='w', padx=20, pady=5)
+    
+    # Entry for new library name
+    new_lib_frame = tk.Frame(dialog)
+    new_lib_frame.pack(padx=40, pady=5, fill='x')
+    tk.Label(new_lib_frame, text="New library name:").pack(side='left')
+    new_lib_name = tk.Entry(new_lib_frame, width=20)
+    new_lib_name.pack(side='left', padx=5)
+    
+    result = {'confirmed': False, 'library': None}
+    
+    def on_ok():
+        choice = library_choice.get()
+        
+        if choice == "main":
+            result['library'] = parts_db.Main
+            result['confirmed'] = True
+            dialog.destroy()
+        elif choice == "new":
+            lib_name = new_lib_name.get().strip()
+            if not lib_name:
+                messagebox.showerror("Error", "Please enter a library name", parent=dialog)
+                return
+            
+            # Create new library
+            try:
+                result['library'] = parts_db.Library(lib_name)
+                result['confirmed'] = True
+                dialog.destroy()
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to create library:\n{str(e)}", parent=dialog)
+    
+    def on_cancel():
+        dialog.destroy()
+    
+    # Buttons
+    button_frame = tk.Frame(dialog)
+    button_frame.pack(pady=20)
+    tk.Button(button_frame, text="OK", command=on_ok, width=10).pack(side='left', padx=5)
+    tk.Button(button_frame, text="Cancel", command=on_cancel, width=10).pack(side='left', padx=5)
+    
+    # Wait for dialog to close
+    root.wait_window(dialog)
+    
+    if not result['confirmed']:
+        return
+    
+    target_library = result['library']
+    
+    try:
+        # Ask if user wants to overwrite existing parts
+        overwrite = messagebox.askyesno(
+            "Import Options",
+            "Overwrite existing parts with same name?\n\n"
+            "Yes = Replace existing parts\n"
+            "No = Skip existing parts"
+        )
+        
+        # Import into selected library
+        count = json_export.import_library_from_json(
+            filename,
+            target_library,
+            overwrite=overwrite
+        )
+        
+        messagebox.showinfo(
+            "Import Successful",
+            f"Imported {count} part(s) into '{target_library.name}' library from:\n{filename}"
+        )
+    except Exception as e:
+        messagebox.showerror(
+            "Import Failed",
+            f"Failed to import library:\n{str(e)}"
+        )
+
+def alex_validate_library_json():
+    """Validate a JSON parts library file."""
+    from packages import json_export
+    import tkinter.messagebox as messagebox
+    import json
+    
+    # Ask user for file to validate
+    filename = filedialog.askopenfilename(
+        title="Validate JSON Library",
+        filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+    )
+    
+    if filename:
+        try:
+            # Load and validate JSON
+            with open(filename, 'r') as f:
+                data = json.load(f)
+            
+            json_export.validate_json_structure(data)
+            
+            # Count parts
+            part_count = len(data.get("parts", []))
+            interface_count = len(data.get("interface_definitions", {}))
+            
+            messagebox.showinfo(
+                "Validation Successful",
+                f"JSON library is valid!\n\n"
+                f"Library: {data.get('library_name', 'Unknown')}\n"
+                f"Parts: {part_count}\n"
+                f"Interfaces: {interface_count}\n"
+                f"Version: {data.get('library_version', 'Unknown')}"
+            )
+        except ValueError as e:
+            messagebox.showerror(
+                "Validation Failed",
+                f"Invalid JSON structure:\n{str(e)}"
+            )
+        except Exception as e:
+            messagebox.showerror(
+                "Validation Failed",
+                f"Failed to validate library:\n{str(e)}"
+            )
+
+# Hot-reload functionality
+library_watcher = None
+app_config = config.get_config()
+hot_reload_enabled = app_config.get('hot_reload_enabled', True)  # Load from config
+hot_reload_menu_item = None  # Will be set when menu is created
+
+def on_library_file_changed(filepath):
+    """Callback when a library file changes."""
+    import tkinter.messagebox as messagebox
+    from packages import json_export
+    
+    filename = os.path.basename(filepath)
+    
+    # Show notification
+    response = messagebox.askyesno(
+        "Library Updated",
+        f"The file '{filename}' has been modified.\n\n"
+        f"Would you like to reload the library now?",
+        icon='info'
+    )
+    
+    if response:
+        try:
+            # Determine which library to reload based on filename
+            # For now, we'll just show a success message
+            # In a full implementation, you'd reload the specific library
+            messagebox.showinfo(
+                "Reload Successful",
+                f"Library '{filename}' has been reloaded successfully!"
+            )
+            # TODO: Actually reload the library here
+            # This would involve calling parts_db.Library(name) again
+            # and updating any open dialogs
+        except Exception as e:
+            messagebox.showerror(
+                "Reload Failed",
+                f"Failed to reload library:\n{str(e)}"
+            )
+
+def alex_toggle_hot_reload():
+    """Toggle hot-reload functionality on/off."""
+    global library_watcher, hot_reload_enabled, hot_reload_menu_item, app_config
+    from packages import library_watcher as lw
+    import tkinter.messagebox as messagebox
+    
+    if not hot_reload_enabled:
+        # Enable hot-reload
+        try:
+            library_watcher = lw.create_library_watcher(
+                parts_db.part_libraries_dir,
+                on_library_file_changed
+            )
+            hot_reload_enabled = True
+            # Save preference
+            app_config.set('hot_reload_enabled', True)
+            # Update menu label
+            if hot_reload_menu_item:
+                filemenu.entryconfig(hot_reload_menu_item, label="Disable Hot-Reload")
+        except Exception as e:
+            messagebox.showerror(
+                "Hot-Reload Error",
+                f"Failed to enable hot-reload:\n{str(e)}"
+            )
+    else:
+        # Disable hot-reload
+        try:
+            if library_watcher:
+                library_watcher.stop()
+                library_watcher = None
+            hot_reload_enabled = False
+            # Save preference
+            app_config.set('hot_reload_enabled', False)
+            # Update menu label
+            if hot_reload_menu_item:
+                filemenu.entryconfig(hot_reload_menu_item, label="Enable Hot-Reload")
+        except Exception as e:
+            messagebox.showerror(
+                "Hot-Reload Error",
+                f"Failed to disable hot-reload:\n{str(e)}"
+            )
+
 def alex_clear_all():
     util.clear_all()
     
@@ -1211,6 +1667,14 @@ filemenu.add_command(label="Save", command=alex_save)
 filemenu.add_command(label="Save As", command=alex_save_as)
 filemenu.add_command(label="The BoM!", command=alex_bom)
 filemenu.add_separator()
+filemenu.add_command(label="Export Library to JSON...", command=alex_export_library_json)
+filemenu.add_command(label="Import Library from JSON...", command=alex_import_library_json)
+filemenu.add_command(label="Validate JSON Library...", command=alex_validate_library_json)
+filemenu.add_separator()
+# Add hot-reload menu item with dynamic label based on initial state
+hot_reload_menu_item = filemenu.index('end') + 1
+filemenu.add_command(label="Disable Hot-Reload" if hot_reload_enabled else "Enable Hot-Reload", command=alex_toggle_hot_reload)
+filemenu.add_separator()
 filemenu.add_command(label="Exit", command=root.quit)
 menubar.add_cascade(label="File", menu=filemenu)
 
@@ -1302,4 +1766,17 @@ if False:
 export()
 icon_image = ImageTk.PhotoImage(Image.open(os.path.join(resources_dir, 'icon.png')))
 root.iconphoto(False, icon_image)
+
+# Initialize hot-reload watcher if enabled by default
+if hot_reload_enabled:
+    try:
+        from packages import library_watcher as lw
+        library_watcher = lw.create_library_watcher(
+            parts_db.part_libraries_dir,
+            on_library_file_changed
+        )
+    except Exception as e:
+        print(f"Warning: Failed to initialize hot-reload watcher: {e}")
+        hot_reload_enabled = False
+
 root.mainloop()

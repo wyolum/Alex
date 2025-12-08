@@ -1,0 +1,102 @@
+Alex CAD: 40 Minutes of Incredible Improvements
+
+In a single focused session this morning (7:36 AM - 8:16 AM), we transformed Alex CAD with security patches, a major new feature, and comprehensive code refactoring.
+
+<img src="http://wyolum.com/wp-content/uploads/2025/12/alex_resizable_panels.png" alt="Alex CAD with resizable panels" />
+
+<h2>What We Accomplished in 40 Minutes</h2>
+
+<h3>Phase 1: Security Fixes (11 minutes)</h3>
+
+<strong>Critical Vulnerability Patched</strong>
+<ul>
+<li><strong>CVE-2025-66418 Fixed</strong>: Updated urllib3 from 1.26.6 → 2.6.0</li>
+<li>Addressed unbounded decompression chain vulnerability</li>
+<li>Updated requests library for compatibility (2.26.0 → 2.32.3)</li>
+</ul>
+
+<strong>Dependency Modernization</strong>
+Updated 24 packages from 2021 versions to modern 2024-2025 releases:
+<ul>
+<li>matplotlib: 3.4.2 → 3.9.4</li>
+<li>numpy: 1.20.1 → 1.26.4</li>
+<li>scipy: 1.7.1 → 1.13.1</li>
+<li>Pillow: 8.1.0 → 11.3.0</li>
+</ul>
+
+<h3>Phase 2: Dual Monitor Fix (10 minutes)</h3>
+
+Fixed a frustrating issue where Alex's window would span across both monitors on dual-monitor setups.
+
+<h3>Phase 3: Dynamic Panel Resizing (9 minutes)</h3>
+
+This was the game-changer! We completely reimagined the view layout:
+
+<strong>What Changed</strong>
+<ul>
+<li><strong>Before</strong>: Fixed grid layout with unchangeable panel sizes</li>
+<li><strong>After</strong>: Fully resizable panels with draggable dividers</li>
+</ul>
+
+<strong>Technical Implementation</strong>
+<ul>
+<li>Replaced Tkinter grid layout with nested PanedWindow widgets</li>
+<li>Created 2x2 grid of resizable view panels (Top, Side, Front, Iso)</li>
+<li>Added resize event handlers to IsoView class</li>
+<li>Views automatically recenter when panels resize</li>
+<li>Zoom levels preserved during resize operations</li>
+</ul>
+
+<h3>Phase 4: Code Quality Refactoring (10 minutes)</h3>
+
+We performed a comprehensive refactoring to improve long-term maintainability:
+
+<strong>New Modules Created:</strong>
+<ul>
+<li><strong>ViewConfig</strong> - Centralized configuration constants</li>
+<li><strong>ViewPanel</strong> - Reusable panel component (eliminated ~40 lines of duplication)</li>
+<li><strong>view_layout</strong> - Separated layout logic (reduced AlexCAD.py by ~90 lines)</li>
+</ul>
+
+<strong>Improvements:</strong>
+<ul>
+<li>Improved resize handler with robust debouncing</li>
+<li>Added type hints throughout for better IDE support</li>
+</ul>
+
+<h2>Impact Metrics</h2>
+
+<strong>Code Quality</strong>
+<ul>
+<li>Reduced duplication: ~40 lines eliminated</li>
+<li>Improved organization: 3 new focused modules</li>
+<li>Net reduction: ~90 lines in main file</li>
+<li>Type safety: Type hints throughout</li>
+</ul>
+
+<strong>Files Changed</strong>
+<ul>
+<li>+370 insertions, -101 deletions</li>
+<li>3 new modules created</li>
+<li>5 files modified</li>
+</ul>
+
+<h2>Key Takeaways</h2>
+
+<ol>
+<li><strong>Security First</strong>: Immediately addressed the critical vulnerability</li>
+<li><strong>User-Focused</strong>: Implemented the requested dynamic resizing feature</li>
+<li><strong>Quality Matters</strong>: Didn't stop at "working" - refactored for maintainability</li>
+<li><strong>Clean Process</strong>: Proper git workflow with feature branches</li>
+<li><strong>Zero Downtime</strong>: Alex remained functional throughout all changes</li>
+</ol>
+
+<h2>Try It Yourself</h2>
+
+Alex CAD is open source! Check out the repository at <a href="https://github.com/wyolum/Alex">github.com/wyolum/Alex</a>
+
+The resizable panels feature makes it easier than ever to customize your workspace for aluminum extrusion design projects.
+
+<hr>
+
+<em>This incredible 40-minute session demonstrates what's possible when you combine focused effort, modern tools, and a commitment to code quality. From security vulnerability to fully refactored, feature-enhanced application - all in less time than a typical meeting!</em>

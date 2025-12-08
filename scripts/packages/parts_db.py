@@ -517,6 +517,8 @@ def url_shortener(url, max_len=40):
     return url
 
 def PartDialog(parent, select_cb, lib=None):
+    import fnmatch
+    
     if lib is None:
         lib = Main
     PartDialog.lib = lib
@@ -539,6 +541,8 @@ def PartDialog(parent, select_cb, lib=None):
         return parts, names, columns, data
     parts, names, columns, data = get_parts()
     
+    # Store all names for filtering
+    all_names = names.copy()
     
     n_col = len(columns)
     tl = tk.Toplevel(parent)
@@ -594,10 +598,12 @@ def PartDialog(parent, select_cb, lib=None):
         select()
 
     def relist(lib, name=None):
+        nonlocal all_names
         PartDialog.lib = lib
         tl.winfo_toplevel().title(f"Library: {lib.name}")
         lb.delete(0, tk.END);
         new_parts, new_names, new_columns, new_data = get_parts()
+        all_names = new_names.copy()
         for i, item in enumerate(new_names):
             lb.insert(i, item);
         for k in list(data.keys()):
@@ -611,6 +617,8 @@ def PartDialog(parent, select_cb, lib=None):
         else:
             if len(new_names) > 0:
                 item_clicked(new_names[0])
+        # Reset filter
+        filter_var.set("")
 
     name_var = tk.StringVar()
     menubar = tk.Menu(tl)
@@ -637,30 +645,66 @@ def PartDialog(parent, select_cb, lib=None):
     tl.config(menu=menubar)
     tl.winfo_toplevel().title(f"Library: Main")
 
+    # Add filter entry
+    filter_frame = tk.Frame(tl)
+    filter_frame.grid(row=0, column=0, sticky='ew', padx=5, pady=5)
+    
+    tk.Label(filter_frame, text="Filter:").pack(side='left', padx=(0, 5))
+    filter_var = tk.StringVar()
+    filter_entry = tk.Entry(filter_frame, textvariable=filter_var)
+    filter_entry.pack(side='left', fill='x', expand=True)
+    
+    def update_list(filter_pattern="*"):
+        """Update the listbox based on filter pattern."""
+        lb.delete(0, tk.END)
+        filtered_names = []
+        for name in all_names:
+            if fnmatch.fnmatch(name.lower(), filter_pattern.lower()):
+                filtered_names.append(name)
+        
+        for i, name in enumerate(filtered_names):
+            lb.insert(i, name)
+        
+        # Select first item if available
+        if len(filtered_names) > 0:
+            item_clicked(filtered_names[0])
+    
+    def on_filter_change(*args):
+        """Handle filter text changes."""
+        pattern = filter_var.get()
+        if not pattern:
+            pattern = "*"
+        else:
+            # Auto-add wildcards unless user already included them
+            if '*' not in pattern and '?' not in pattern:
+                pattern = f"*{pattern}*"
+        update_list(pattern)
+    
+    filter_var.trace('w', on_filter_change)
 
     lb = listbox(tl, names, item_clicked, item_selected, n_row=50)
-    lb.grid(row=0, column=0, rowspan=10)
+    lb.grid(row=1, column=0, rowspan=10)
 
     img = ImageTk.PhotoImage(Image.open(os.path.join(PartDialog.lib.thumbnail_dir, f'unknown.png')))
     imgs[0] = img
     display = tk.Label(tl, image=img)
-    display.grid(row=0, column=2, sticky='N', columnspan=10)
+    display.grid(row=1, column=2, sticky='N', columnspan=10)
 
     url = tk.Label(tl)
     url.configure(fg='blue')
-    url.grid(row=0, column=2, sticky='NW', columnspan=4)
+    url.grid(row=1, column=2, sticky='NW', columnspan=4)
     url.bind('<Button-1>', browseto)
 
     cancel_button = tk.Button(tl, text="Cancel", command=cancel)
-    cancel_button.grid(row=2, column=3, sticky='E')
+    cancel_button.grid(row=3, column=3, sticky='E')
     select_button = tk.Button(tl, text="Select", command=select)
-    select_button.grid(row=2, column=4, sticky='EW')
+    select_button.grid(row=3, column=4, sticky='EW')
     edit_button = tk.Button(tl, text="Edit", command=edit)
-    edit_button.grid(row=2, column=5, sticky='EW')
+    edit_button.grid(row=3, column=5, sticky='EW')
     copy_button = tk.Button(tl, text="Copy", command=copy)
-    copy_button.grid(row=2, column=6, sticky='EW')
+    copy_button.grid(row=3, column=6, sticky='EW')
     new_button = tk.Button(tl, text="New", command=on_new_part)
-    new_button.grid(row=2, column=7, sticky='W')
+    new_button.grid(row=3, column=7, sticky='W')
     
     item_clicked(names[0])
     return tl

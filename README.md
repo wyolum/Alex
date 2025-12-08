@@ -28,9 +28,10 @@ Aluminium Extrusion specific CAD program for Python3
 - Intuative alignment
 - Interactive BoM (The BoM!)
 - Third party parts
+- Tooltips on all buttons and controls
 
 #TODO
-- Add too tips.
+- Additional keyboard shortcuts documentation
 
 # Development Videos
 ## Introduction 
