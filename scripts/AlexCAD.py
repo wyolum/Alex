@@ -57,6 +57,7 @@ from packages import things
 from packages import isometric_view as iv
 from packages import tooltip
 from packages import config
+from packages import enhanced_bom
 
 # Get the base directory for resources
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -1082,6 +1083,42 @@ def alex_bom():
             with open(alex_filename[0][:-4] + 'csv', 'w') as f:
                 f.write(out)
     print(out)
+
+def alex_enhanced_bom():
+    """Show enhanced Bill of Materials with supplier grouping and smart features."""
+    lines = scene.tobom()
+    out = []
+    counts = []
+    total_costs = []
+    descs = []
+    
+    # Aggregate parts
+    for line in lines:
+        if line in out:
+            i = out.index(line)
+            counts[i] += 1
+            total_costs[i] += float(line.split(',')[4][1:])
+        else:
+            out.append(line)
+            counts.append(1)
+            descs.append(line.split(',')[0])
+            total_costs.append(float(line.split(',')[4][1:]))
+    
+    # Format output
+    formatted_out = []
+    for count, total, l in zip(counts, total_costs, out):
+        l = l.split(',')
+        formatted_out.append(f'{count},{l[0]},{l[1]},{l[2]},{l[3]},{l[4]},${total:.2f},{l[5]}')
+    
+    # Sort by description
+    order = np.argsort(descs)
+    formatted_out = [formatted_out[i] for i in order]
+    
+    # Get filename for export default
+    filename = alex_filename[0] if alex_filename else None
+    
+    # Show enhanced BOM dialog
+    enhanced_bom.show_enhanced_bom(root, formatted_out, filename)
         
 def alex_export_library_json():
     """Export parts library to JSON file."""
@@ -1665,7 +1702,7 @@ if False and STL_SUPPORTED:
     filemenu.add_command(label="Import STL", command=stl_import_dialog)
 filemenu.add_command(label="Save", command=alex_save)
 filemenu.add_command(label="Save As", command=alex_save_as)
-filemenu.add_command(label="The BoM!", command=alex_bom)
+filemenu.add_command(label="📋 Bill of Materials", command=alex_enhanced_bom)
 filemenu.add_separator()
 filemenu.add_command(label="Export Library to JSON...", command=alex_export_library_json)
 filemenu.add_command(label="Import Library from JSON...", command=alex_import_library_json)
