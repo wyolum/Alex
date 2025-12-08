@@ -35,6 +35,8 @@ class EnhancedBOMDialog:
         self.parent = parent
         self.filename = filename
         self.bom_items = self._parse_bom_data(bom_data)
+        self.grouped_view = False  # Track if we're in grouped view
+        self.expanded_suppliers = {}  # Track which suppliers are expanded
         
         # Create dialog window
         self.window = tk.Toplevel(parent)
@@ -131,12 +133,13 @@ class EnhancedBOMDialog:
             padx=10
         ).pack(side='left', padx=2)
         
-        tk.Button(
+        self.group_button = tk.Button(
             button_frame,
             text="📊 Group by Supplier",
             command=self._toggle_supplier_grouping,
             padx=10
-        ).pack(side='left', padx=2)
+        )
+        self.group_button.pack(side='left', padx=2)
         
         # Main content area with scrollbar
         content_frame = tk.Frame(self.window)
@@ -298,6 +301,243 @@ class EnhancedBOMDialog:
         for col in range(len(headers)):
             table_frame.columnconfigure(col, weight=1)
     
+    def _toggle_supplier_grouping(self):
+        """Toggle between flat and supplier-grouped view."""
+        self.grouped_view = not self.grouped_view
+        
+        if self.grouped_view:
+            self.group_button.config(text="📋 Show All Items")
+            self._build_grouped_view()
+        else:
+            self.group_button.config(text="📊 Group by Supplier")
+            self._build_bom_table()
+    
+    def _build_grouped_view(self):
+        """Build supplier-grouped view with collapsible sections."""
+        # Clear existing content
+        for widget in self.scrollable_frame.winfo_children():
+            widget.destroy()
+        
+        # Get supplier groups
+        supplier_groups = self._group_by_supplier()
+        
+        # Sort suppliers alphabetically
+        sorted_suppliers = sorted(supplier_groups.keys())
+        
+        # Create main container
+        main_frame = tk.Frame(self.scrollable_frame)
+        main_frame.pack(fill='both', expand=True)
+        
+        # For each supplier, create a collapsible section
+        for supplier_name in sorted_suppliers:
+            items = supplier_groups[supplier_name]
+            supplier_total = sum(item['total_cost'] for item in items)
+            supplier_qty = sum(item['qty'] for item in items)
+            
+            # Initialize expanded state if not set
+            if supplier_name not in self.expanded_suppliers:
+                self.expanded_suppliers[supplier_name] = True
+            
+            # Supplier header frame
+            header_frame = tk.Frame(main_frame, bg='#3498db', relief='raised', borderwidth=2)
+            header_frame.pack(fill='x', pady=2)
+            
+            # Expand/collapse button
+            expand_symbol = '▼' if self.expanded_suppliers[supplier_name] else '▶'
+            expand_btn = tk.Label(
+                header_frame,
+                text=expand_symbol,
+                bg='#3498db',
+                fg='white',
+                font=('Arial', 12, 'bold'),
+                cursor='hand2',
+                padx=10
+            )
+            expand_btn.pack(side='left')
+            
+            # Bind click to toggle
+            expand_btn.bind('<Button-1>', lambda e, s=supplier_name: self._toggle_supplier_section(s))
+            
+            # Supplier name and summary
+            summary_text = f"{supplier_name} - {len(items)} items, {supplier_qty} parts - ${supplier_total:.2f}"
+            summary_label = tk.Label(
+                header_frame,
+                text=summary_text,
+                bg='#3498db',
+                fg='white',
+                font=('Arial', 11, 'bold'),
+                cursor='hand2',
+                padx=10,
+                pady=8
+            )
+            summary_label.pack(side='left', fill='x', expand=True)
+            summary_label.bind('<Button-1>', lambda e, s=supplier_name: self._toggle_supplier_section(s))
+            
+            # Copy supplier list button
+            copy_btn = tk.Button(
+                header_frame,
+                text="📋 Copy",
+                command=lambda s=supplier_name, itms=items: self._copy_supplier_list(s, itms),
+                bg='#2980b9',
+                fg='white',
+                font=('Arial', 9, 'bold'),
+                cursor='hand2',
+                padx=10,
+                pady=4,
+                relief='flat'
+            )
+            copy_btn.pack(side='right', padx=5)
+            
+            # Items table (only if expanded)
+            if self.expanded_suppliers[supplier_name]:
+                items_frame = tk.Frame(main_frame, bg='#ecf0f1', relief='sunken', borderwidth=1)
+                items_frame.pack(fill='x', padx=20, pady=(0, 5))
+                
+                # Table headers
+                headers = ['QTY', 'Description', 'Dimensions', 'Unit Cost', 'Total Cost', 'Link']
+                header_row = tk.Frame(items_frame, bg='#95a5a6')
+                header_row.pack(fill='x')
+                
+                for col, header in enumerate(headers):
+                    tk.Label(
+                        header_row,
+                        text=header,
+                        bg='#95a5a6',
+                        fg='white',
+                        font=('Arial', 9, 'bold'),
+                        padx=8,
+                        pady=5
+                    ).grid(row=0, column=col, sticky='ew')
+                
+                # Configure column weights
+                for col in range(len(headers)):
+                    header_row.columnconfigure(col, weight=1)
+                
+                # Data rows
+                row_colors = ['#ffffff', '#f8f9fa']
+                for idx, item in enumerate(items):
+                    row_frame = tk.Frame(items_frame, bg=row_colors[idx % 2])
+                    row_frame.pack(fill='x')
+                    
+                    bg = row_colors[idx % 2]
+                    
+                    # Quantity
+                    tk.Label(
+                        row_frame,
+                        text=str(item['qty']),
+                        bg=bg,
+                        padx=8,
+                        pady=4,
+                        anchor='center'
+                    ).grid(row=0, column=0, sticky='ew')
+                    
+                    # Description
+                    tk.Label(
+                        row_frame,
+                        text=item['description'],
+                        bg=bg,
+                        font=('Arial', 9, 'bold'),
+                        padx=8,
+                        pady=4,
+                        anchor='w'
+                    ).grid(row=0, column=1, sticky='ew')
+                    
+                    # Dimensions
+                    dims = f"{item['dim_x']}×{item['dim_y']}×{item['dim_z']}"
+                    tk.Label(
+                        row_frame,
+                        text=dims,
+                        bg=bg,
+                        padx=8,
+                        pady=4,
+                        anchor='center'
+                    ).grid(row=0, column=2, sticky='ew')
+                    
+                    # Unit Cost
+                    tk.Label(
+                        row_frame,
+                        text=f"${item['unit_cost']:.2f}",
+                        bg=bg,
+                        padx=8,
+                        pady=4,
+                        anchor='e'
+                    ).grid(row=0, column=3, sticky='ew')
+                    
+                    # Total Cost
+                    tk.Label(
+                        row_frame,
+                        text=f"${item['total_cost']:.2f}",
+                        bg=bg,
+                        font=('Arial', 9, 'bold'),
+                        padx=8,
+                        pady=4,
+                        anchor='e'
+                    ).grid(row=0, column=4, sticky='ew')
+                    
+                    # Link
+                    if item['url'] and item['url'].startswith('http'):
+                        link_label = tk.Label(
+                            row_frame,
+                            text="↗ Open",
+                            bg=bg,
+                            fg='#3498db',
+                            cursor='hand2',
+                            padx=8,
+                            pady=4,
+                            anchor='center'
+                        )
+                        link_label.grid(row=0, column=5, sticky='ew')
+                        link_label.bind('<Button-1>', lambda e, url=item['url']: webbrowser.open_new(url))
+                        
+                        def on_enter(e, label=link_label):
+                            label.config(fg='#2980b9', font=('Arial', 9, 'underline'))
+                        
+                        def on_leave(e, label=link_label):
+                            label.config(fg='#3498db', font=('Arial', 9))
+                        
+                        link_label.bind('<Enter>', on_enter)
+                        link_label.bind('<Leave>', on_leave)
+                    else:
+                        tk.Label(
+                            row_frame,
+                            text="-",
+                            bg=bg,
+                            padx=8,
+                            pady=4,
+                            anchor='center'
+                        ).grid(row=0, column=5, sticky='ew')
+                    
+                    # Configure column weights
+                    for col in range(len(headers)):
+                        row_frame.columnconfigure(col, weight=1)
+    
+    def _toggle_supplier_section(self, supplier_name):
+        """Toggle expansion state of a supplier section."""
+        self.expanded_suppliers[supplier_name] = not self.expanded_suppliers[supplier_name]
+        self._build_grouped_view()
+    
+    def _copy_supplier_list(self, supplier_name, items):
+        """Copy a specific supplier's items to clipboard."""
+        csv_lines = [f"{supplier_name} - Parts List"]
+        csv_lines.append('QTY,Description,Dimensions,Unit Cost,Total Cost,URL')
+        
+        supplier_total = 0
+        for item in items:
+            dims = f"{item['dim_x']}×{item['dim_y']}×{item['dim_z']}"
+            line = f"{item['qty']},{item['description']},{dims},${item['unit_cost']:.2f},${item['total_cost']:.2f},{item['url']}"
+            csv_lines.append(line)
+            supplier_total += item['total_cost']
+        
+        csv_lines.append(f",,,,${supplier_total:.2f},")
+        csv_text = '\n'.join(csv_lines)
+        
+        # Copy to clipboard
+        self.window.clipboard_clear()
+        self.window.clipboard_append(csv_text)
+        self.window.update()
+        
+        messagebox.showinfo("Copied", f"{supplier_name} list copied to clipboard!\n{len(items)} items, ${supplier_total:.2f}")
+    
     def _create_status_bar(self):
         """Create bottom status bar with summary."""
         status_frame = tk.Frame(self.window, bg='#34495e', pady=8)
@@ -382,11 +622,6 @@ class EnhancedBOMDialog:
                 messagebox.showinfo("Export Successful", f"BOM exported to:\n{filename}")
             except Exception as e:
                 messagebox.showerror("Export Failed", f"Failed to export BOM:\n{str(e)}")
-    
-    def _toggle_supplier_grouping(self):
-        """Toggle between flat and supplier-grouped view."""
-        # TODO: Implement supplier grouping view
-        messagebox.showinfo("Coming Soon", "Supplier grouping view will be implemented next!")
 
 
 def show_enhanced_bom(parent, bom_data, filename=None):
