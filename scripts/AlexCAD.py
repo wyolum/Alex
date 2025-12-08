@@ -1469,7 +1469,7 @@ hot_reload_menu_item = None  # Will be set when menu is created
 def on_library_file_changed(filepath):
     """Callback when a library file changes."""
     import tkinter.messagebox as messagebox
-    from packages import json_export
+    from packages import json_export, parts_db
     
     filename = os.path.basename(filepath)
     
@@ -1484,15 +1484,41 @@ def on_library_file_changed(filepath):
     if response:
         try:
             # Determine which library to reload based on filename
-            # For now, we'll just show a success message
-            # In a full implementation, you'd reload the specific library
-            messagebox.showinfo(
-                "Reload Successful",
-                f"Library '{filename}' has been reloaded successfully!"
-            )
-            # TODO: Actually reload the library here
-            # This would involve calling parts_db.Library(name) again
-            # and updating any open dialogs
+            # Extract library name from filepath
+            library_name = None
+            
+            # Check if it's parts_library.json (Main library)
+            if filename == 'parts_library.json':
+                library_name = 'Main'
+            else:
+                # Try to extract library name from path
+                # e.g., part_libraries/CustomLib/parts_library.json
+                parts = filepath.split(os.sep)
+                if 'part_libraries' in parts:
+                    idx = parts.index('part_libraries')
+                    if idx + 1 < len(parts):
+                        library_name = parts[idx + 1]
+            
+            if library_name:
+                # Reload the library
+                new_library = parts_db.Library(library_name)
+                
+                # Update the global Main library if it's the main library
+                if library_name == 'Main':
+                    parts_db.Main = new_library
+                
+                messagebox.showinfo(
+                    "Reload Successful",
+                    f"Library '{library_name}' has been reloaded successfully!\n\n"
+                    f"The changes are now active in AlexCAD."
+                )
+            else:
+                messagebox.showwarning(
+                    "Unknown Library",
+                    f"Could not determine library name from '{filename}'.\n\n"
+                    f"Please reload the library manually."
+                )
+                
         except Exception as e:
             messagebox.showerror(
                 "Reload Failed",

@@ -97,13 +97,18 @@ Automatically detect changes to JSON library files and offer to reload them with
 
 ## Future Enhancements
 
-### TODO:
-- [ ] Actually reload the library (currently just shows success message)
+### COMPLETED:
+- ✅ Actually reload the library (using parts_db.Library)
+- ✅ Update global Main library reference
+- ✅ Show which library was reloaded
+- ✅ Handle multiple library paths correctly
+
+### Future Enhancements (Optional):
 - [ ] Update open Parts Dialog automatically
-- [ ] Show which library was reloaded
 - [ ] Add status indicator in UI (enabled/disabled)
 - [ ] Watch specific library files instead of entire directory
 - [ ] Add preferences to auto-enable on startup
+
 
 ### Full Implementation Would:
 1. Detect which library file changed
