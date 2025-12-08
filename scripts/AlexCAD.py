@@ -1675,82 +1675,28 @@ def alex_update_3d_viewer(viewer_widget=None):
             viewer_widget.clear()
             return
         
-        # Export scene to temporary STL file
-        # Since AlexCAD doesn't have a direct STL export for the scene,
-        # we'll use the OpenSCAD export and then convert it
-        # Or we can export individual part STLs and combine them
+        # For now, show a message about the limitation
+        # AlexCAD uses wireframe rendering, not STL files
+        # We would need to either:
+        # 1. Generate STL from wireframes (complex)
+        # 2. Use OpenSCAD to render the .scad file (requires OpenSCAD)
+        # 3. Implement a wireframe-to-mesh converter
         
-        # For now, let's create a simple combined STL from all parts
-        from stl import mesh
-        import numpy as np
+        messagebox.showinfo(
+            "3D Viewer - Coming Soon",
+            "The 3D viewer is currently being developed!\n\n"
+            "AlexCAD uses wireframe-based rendering, which needs to be\n"
+            "converted to 3D meshes for the Three.js viewer.\n\n"
+            "For now, you can:\n"
+            "• Use the 4-panel views (Top, Front, Side, Iso)\n"
+            "• Export to OpenSCAD (.scad file) and view there\n"
+            "• Check the alex.scad file in your project directory\n\n"
+            "Full 3D viewer support coming in the next update!"
+        )
         
-        all_vertices = []
-        all_faces = []
-        vertex_offset = 0
+        print(f"3D viewer: Scene has {len(scene)} parts")
+        print("Note: STL export from wireframes not yet implemented")
         
-        for thing in scene:
-            # Check if thing has STL data
-            if hasattr(thing, 'stl_dir') and hasattr(thing, 'name'):
-                # Try to find the STL file for this part
-                stl_path = os.path.join(thing.stl_dir, thing.name + '.stl')
-                if os.path.exists(stl_path):
-                    try:
-                        part_mesh = mesh.Mesh.from_file(stl_path)
-                        
-                        # Apply transformations if any
-                        vertices = part_mesh.vectors.reshape(-1, 3)
-                        
-                        # Apply thing's position/rotation
-                        if hasattr(thing, 'pos') and thing.pos is not None:
-                            vertices = vertices + np.array(thing.pos)
-                        
-                        # Add to combined mesh
-                        all_vertices.extend(vertices.tolist())
-                        
-                        # Create faces (triangles)
-                        num_vertices = len(vertices)
-                        for i in range(0, num_vertices, 3):
-                            all_faces.append([
-                                vertex_offset + i,
-                                vertex_offset + i + 1,
-                                vertex_offset + i + 2
-                            ])
-                        
-                        vertex_offset += num_vertices
-                    except Exception as e:
-                        print(f"Warning: Could not load STL for {thing.name}: {e}")
-        
-        if len(all_vertices) == 0:
-            messagebox.showwarning(
-                "No 3D Data",
-                "Could not find 3D geometry for the parts in the scene.\n\n"
-                "The parts may not have STL files generated yet."
-            )
-            return
-        
-        # Create combined mesh
-        vertices = np.array(all_vertices)
-        faces = np.array(all_faces)
-        
-        # Create STL mesh
-        combined_mesh = mesh.Mesh(np.zeros(len(faces), dtype=mesh.Mesh.dtype))
-        for i, face in enumerate(faces):
-            for j in range(3):
-                combined_mesh.vectors[i][j] = vertices[face[j]]
-        
-        # Save to temporary file
-        with tempfile.NamedTemporaryFile(mode='wb', suffix='.stl', delete=False) as f:
-            temp_stl_path = f.name
-        
-        combined_mesh.save(temp_stl_path)
-        
-        # Load into viewer
-        viewer_widget.load_stl_file(temp_stl_path)
-        
-        # Clean up temp file after a delay
-        root.after(2000, lambda: os.unlink(temp_stl_path) if os.path.exists(temp_stl_path) else None)
-        
-        print(f"3D viewer updated with scene ({len(scene)} parts, {len(faces)} triangles)")
     except Exception as e:
         messagebox.showerror(
             "3D Viewer Error",
