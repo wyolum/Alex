@@ -1567,6 +1567,127 @@ def alex_toggle_hot_reload():
                 f"Failed to disable hot-reload:\n{str(e)}"
             )
 
+# 3D Viewer functionality
+viewer_3d_window = None
+
+def alex_show_3d_viewer():
+    """Show the 3D viewer in a separate window."""
+    global viewer_3d_window
+    import tkinter.messagebox as messagebox
+    import tempfile
+    import os
+    
+    try:
+        from packages.viewer3d import create_viewer_widget
+    except ImportError as e:
+        messagebox.showerror(
+            "3D Viewer Error",
+            f"Failed to import 3D viewer:\n{str(e)}\n\n"
+            f"Make sure tkinterweb is installed:\npip install tkinterweb"
+        )
+        return
+    
+    # Create viewer window if it doesn't exist
+    if viewer_3d_window is None or not viewer_3d_window.winfo_exists():
+        viewer_3d_window = tk.Toplevel(root)
+        viewer_3d_window.title("AlexCAD 3D Viewer")
+        viewer_3d_window.geometry("1024x768")
+        
+        # Create viewer widget
+        viewer_widget = create_viewer_widget(viewer_3d_window)
+        viewer_widget.pack(fill='both', expand=True)
+        
+        # Store widget reference
+        viewer_3d_window.viewer_widget = viewer_widget
+        
+        # Add control buttons at bottom
+        button_frame = tk.Frame(viewer_3d_window)
+        button_frame.pack(fill='x', padx=5, pady=5)
+        
+        tk.Button(
+            button_frame, 
+            text="🔄 Reload Scene", 
+            command=lambda: alex_update_3d_viewer(viewer_widget)
+        ).pack(side='left', padx=2)
+        
+        tk.Button(
+            button_frame, 
+            text="Top", 
+            command=lambda: viewer_widget.set_view('top')
+        ).pack(side='left', padx=2)
+        
+        tk.Button(
+            button_frame, 
+            text="Front", 
+            command=lambda: viewer_widget.set_view('front')
+        ).pack(side='left', padx=2)
+        
+        tk.Button(
+            button_frame, 
+            text="Side", 
+            command=lambda: viewer_widget.set_view('side')
+        ).pack(side='left', padx=2)
+        
+        tk.Button(
+            button_frame, 
+            text="Iso", 
+            command=lambda: viewer_widget.set_view('iso')
+        ).pack(side='left', padx=2)
+        
+        tk.Button(
+            button_frame, 
+            text="🔍 Fit", 
+            command=viewer_widget.fit_to_view
+        ).pack(side='left', padx=2)
+        
+        tk.Button(
+            button_frame, 
+            text="🗑️ Clear", 
+            command=viewer_widget.clear
+        ).pack(side='left', padx=2)
+        
+        # Load current scene
+        alex_update_3d_viewer(viewer_widget)
+    else:
+        # Window exists, just raise it
+        viewer_3d_window.lift()
+        viewer_3d_window.focus_force()
+
+def alex_update_3d_viewer(viewer_widget=None):
+    """Update the 3D viewer with current scene."""
+    import tkinter.messagebox as messagebox
+    import tempfile
+    import os
+    
+    if viewer_widget is None:
+        if viewer_3d_window and viewer_3d_window.winfo_exists():
+            viewer_widget = viewer_3d_window.viewer_widget
+        else:
+            return
+    
+    try:
+        # Export scene to temporary STL file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.stl', delete=False) as f:
+            temp_stl_path = f.name
+        
+        # Export scene to STL
+        scene.export_stl(temp_stl_path)
+        
+        # Load into viewer
+        viewer_widget.load_stl_file(temp_stl_path)
+        
+        # Clean up temp file after a delay (give viewer time to load)
+        root.after(2000, lambda: os.unlink(temp_stl_path) if os.path.exists(temp_stl_path) else None)
+        
+        print(f"3D viewer updated with scene ({len(scene)} parts)")
+    except Exception as e:
+        messagebox.showerror(
+            "3D Viewer Error",
+            f"Failed to update 3D viewer:\n{str(e)}"
+        )
+        import traceback
+        traceback.print_exc()
+
 def alex_clear_all():
     util.clear_all()
     
@@ -1750,6 +1871,10 @@ partmenu.add_command(label='Part Library', command=parts_db_dialog)
 # partmenu.add_command(label='Add New Part', command=new_part_dialog)
 menubar.add_cascade(label="Part", menu=partmenu)
 
+# View menu
+viewmenu = tk.Menu(menubar, tearoff=0)
+viewmenu.add_command(label="🎨 3D Viewer", command=alex_show_3d_viewer)
+menubar.add_cascade(label="View", menu=viewmenu)
 
 wizardmenu = tk.Menu(menubar, tearoff=0)
 wizardmenu.add_command(label="Cube", command=cube_dialog)
