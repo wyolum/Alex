@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlexCAD 3D Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: #1a1a1a;
+        }
+
+        #viewer-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Control Panel */
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            min-width: 200px;
+        }
+
+        #controls h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #333;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+
+        .control-group {
+            margin: 10px 0;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 8px;
+            margin: 3px 0;
+            border: none;
+            border-radius: 4px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .view-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+        }
+
+        /* Loading Indicator */
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            z-index: 2000;
+            display: none;
+        }
+
+        #loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Info Panel */
+        #info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="viewer-container">
+        <div id="canvas-container"></div>
+
+        <!-- Control Panel -->
+        <div id="controls">
+            <h3>🎮 3D Controls</h3>
+
+            <div class="control-group">
+                <label>Camera Views:</label>
+                <div class="view-buttons">
+                    <button onclick="setView('top')">Top</button>
+                    <button onclick="setView('front')">Front</button>
+                    <button onclick="setView('side')">Side</button>
+                    <button onclick="setView('iso')">Iso</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <button onclick="resetCamera()">🔄 Reset Camera</button>
+                <button onclick="toggleWireframe()">🔲 Toggle Wireframe</button>
+                <button onclick="toggleGrid()">📐 Toggle Grid</button>
+                <button onclick="toggleAxes()">📏 Toggle Axes</button>
+            </div>
+
+            <div class="control-group">
+                <button onclick="takeScreenshot()">📸 Screenshot</button>
+                <button onclick="fitToView()">🔍 Fit to View</button>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading">
+            <div class="spinner"></div>
+            <div>Loading model...</div>
+        </div>
+
+        <!-- Info Panel -->
+        <div id="info">
+            <div>FPS: <span id="fps">60</span></div>
+            <div>Parts: <span id="part-count">0</span></div>
+            <div>Triangles: <span id="tri-count">0</span></div>
+        </div>
+    </div>
+
+    <!-- Three.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/STLLoader.js"></script>
+
+    <script>
+        // Global variables
+        let scene, camera, renderer, controls;
+        let gridHelper, axesHelper;
+        let loadedModels = [];
+        let wireframeMode = false;
+        let showGrid = true;
+        let showAxes = true;
+
+        // Performance monitoring
+        let frameCount = 0;
+        let lastTime = performance.now();
+
+        // Initialize the 3D viewer
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x2c3e50);
+            scene.fog = new THREE.Fog(0x2c3e50, 500, 2000);
+
+            // Camera
+            const aspect = container.clientWidth / container.clientHeight;
+            camera = new THREE.PerspectiveCamera(45, aspect, 1, 5000);
+            camera.position.set(500, 500, 500);
+            camera.lookAt(0, 0, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                alpha: true
+            });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(200, 500, 300);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.camera.left = -500;
+            directionalLight.shadow.camera.right = 500;
+            directionalLight.shadow.camera.top = 500;
+            directionalLight.shadow.camera.bottom = -500;
+            scene.add(directionalLight);
+
+            // Hemisphere light for better ambient
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4);
+            hemiLight.position.set(0, 500, 0);
+            scene.add(hemiLight);
+
+            // Grid
+            gridHelper = new THREE.GridHelper(1000, 50, 0x888888, 0x444444);
+            scene.add(gridHelper);
+
+            // Axes
+            axesHelper = new THREE.AxesHelper(200);
+            scene.add(axesHelper);
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false;
+            controls.minDistance = 50;
+            controls.maxDistance = 2000;
+            controls.maxPolarAngle = Math.PI / 2;
+
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize, false);
+
+            // Start animation loop
+            animate();
+
+            console.log('3D Viewer initialized');
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Update controls
+            controls.update();
+
+            // Render scene
+            renderer.render(scene, camera);
+
+            // Update FPS counter
+            frameCount++;
+            const currentTime = performance.now();
+            if (currentTime >= lastTime + 1000) {
+                document.getElementById('fps').textContent = frameCount;
+                frameCount = 0;
+                lastTime = currentTime;
+            }
+        }
+
+        // Load STL model
+        function loadSTL(url) {
+            showLoading(true);
+
+            const loader = new THREE.STLLoader();
+            loader.load(
+                url,
+                function (geometry) {
+                    // Clear previous models
+                    clearModels();
+
+                    // Create material
+                    const material = new THREE.MeshPhongMaterial({
+                        color: 0x3498db,
+                        specular: 0x111111,
+                        shininess: 200,
+                        flatShading: false
+                    });
+
+                    // Create mesh
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+
+                    // Center the model
+                    geometry.computeBoundingBox();
+                    const center = new THREE.Vector3();
+                    geometry.boundingBox.getCenter(center);
+                    mesh.position.sub(center);
+
+                    scene.add(mesh);
+                    loadedModels.push(mesh);
+
+                    // Update info
+                    updateInfo();
+
+                    // Fit to view
+                    fitToView();
+
+                    showLoading(false);
+                    console.log('STL loaded successfully');
+                },
+                function (xhr) {
+                    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+                },
+                function (error) {
+                    console.error('Error loading STL:', error);
+                    showLoading(false);
+                }
+            );
+        }
+
+        // Load STL from data (base64 or blob)
+        function loadSTLData(data) {
+            // Create blob URL from data
+            const blob = new Blob([data], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            loadSTL(url);
+        }
+
+        // Clear all loaded models
+        function clearModels() {
+            loadedModels.forEach(model => {
+                scene.remove(model);
+                if (model.geometry) model.geometry.dispose();
+                if (model.material) model.material.dispose();
+            });
+            loadedModels = [];
+        }
+
+        // Camera view presets
+        function setView(view) {
+            const distance = 500;
+            const target = new THREE.Vector3(0, 0, 0);
+
+            switch (view) {
+                case 'top':
+                    camera.position.set(0, distance, 0);
+                    break;
+                case 'front':
+                    camera.position.set(0, 0, distance);
+                    break;
+                case 'side':
+                    camera.position.set(distance, 0, 0);
+                    break;
+                case 'iso':
+                    camera.position.set(distance, distance, distance);
+                    break;
+            }
+
+            camera.lookAt(target);
+            controls.target.copy(target);
+            controls.update();
+        }
+
+        // Reset camera to default position
+        function resetCamera() {
+            camera.position.set(500, 500, 500);
+            camera.lookAt(0, 0, 0);
+            controls.target.set(0, 0, 0);
+            controls.update();
+        }
+
+        // Toggle wireframe mode
+        function toggleWireframe() {
+            wireframeMode = !wireframeMode;
+            loadedModels.forEach(model => {
+                if (model.material) {
+                    model.material.wireframe = wireframeMode;
+                }
+            });
+        }
+
+        // Toggle grid visibility
+        function toggleGrid() {
+            showGrid = !showGrid;
+            gridHelper.visible = showGrid;
+        }
+
+        // Toggle axes visibility
+        function toggleAxes() {
+            showAxes = !showAxes;
+            axesHelper.visible = showAxes;
+        }
+
+        // Fit model to view
+        function fitToView() {
+            if (loadedModels.length === 0) return;
+
+            const box = new THREE.Box3();
+            loadedModels.forEach(model => {
+                box.expandByObject(model);
+            });
+
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fov = camera.fov * (Math.PI / 180);
+            let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+            cameraZ *= 1.5; // Add some padding
+
+            camera.position.set(center.x + cameraZ, center.y + cameraZ, center.z + cameraZ);
+            camera.lookAt(center);
+            controls.target.copy(center);
+            controls.update();
+        }
+
+        // Take screenshot
+        function takeScreenshot() {
+            renderer.render(scene, camera);
+            const dataURL = renderer.domElement.toDataURL('image/png');
+
+            // Send to Python
+            if (window.pywebview) {
+                window.pywebview.api.on_screenshot(dataURL);
+            } else {
+                // Fallback: download directly
+                const link = document.createElement('a');
+                link.download = 'alexcad_3d_view.png';
+                link.href = dataURL;
+                link.click();
+            }
+        }
+
+        // Show/hide loading indicator
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            if (show) {
+                loading.classList.add('show');
+            } else {
+                loading.classList.remove('show');
+            }
+        }
+
+        // Update info panel
+        function updateInfo() {
+            let triCount = 0;
+            loadedModels.forEach(model => {
+                if (model.geometry) {
+                    triCount += model.geometry.attributes.position.count / 3;
+                }
+            });
+
+            document.getElementById('part-count').textContent = loadedModels.length;
+            document.getElementById('tri-count').textContent = Math.floor(triCount);
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', init);
+
+        // Expose functions to Python
+        window.viewer = {
+            loadSTL: loadSTL,
+            loadSTLData: loadSTLData,
+            clearModels: clearModels,
+            setView: setView,
+            resetCamera: resetCamera,
+            fitToView: fitToView
+        };
+    </script>
+</body>
+
+</html>
