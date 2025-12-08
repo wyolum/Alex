@@ -1684,14 +1684,66 @@ def alex_update_3d_viewer(viewer_widget=None):
         vertex_offset = 0
         parts_loaded = 0
         
-        for thing in scene:
+        print(f"\n=== 3D Viewer Debug ===")
+        print(f"Scene has {len(scene)} items")
+        
+        for i, thing in enumerate(scene):
+            print(f"\nItem {i+1}: {type(thing).__name__}")
+            print(f"  Has 'lib': {hasattr(thing, 'lib')}")
+            print(f"  Has 'name': {hasattr(thing, 'name')}")
+            
+            if hasattr(thing, 'name'):
+                print(f"  Name: {thing.name}")
+            
+            # Check if it's a Group - need to process its members
+            if hasattr(thing, 'iscontainer') and thing.iscontainer():
+                print(f"  This is a Group with {len(thing)} items")
+                # Recursively process group members
+                for j, member in enumerate(thing):
+                    print(f"    Member {j+1}: {type(member).__name__}")
+                    if hasattr(member, 'name'):
+                        print(f"      Name: {member.name}")
+                    
+                    # Process this member as a part
+                    if hasattr(member, 'lib') and hasattr(member, 'name'):
+                        stl_filename = member.name + '.stl'
+                        stl_path = os.path.join(member.lib.stl_dir, stl_filename)
+                        print(f"      Looking for STL: {stl_path}")
+                        
+                        if os.path.exists(stl_path):
+                            try:
+                                part_mesh = mesh.Mesh.from_file(stl_path)
+                                vertices = part_mesh.vectors.reshape(-1, 3)
+                                
+                                # Apply transformations
+                                if hasattr(member, 'dim1') and hasattr(member, 'dim2') and hasattr(member, 'length'):
+                                    scale = np.array([member.dim1, member.dim2, member.length])
+                                    vertices = vertices * scale
+                                
+                                if hasattr(member, 'orient') and member.orient is not None:
+                                    vertices = vertices @ member.orient.T
+                                
+                                if hasattr(member, 'pos') and member.pos is not None:
+                                    vertices = vertices + np.array(member.pos)
+                                
+                                all_vertices.extend(vertices.tolist())
+                                num_vertices = len(vertices)
+                                for k in range(0, num_vertices, 3):
+                                    all_faces.append([vertex_offset + k, vertex_offset + k + 1, vertex_offset + k + 2])
+                                vertex_offset += num_vertices
+                                parts_loaded += 1
+                                print(f"      ✓ Loaded {member.name}")
+                            except Exception as e:
+                                print(f"      ✗ Error: {e}")
+                continue  # Skip the regular part processing for groups
+            
             # Check if thing is a Part (has lib and name attributes)
             if hasattr(thing, 'lib') and hasattr(thing, 'name'):
                 # Get the STL file path from the library
                 stl_filename = thing.name + '.stl'
                 stl_path = os.path.join(thing.lib.stl_dir, stl_filename)
                 
-                print(f"Looking for STL: {stl_path}")
+                print(f"  Looking for STL: {stl_path}")
                 
                 if os.path.exists(stl_path):
                     try:
