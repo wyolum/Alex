@@ -46,6 +46,9 @@ class EnhancedBOMDialog:
         # Build UI
         self._create_ui()
         
+        # Setup keyboard shortcuts
+        self._setup_keyboard_shortcuts()
+        
     def _parse_bom_data(self, bom_lines):
         """Parse BOM data from CSV format into structured items."""
         items = []
@@ -115,23 +118,36 @@ class EnhancedBOMDialog:
     
     def _create_ui(self):
         """Create the user interface."""
+        # Import tooltip if available
+        try:
+            from packages import tooltip
+            has_tooltip = True
+        except ImportError:
+            has_tooltip = False
+        
         # Top button bar
         button_frame = tk.Frame(self.window, pady=5)
         button_frame.pack(fill='x', padx=10)
         
-        tk.Button(
+        copy_btn = tk.Button(
             button_frame,
             text="📋 Copy All",
             command=self._copy_all,
             padx=10
-        ).pack(side='left', padx=2)
+        )
+        copy_btn.pack(side='left', padx=2)
+        if has_tooltip:
+            tooltip.create_tooltip(copy_btn, "Copy entire BOM to clipboard (Ctrl+C)")
         
-        tk.Button(
+        export_btn = tk.Button(
             button_frame,
             text="💾 Export CSV",
             command=self._export_csv,
             padx=10
-        ).pack(side='left', padx=2)
+        )
+        export_btn.pack(side='left', padx=2)
+        if has_tooltip:
+            tooltip.create_tooltip(export_btn, "Export BOM to CSV file (Ctrl+E)")
         
         self.group_button = tk.Button(
             button_frame,
@@ -140,6 +156,21 @@ class EnhancedBOMDialog:
             padx=10
         )
         self.group_button.pack(side='left', padx=2)
+        if has_tooltip:
+            tooltip.create_tooltip(self.group_button, "Toggle supplier grouping view (Ctrl+G)")
+        
+        # Help button on the right
+        help_btn = tk.Button(
+            button_frame,
+            text="❓",
+            command=self._show_shortcuts_help,
+            padx=8,
+            font=('Arial', 10, 'bold')
+        )
+        help_btn.pack(side='right', padx=2)
+        if has_tooltip:
+            tooltip.create_tooltip(help_btn, "Show keyboard shortcuts (F1)")
+        
         
         # Main content area with scrollbar
         content_frame = tk.Frame(self.window)
@@ -622,6 +653,38 @@ class EnhancedBOMDialog:
                 messagebox.showinfo("Export Successful", f"BOM exported to:\n{filename}")
             except Exception as e:
                 messagebox.showerror("Export Failed", f"Failed to export BOM:\n{str(e)}")
+    
+    def _setup_keyboard_shortcuts(self):
+        """Setup keyboard shortcuts for the BOM dialog."""
+        # Ctrl+C - Copy all
+        self.window.bind('<Control-c>', lambda e: self._copy_all())
+        
+        # Ctrl+E - Export CSV
+        self.window.bind('<Control-e>', lambda e: self._export_csv())
+        
+        # Ctrl+G - Toggle grouping
+        self.window.bind('<Control-g>', lambda e: self._toggle_supplier_grouping())
+        
+        # Escape - Close dialog
+        self.window.bind('<Escape>', lambda e: self.window.destroy())
+        
+        # F1 or ? - Show shortcuts help
+        self.window.bind('<F1>', lambda e: self._show_shortcuts_help())
+        self.window.bind('<?>', lambda e: self._show_shortcuts_help())
+    
+    def _show_shortcuts_help(self):
+        """Show keyboard shortcuts help dialog."""
+        help_text = """Keyboard Shortcuts:
+
+Ctrl+C      Copy all items to clipboard
+Ctrl+E      Export to CSV file
+Ctrl+G      Toggle supplier grouping
+Escape      Close this dialog
+F1 or ?     Show this help
+
+Tip: Hover over buttons to see tooltips!"""
+        
+        messagebox.showinfo("Keyboard Shortcuts", help_text)
 
 
 def show_enhanced_bom(parent, bom_data, filename=None):
