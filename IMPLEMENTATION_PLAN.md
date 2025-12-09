@@ -163,7 +163,12 @@ Transform Alex CAD from a desktop CAD tool into a collaborative, cloud-enabled p
   - ✅ Expand/collapse all
   - ✅ Copy to clipboard
   - ✅ CSV export
-- Three.js 3D viewer integration
+- ✅ **3D Viewer Integration** (COMPLETE!)
+  - ✅ STL export (20 parts, 8,608 triangles)
+  - ✅ Matplotlib 3D viewer (working!)
+  - ✅ OpenSCAD integration (fast & preferred!)
+  - ✅ View menu with both options
+- Three.js 3D viewer (optional - matplotlib/OpenSCAD work great)
 - Design gallery website
 - Link manager with auto-updates
 
