@@ -1843,6 +1843,43 @@ def alex_update_3d_viewer(viewer_widget=None):
         import traceback
         traceback.print_exc()
 
+def alex_launch_openscad():
+    """Launch OpenSCAD with the current design."""
+    import tkinter.messagebox as messagebox
+    import subprocess
+    
+    if not openscad_path:
+        messagebox.showerror(
+            "OpenSCAD Not Found",
+            "OpenSCAD is not installed or not found in PATH.\n\n"
+            "Please install OpenSCAD:\n"
+            "• Ubuntu/Debian: sudo apt install openscad\n"
+            "• macOS: brew install openscad\n"
+            "• Windows: Download from openscad.org"
+        )
+        return
+    
+    # The scene is automatically exported to alex.scad (or Alex_test.scad)
+    scad_file = alex_scad
+    
+    if not os.path.exists(scad_file):
+        messagebox.showwarning(
+            "No Design File",
+            f"Design file not found: {scad_file}\n\n"
+            "Create some parts first, then try again."
+        )
+        return
+    
+    try:
+        # Launch OpenSCAD with the file
+        subprocess.Popen([openscad_path, scad_file])
+        print(f"✓ Launched OpenSCAD with {scad_file}")
+    except Exception as e:
+        messagebox.showerror(
+            "Launch Failed",
+            f"Failed to launch OpenSCAD:\n{str(e)}"
+        )
+
 def alex_clear_all():
     util.clear_all()
     
@@ -2029,6 +2066,8 @@ menubar.add_cascade(label="Part", menu=partmenu)
 # View menu
 viewmenu = tk.Menu(menubar, tearoff=0)
 viewmenu.add_command(label="🎨 3D Viewer", command=alex_show_3d_viewer)
+viewmenu.add_separator()
+viewmenu.add_command(label="🔧 Launch OpenSCAD", command=alex_launch_openscad)
 menubar.add_cascade(label="View", menu=viewmenu)
 
 wizardmenu = tk.Menu(menubar, tearoff=0)
