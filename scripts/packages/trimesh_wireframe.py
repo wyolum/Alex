@@ -128,7 +128,7 @@ def get_bounding_box_wireframe():
     return np.array(wireframe[:-1])
 
 
-def from_stl_simple(stl_path, target_faces=500):
+def from_stl_simple(stl_path, max_faces=1000):
     """
     Simplified version: just get the decimated mesh edges.
     
@@ -137,21 +137,28 @@ def from_stl_simple(stl_path, target_faces=500):
     
     Args:
         stl_path: Path to STL file
-        target_faces: Target number of faces for decimation
+        max_faces: Maximum number of faces (will decimate if exceeded)
     
     Returns:
         wireframe: nx3 numpy array with NaN separators
     """
-    # Load and decimate mesh
+    # Load mesh
     mesh = trimesh.load(stl_path, force='mesh')
     
-    if len(mesh.faces) > target_faces:
-        mesh = mesh.simplify_quadric_decimation(target_faces)
+    original_faces = len(mesh.faces)
+    
+    # Decimate if needed
+    if original_faces > max_faces:
+        # Calculate target reduction percentage
+        target_percent = max_faces / original_faces
+        print(f"Decimating: {original_faces} faces -> {max_faces} faces ({target_percent:.1%})")
+        mesh = mesh.simplify_quadric_decimation(max_faces)
+        print(f"Result: {len(mesh.faces)} faces")
     
     # Normalize
     bounds = mesh.bounds
     center = (bounds[0] + bounds[1]) / 2
-    center[2] = bounds[0][2]
+    center[2] = bounds[0][2]  # Keep Z-min at 0
     size = bounds[1] - bounds[0]
     max_size = np.max(size)
     
@@ -161,6 +168,8 @@ def from_stl_simple(stl_path, target_faces=500):
     # Get all unique edges
     edges = mesh.edges_unique
     
+    print(f"Mesh has {len(edges)} unique edges")
+    
     # Convert to wireframe format
     wireframe = []
     for edge in edges:
@@ -169,7 +178,7 @@ def from_stl_simple(stl_path, target_faces=500):
         wireframe.append(v2)
         wireframe.append([np.nan, np.nan, np.nan])
     
-    return np.array(wireframe[:-1])
+    return np.array(wireframe[:-1] if wireframe else [[np.nan, np.nan, np.nan]])
 
 
 # For testing
