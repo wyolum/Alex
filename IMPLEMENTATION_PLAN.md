@@ -155,7 +155,13 @@ Transform Alex CAD from a desktop CAD tool into a collaborative, cloud-enabled p
 
 **🎉 SPRINT COMPLETE! 100% DONE! 🎉**
 
-### 📅 Short-term (3-6 months)
+### � Recent Bug Fixes (Dec 9, 2024)
+1. ✅ **Fixed wireframe normalization** - Trimesh wireframe generation now properly normalizes each dimension independently to create a perfect unit cube (-0.5 to 0.5 in all axes). This ensures circles render as circles instead of ellipses when multiplied by [dim1, dim2, length] during rendering.
+2. ✅ **Fixed mouse wheel crash** - Added exception handling for KeyError when scrolling over menu widgets (#!menu)
+3. ✅ **Enhanced wireframe preview** - New part dialog now properly scales wireframe preview by actual dimensions with real-time updates
+
+
+### �📅 Short-term (3-6 months)
 - ✅ **Enhanced BOM with supplier links** (COMPLETE!)
   - ✅ Supplier grouping and subtotals
   - ✅ Sortable columns (click headers)

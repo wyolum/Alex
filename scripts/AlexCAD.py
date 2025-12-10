@@ -132,7 +132,11 @@ def OnMouseWheel(event):
             
 def get_widget_under_mouse(root):
     x,y = root.winfo_pointerxy()
-    widget = root.winfo_containing(x,y)
+    try:
+        widget = root.winfo_containing(x,y)
+    except KeyError:
+        # Handle special widgets like menus that can't be looked up normally
+        widget = None
     return widget
     
 def OnMouseButton4_5(event):

@@ -1169,13 +1169,43 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
         else:
             pass
         thing = things.STL(stl_fn)
-        pts = thing.mesh.vectors.reshape((-1, 3))
-        maxs = np.max(pts, axis=0)
-        mins = np.min(pts, axis=0)
-        dims = maxs - mins
-        dim1_var.set(np.round(dims[0]))
-        dim2_var.set(np.round(dims[1]))
-        length_var.set(np.round(dims[2]))
+        # Use the STL class's calculated dimensions to ensure consistency
+        dim1_var.set(np.round(thing.dim1))
+        dim2_var.set(np.round(thing.dim2))
+        length_var.set(np.round(thing.length))
+        update_wireframe_preview()
+        
+    def update_wireframe_preview(*args):
+        """Update the wireframe preview with proper scaling."""
+        try:
+            # Get the wireframe name
+            wf_name = wire_var.get()
+            if wf_name not in lib.get_wireframe_names():
+                return
+            
+            # Get the normalized wireframe (unit cube)
+            wf = lib.get_wireframe(wf_name)
+            
+            # Get the dimensions
+            try:
+                dim1 = float(dim1_var.get())
+                dim2 = float(dim2_var.get())
+                length = float(length_var.get())
+            except (ValueError, tk.TclError):
+                # If dimensions aren't set yet, use unit scale
+                dim1 = dim2 = length = 1.0
+            
+            # Scale the wireframe by the actual dimensions
+            scaled_wf = wf.copy()
+            scaled_wf = scaled_wf * np.array([dim1, dim2, length])
+            
+            # Clear and redraw
+            wire_view.can.delete('all')
+            wire_view.draw_axes()
+            wire_view.create_path('wireframe', scaled_wf, "black", 1)
+        except Exception as e:
+            print(f"Error updating wireframe preview: {e}")
+        
         
     dim_frame = tk.Frame(part_frame)
     dim_button = tk.Button(dim_frame, text="Pull Dims from STL", command=util.curry(pull_dims_from_stl, (stl_var,)))
@@ -1188,6 +1218,7 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
     validate = curry(validators[row], ('Dim X', dim1_var, dim1_entry, commit_button))
     validates.append(validate)
     dim1_entry.bind('<FocusOut>', validate)
+    dim1_var.trace('w', update_wireframe_preview)
     row += 1
     
     dim2_var = tk.StringVar()
@@ -1198,6 +1229,7 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
     validate = curry(validators[row], ('Dim Y', dim2_var, dim2_entry, commit_button))
     validates.append(validate)
     dim2_entry.bind('<FocusOut>', validate)
+    dim2_var.trace('w', update_wireframe_preview)
     row += 1
 
     length_var = tk.StringVar()
@@ -1208,9 +1240,11 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
     validate = curry(validators[row], ('Dim Z', length_var, length_entry, commit_button))
     validates.append(validate)
     length_entry.bind('<FocusOut>', validate)
+    length_var.trace('w', update_wireframe_preview)
     length_var.set("NA")
     row += 1
     dim_frame.grid(row=row, column=1, pady=10, sticky='e', columnspan=2)
+    
     
     interface_names = list(interface_table.keys())
     interface_vars = [tk.StringVar() for i in range(6)]

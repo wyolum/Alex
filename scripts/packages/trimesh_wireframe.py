@@ -156,15 +156,20 @@ def from_stl_simple(stl_path, max_faces=1000):
         mesh = mesh.simplify_quadric_decimation(reduction)
         print(f"Result: {len(mesh.faces)} faces")
     
-    # Normalize
+    # Normalize to unit cube (-0.5 to 0.5 in each dimension)
+    # This ensures that when multiplied by [dim1, dim2, length], we get the correct shape
     bounds = mesh.bounds
     center = (bounds[0] + bounds[1]) / 2
     center[2] = bounds[0][2]  # Keep Z-min at 0
     size = bounds[1] - bounds[0]
-    max_size = np.max(size)
     
+    # Translate to origin
     mesh.apply_translation(-center)
-    mesh.apply_scale(1.0 / max_size)
+    
+    # Scale each dimension independently to fit in -0.5 to 0.5 range
+    # This preserves the aspect ratio when later multiplied by [dim1, dim2, length]
+    scale_factors = np.where(size > 0, 1.0 / size, 1.0)
+    mesh.apply_scale(scale_factors)
     
     # Get all unique edges
     edges = mesh.edges_unique
@@ -180,6 +185,7 @@ def from_stl_simple(stl_path, max_faces=1000):
         wireframe.append([np.nan, np.nan, np.nan])
     
     return np.array(wireframe[:-1] if wireframe else [[np.nan, np.nan, np.nan]])
+
 
 
 # For testing
