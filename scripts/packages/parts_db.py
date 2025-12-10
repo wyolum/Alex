@@ -1015,11 +1015,22 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
 
         to_lib.insert([values])
 
-        ### import wireframe to library
-        npy = os.path.join(to_lib.wireframe_dir, values[1] + '.npy')
-        if not os.path.exists(npy):
-            shutil.copyfile(os.path.join(lib.wireframe_dir, values[1] + '.npy'),
-                            npy)
+        ### Auto-generate wireframe from STL (using fast trimesh method!)
+        print(f'Auto-generating wireframe from STL: {stl_fn}')
+        try:
+            wf = wireframes.from_stl(stl_fn)
+            wireframe_name = values[1]  # Use the wireframe name from values
+            wireframes.add_wf(to_lib, wireframe_name, wf)
+            print(f'✓ Wireframe "{wireframe_name}" generated successfully!')
+        except Exception as e:
+            print(f'Warning: Could not generate wireframe: {e}')
+            # Fallback to copying Cube wireframe if generation fails
+            npy = os.path.join(to_lib.wireframe_dir, values[1] + '.npy')
+            if not os.path.exists(npy):
+                cube_npy = os.path.join(Main.wireframe_dir, 'Cube.npy')
+                if os.path.exists(cube_npy):
+                    shutil.copyfile(cube_npy, npy)
+                    print(f'Fallback: Using Cube wireframe')
             
         if price_var.get() == '{piecewise}':
             price_list = cm.get_table(len_vars, cost_vars)
@@ -1077,21 +1088,28 @@ def new_part_dialog(parent, lib=Main, name=None, onclose=None, copy=False):
     ### validate created below after other entries are created.
     row += 1
 
+    # Wireframe is now automatically generated from STL - no manual selection needed!
+    # The wireframe will be created when the STL is loaded
     wireframe_names = lib.get_wireframe_names()
     wire_var = tk.StringVar()
-    wire_var.set("Cube")
+    wire_var.set("Cube")  # Default, will be overridden by auto-generated wireframe
     variables.append(wire_var)
-    tk.Label(part_frame, text="Wireframe").grid(row=row+1, column=1, sticky='e')
-    wire_opt = tk.OptionMenu(part_frame, wire_var, *wireframe_names)
-    wire_opt.grid(row=row+1, column=2, sticky='w')
     
-    validate = curry(validators[row], (lib, 'Wireframe', wire_var, wire_opt, commit_button, wire_view))
-    validates.append(validate)
-    wire_opt.bind('<FocusOut>', validate)
-    browse_button = tk.Button(part_frame, text="New", command=curry(ask_wireframe, (lib, 'Wireframe', wire_opt, wire_var)))
-    browse_button.grid(row=row+1, column=3, sticky='w')
-    wire_var.trace('w', validate)
-    validate()
+    # UI removed - wireframe is auto-generated from STL
+    # tk.Label(part_frame, text="Wireframe").grid(row=row+1, column=1, sticky='e')
+    # wire_opt = tk.OptionMenu(part_frame, wire_var, *wireframe_names)
+    # wire_opt.grid(row=row+1, column=2, sticky='w')
+    
+    # validate = curry(validators[row], (lib, 'Wireframe', wire_var, wire_opt, commit_button, wire_view))
+    # validates.append(validate)
+    # wire_opt.bind('<FocusOut>', validate)
+    # browse_button = tk.Button(part_frame, text="New", command=curry(ask_wireframe, (lib, 'Wireframe', wire_opt, wire_var)))
+    # browse_button.grid(row=row+1, column=3, sticky='w')
+    # wire_var.trace('w', validate)
+    # validate()
+    
+    # Skip wireframe validation - it's automatic now
+    validates.append(lambda: True)  # Always valid
     row += 1
 
     stl_var = tk.StringVar()

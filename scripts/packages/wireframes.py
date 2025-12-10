@@ -6,7 +6,8 @@ import sys
 if '.' not in sys.path:
     sys.path.append('.')
 from packages.constants import npy_dir
-from packages.stl_to_wireframe import from_stl
+# Use new trimesh-based wireframe generation (much faster!)
+from packages.trimesh_wireframe import from_stl_simple as from_stl
 
 import sys
 if '.' not in sys.path:
