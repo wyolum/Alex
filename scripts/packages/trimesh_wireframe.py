@@ -149,10 +149,11 @@ def from_stl_simple(stl_path, max_faces=1000):
     
     # Decimate if needed
     if original_faces > max_faces:
-        # Calculate target reduction percentage
-        target_percent = max_faces / original_faces
-        print(f"Decimating: {original_faces} faces -> {max_faces} faces ({target_percent:.1%})")
-        mesh = mesh.simplify_quadric_decimation(max_faces)
+        # Calculate reduction percentage (how much to REMOVE, not keep)
+        # If we have 2000 faces and want 1000, we need to remove 50%
+        reduction = 1.0 - (max_faces / original_faces)
+        print(f"Decimating: {original_faces} faces -> ~{max_faces} faces (removing {reduction:.1%})")
+        mesh = mesh.simplify_quadric_decimation(reduction)
         print(f"Result: {len(mesh.faces)} faces")
     
     # Normalize
